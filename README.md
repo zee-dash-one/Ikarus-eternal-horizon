@@ -8,7 +8,7 @@
 **Status:** pre-production (Gate G0) · **Stack:** TypeScript · Vite · Three.js · Yuka · Howler
 **Operational source of truth:** [`.docs/plans/planning.spec.MD`](.docs/plans/planning.spec.MD) (canonical names, decisions, gates, traceable requirements, SDD build order)
 **Builds:** [`poc/`](poc/README.md) — POC-1, frozen playable reference · [`poc2/`](poc2/README.md) — active build (`npm run dev` in `poc2/`)
-**POC2 now:** fly the modular airplane, fire four weapons, dash, pause to pick a scheme, remap binds. Warriors form squads after the gate (10 Z standoff, FURY cap 4). Collision is live; HUD bars / Title flow are still next.
+**POC2 now:** fly the modular airplane, fire four weapons, dash, pause to pick a scheme, remap binds. Laser overheat cues go through `SoundManager.playOverheatCue()` (silent until Howler). Warriors form squads after the gate (10 Z standoff, FURY cap 4). Collision is live; HUD bars / Title flow are still next.
 **This document supersedes GDD v2.0.** All mechanical systems from v2.0 are preserved; this revision folds in the full lore bible and the narrative-delivery systems (HUD storytelling, Bounty Board, item flavor text, sector staging, boss narrative beats) that were previously parked as "open worldbuilding questions."
 
 ---

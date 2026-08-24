@@ -4,6 +4,7 @@
  */
 
 import type { Scene } from 'three'
+import { SoundManager } from '../audio/sound-manager'
 import { BALANCE } from '../core/balancer'
 import type { InputPort } from '../core/input'
 import type { InputBindings } from '../core/input-bindings'
@@ -174,6 +175,7 @@ export function createRunWorld(options: RunWorldOptions): RunWorldFactory {
       canRegen: () => ship.status.recovering,
       regenBonus: () => ship.energyGain,
     })
+    const sound = new SoundManager()
     const weaponCapacity = Math.max(
       ...BALANCE.weapons.loadout.map((id) => BALANCE.weapons.catalog[id].poolSize),
     )
@@ -301,7 +303,7 @@ export function createRunWorld(options: RunWorldOptions): RunWorldFactory {
       shooting: ship,
       registry: {
         create(id) {
-          return new Weapon({ id, shots: shots.asAcquirePort(), deps: { scene } })
+          return new Weapon({ id, shots: shots.asAcquirePort(), deps: { scene, sound } })
         },
       },
     })
@@ -340,6 +342,7 @@ export function createRunWorld(options: RunWorldOptions): RunWorldFactory {
       ship,
       health,
       energy,
+      sound,
       shots,
       firing,
       enemies,
@@ -522,6 +525,20 @@ export function createRunWorld(options: RunWorldOptions): RunWorldFactory {
         },
         dispose() {
           world.energy.dispose()
+        },
+      }
+    },
+    soundManager() {
+      const world = current()
+      return {
+        update(dt: number) {
+          world.sound.update(dt)
+        },
+        syncRender() {
+          /* no visual */
+        },
+        dispose() {
+          world.sound.dispose()
         },
       }
     },

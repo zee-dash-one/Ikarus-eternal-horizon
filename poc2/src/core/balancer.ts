@@ -1,6 +1,6 @@
 /**
  * SDD-A01 Balancer — single source of gameplay numbers (RUL-12).
- * Port of POC-1 `poc/src/core/balancer.ts` plus health / difficulty / score / drops / vfx.
+ * Port of POC-1 `poc/src/core/balancer.ts` plus health / difficulty / score / drops / vfx / audio.
  * Weapon *behaviour* is D02; catalog data lives in catalog.ts and is re-exported here.
  */
 
@@ -446,6 +446,13 @@ export interface VfxConfig {
   readonly hitStopFrames: number
 }
 
+export interface AudioConfig {
+  readonly masterVolume: number
+  readonly sfxVolume: number
+  readonly musicVolume: number
+  readonly muted: boolean
+}
+
 export interface ShotDespawnConfig {
   readonly zNear: number
   readonly zFar: number
@@ -507,6 +514,7 @@ export interface Balance {
   readonly enemy: EnemyConfig
   readonly battlefield: BattleFieldConfig
   readonly vfx: VfxConfig
+  readonly audio: AudioConfig
   readonly haptics: HapticsConfig
   readonly loop: LoopConfig
   readonly gizmos: GizmosConfig
@@ -946,6 +954,12 @@ const BALANCE_DATA: Balance = {
   vfx: {
     shake: { maxAmplitude: 0.18, decayPerSec: 6 },
     hitStopFrames: 3,
+  },
+  audio: {
+    masterVolume: 1,
+    sfxVolume: 1,
+    musicVolume: 0.65,
+    muted: false,
   },
   haptics: {
     enabled: true,

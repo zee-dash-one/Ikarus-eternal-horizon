@@ -45,6 +45,10 @@ export interface LaserSpec {
   diagonalAngleDeg: number
   forwardSpread: number
   diagonalSpreadDeg: number
+  /** Consecutive volleys (hold, no pause) before the barrel must cool. */
+  burstShots: number
+  /** Mandatory cool-down after a full burst (seconds). */
+  overheatSec: number
 }
 
 export interface WeaponConfig {
@@ -74,7 +78,8 @@ export const WEAPONS: Record<WeaponId, WeaponConfig> = {
     energyPerShot: 1,
     damage: 1,
     profile: 'projectile',
-    poolSize: 128,
+    /** L12 volley 12 × burst 15 = 180; ~3s life overlaps ~4 cycles. */
+    poolSize: 768,
     muzzleOffset: { x: 0, y: 0, z: -1.4 },
     level: 1,
     projectile: {
@@ -90,6 +95,8 @@ export const WEAPONS: Record<WeaponId, WeaponConfig> = {
       diagonalAngleDeg: 22,
       forwardSpread: 0.55,
       diagonalSpreadDeg: 10,
+      burstShots: 15,
+      overheatSec: 0.5,
     },
   },
   plasma: {

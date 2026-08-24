@@ -9,6 +9,13 @@ function mockScene(): Scene {
   return { add: vi.fn(), remove: vi.fn() } as unknown as Scene
 }
 
+const idleShots = {
+  acquire: () => null,
+  release() {
+    /* unused — mjolnir does not pool bolts */
+  },
+}
+
 function energyStub(afford = true): EnergyPort & { spent: number[] } {
   const spent: number[] = []
   return {
@@ -27,7 +34,7 @@ describe('MjolnirBehaviour', () => {
     const cfg = copyWeaponConfig(WEAPONS.mjolnir)
     applyWeaponLevel(cfg, 1)
     const energy = energyStub(true)
-    const mjolnir = new MjolnirBehaviour(cfg, { acquire: () => null }, mockScene())
+    const mjolnir = new MjolnirBehaviour(cfg, idleShots, mockScene())
     mjolnir.update({
       dt: 0.1,
       holding: true,
@@ -66,7 +73,7 @@ describe('MjolnirBehaviour', () => {
         },
       },
     ]
-    const mjolnir = new MjolnirBehaviour(cfg, { acquire: () => null }, mockScene())
+    const mjolnir = new MjolnirBehaviour(cfg, idleShots, mockScene())
     mjolnir.update({
       dt: 1,
       holding: true,

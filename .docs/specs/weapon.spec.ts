@@ -26,7 +26,8 @@
  * Does not own: WeaponShot mesh (D01), EnergyManager (D03), ShotManager pool
  *            lifecycle (E04), FiringManager input (E07), Plasma behaviour
  *            (D04 registers into this seam). Beam/Mjolnir (D05/D06) register with
- *            BEAM_LEVELS / MJOLNIR_LEVELS and WeaponDeps.scene for visuals.
+ *            BEAM_LEVELS / MJOLNIR_LEVELS, WeaponDeps.scene for visuals, and
+ *            WeaponDeps.sound for SFX cues (playOverheatCue).
  * Player-facing: L1 cyan needle at 8/s cost 1; L5/L12 volley shapes when applyLaserLevel
  *            is used. Adding a weapon must not edit class Weapon.
  */
@@ -124,6 +125,16 @@ export interface ShotAcquirePort {
   acquire(): { activate(spawn: ShotSpawn): void } | null
 }
 
+/** Port owned by §7 SoundManager. Missing sound is a silent no-op. */
+export interface SoundPort {
+  playOverheatCue(): void
+}
+
+export interface WeaponDeps {
+  readonly scene?: unknown
+  readonly sound?: SoundPort
+}
+
 /** Identical to D01. Copied so this spec is self-contained. */
 export interface ShotSpawn {
   readonly x: number
@@ -178,6 +189,8 @@ export interface LaserSpec {
   readonly diagonalAngleDeg: number
   readonly forwardSpread: number
   readonly diagonalSpreadDeg: number
+  readonly burstShots: number
+  readonly overheatSec: number
 }
 
 export interface WeaponConfig {
@@ -201,6 +214,7 @@ export interface WeaponConfig {
 export type WeaponBehaviourFactory = (
   config: WeaponConfig,
   shots: ShotAcquirePort,
+  deps?: WeaponDeps,
 ) => WeaponBehaviour
 
 export declare const WEAPONS: Record<WeaponId, WeaponConfig>
@@ -232,6 +246,7 @@ export declare function defaultModifiers(): WeaponModifiers
 export interface WeaponOptions {
   readonly id: WeaponId
   readonly shots: ShotAcquirePort
+  readonly deps?: WeaponDeps
 }
 
 export declare class Weapon {
@@ -249,8 +264,10 @@ export declare class Weapon {
 }
 
 export declare class LaserBehaviour implements WeaponBehaviour {
-  constructor(config: WeaponConfig, shots: ShotAcquirePort)
+  constructor(config: WeaponConfig, shots: ShotAcquirePort, sound?: SoundPort)
 
+  /** Soft overheat SFX hook — forwards to SoundPort.playOverheatCue(). */
+  playOverheatCue(): void
   update(ctx: BehaviourCtx): void
   dispose(): void
 }
@@ -271,18 +288,22 @@ export declare class LaserBehaviour implements WeaponBehaviour {
  *   behaviour only — never the E04 pool.
  *
  * LaserBehaviour.update:
- *   cooldown -= dt; return if !holding or cooldown > 0.
- *   cost = energyPerShot * energyMul; return if !canAfford; then spend.
+ *   If overheat timer > 0, tick it down and return (barrel cooling).
+ *   Releasing fire (`!holding`) resets the burst count — a pause breaks the streak.
+ *   Cadence follows `config.rate`: cooldown = 1 / (rate * rateMul) after each
+ *   volley. After `laser.burstShots` uninterrupted volleys, set overheat to
+ *   `laser.overheatSec` and call playOverheatCue() once (SoundManager).
+ *   cost = energyPerShot * energyMul; return if !canAfford. Reserve every
+ *   bolt in the fan first; if the pool is short, release and return without
+ *   spending. Then spend and activate the reserved slots.
  *   Spawn forwardShots along X with forwardSpread; for each side ±1 spawn
  *   diagonalShotsPerSide at ±diagonalAngleDeg + jitter * diagonalSpreadDeg.
  *   vx,vz = (sin(rad)*speed, -cos(rad)*speed); forward uses vx=0, vz=-speed.
  *   ShotSpawn: aoeRadius 0; decayPerUnit from projectile; totalLifetime =
  *   lifetime; range = speed * lifetime; color = config.color.
  *   y is not a spawn field (D01 play plane y = 0).
- *   cooldown = 1 / (rate * rateMul) after a successful volley (at least one
- *   acquire). A fully exhausted pool still spends energy and sets cooldown
- *   once the volley was attempted after canAfford — skip individual bolts
- *   on null, do not abort the rest of the volley.
+ *   A fully exhausted pool does not spend energy and does not count the burst —
+ *   reserved bolts are released and the fan is skipped as a whole.
  *
  * applyLaserLevel:
  *   copies the matching LASER_LEVELS row onto cfg damage/rate/energyPerShot
@@ -301,16 +322,19 @@ export declare class LaserBehaviour implements WeaponBehaviour {
  *   R3. Adding a weapon = 1 catalog.ts entry + 1 registerWeapon call.
  *       Class Weapon is not edited (D12).
  *   R4. Energy gate: no spawn when !canAfford(energyPerShot * energyMul).
- *   R5. Cadence: cooldown = 1 / (rate * rateMul). First shot is allowed
- *       on the first holding frame (cooldown starts at 0).
+ *   R5. Cadence: cooldown = 1 / (rate * rateMul) between volleys. First shot
+ *       is allowed on the first holding frame. After laser.burstShots (15)
+ *       uninterrupted volleys, wait laser.overheatSec (0.5) and call
+ *       playOverheatCue() once (SoundManager). Releasing fire resets the streak.
  *   R6. totalShots = forwardShots + 2 * diagonalShotsPerSide = level
  *       for every LASER_LEVELS row.
  *   R7. L1 = 1 forward; L4 = 4 forward; L5 = 3 forward + 1/side; L10 = 4
  *       forward + 3/side; L12 = 4 forward + 4/side.
- *   R8. Laser bolts: speed 30, lifetime 1, aoeRadius 0. Catalog poolSize 128
+ *   R8. Laser bolts: speed 30, lifetime 1, aoeRadius 0. Catalog poolSize 768
  *       is consumed by E04, not by this class.
- *   R9. Per-frame allocation: none. Shots come from E04; acquire null skips
- *       that bolt (no new).
+ *   R9. Per-frame allocation: none. Shots come from E04. A volley is
+ *       all-or-nothing: if acquire cannot cover every bolt, reserved slots
+ *       are released and nothing fires (no lopsided fan).
  *   R10. dispose() disposes the behaviour. It does not dispose the pool.
  *   R11. applyLaserLevel is a no-op for an unknown level (does not throw).
  *   R12. catalog.ts does not import BALANCE (import cycle).
@@ -339,11 +363,12 @@ export declare class LaserBehaviour implements WeaponBehaviour {
  * Laser catalog (L1 defaults; applyLaserLevel overwrites per level):
  *   id / displayName / color     = 'laser' / 'Laser' / 0x22d3ee
  *   rate / energyPerShot / damage = 8 / 1 / 1
- *   profile / poolSize           = 'projectile' / 128
+ *   profile / poolSize           = 'projectile' / 768
  *   muzzleOffset                 = { x: 0, y: 0, z: -1.4 }
  *   projectile.speed / lifetime / radius / damageDecayPerUnit = 30 / 1 / 0.12 / 0
  *   laser.forwardShots / diagonalShotsPerSide / totalShots    = 1 / 0 / 1
  *   laser.diagonalAngleDeg / forwardSpread / diagonalSpreadDeg = 22 / 0.55 / 10
+ *   laser.burstShots / overheatSec                             = 15 / 0.5
  *
  * LASER_LEVELS (POC2 retune — energyPerShot is one spend per volley, not per bolt):
  *
@@ -407,13 +432,16 @@ export declare class LaserBehaviour implements WeaponBehaviour {
  * describe('LaserBehaviour')
  *   it('spawns no shots when energy.canAfford is false')                           // R4, WPN-05
  *   it('spends energyPerShot * energyMul on a successful volley')                  // R4
- *   it('cooldown is 1 / (rate * rateMul); L1 rate 8 ⇒ 0.125s')                     // R5
+ *   it('spaces volleys by 1 / (rate * rateMul); L1 rate 8 ⇒ 0.125s')               // R5
+ *   it('overheats after 15 uninterrupted volleys and cools for overheatSec')       // R5
+ *   it('playOverheatCue dispatches the laser-overheat sfx cue')                    // R5
+ *   it('releasing fire resets the burst count so a pause never overheats')         // R5
  *   it('L1 spawns 1 forward bolt with vx=0, vz=-30, aoeRadius 0, color 0x22d3ee')  // R7, R8
  *   it('L5 spawns 5 bolts — 3 forward + 1 per side')                               // R7, Acceptance
  *   it('L10 spawns 10 bolts — 4 forward + 3 per side')                             // R7, Acceptance
  *   it('L12 spawns 12 bolts — 4 forward + 4 per side')                             // R7
  *   it('muzzle uses catalog muzzleOffset via ctx.muzzle (not a literal)')          // catalog
- *   it('skips a bolt when acquire() returns null (no new)')                        // R9
+ *   it('aborts the whole volley when the pool cannot cover every bolt')            // R9
  *   it('update allocates no objects')                                              // R9
  *
  * describe('LASER_LEVELS')

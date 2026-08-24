@@ -54,8 +54,9 @@ POC-1 had pooled laser + energy + hit-test against dummies. POC2 adds the real r
 - [x] Force Field absorbs first; Integrity only after shield is 0 · `SDD-C03` · [ship-health.spec.ts](../.docs/specs/ship-health.spec.ts) · **new**
 - [x] Slow shield regen after `regenDelayMs` with no hits · `SDD-C03`
 - [x] Wire D03 combat onto C01 energy pool (regen only while recovering; G08 slider is live energy) · `SDD-D03` / `SDD-C01`
-- [ ] Wire C03 combat onto C01 0–255 integrity/shield pools · `SDD-C01` / `SDD-C03`
+- [ ] Wire C0 waty/shield pools · `SDD-C01` / `SDD-C03`
 - [x] DamageResolver is the only `applyDamage` caller · `SDD-F04` · [damage-resolver.spec.ts](../.docs/specs/damage-resolver.spec.ts) · **new**
+- [x] SoundManager: named SFX cues (`playOverheatCue()` → `laser-overheat`); silent until Howler · §7 Audio · [sound-manager.spec.ts](../.docs/specs/sound-manager.spec.ts) · **new**
 - [ ] Hit feedback: flash, shake cap, shield-hit vs hull-hit, dual-rumble presets (sfx later) · `SDD-F05` · [vfx-manager.spec.ts](../.docs/specs/vfx-manager.spec.ts) · **new** (+ `D18`)
 
 **Fase 1 done when:** holding Space drains Energy, bolts fade with range, a hit eats the shield before the hull.
@@ -82,7 +83,7 @@ POC-1 had pooled laser + energy + hit-test against dummies. POC2 adds the real r
 - [x] Drops on meteor (and later enemy) kill: Metal Scrap, Prismatic Crystal, Dense Core · `SDD-F02` · [drop-manager.spec.ts](../.docs/specs/drop-manager.spec.ts) · **new**
 - [x] Drop game objects, layer `Drop`, magnet radius pull · `SDD-F02`
 - [x] Collection adds to ship inventory counts · `SDD-C01` / `SDD-F02`
-- [ ] Collection feedback (pitch per type; audio §7) · `SDD-G07` / §7 Audio
+- [ ] Collection feedback (pitch per type; `SoundManager.play`) · `SDD-G07` / §7 Audio
 
 **Fase 3 done when:** wreckage magnet-pulls in and the inventory count ticks up.
 
@@ -226,7 +227,7 @@ POC-1 listed a shop. GDD meta is Bounty Board + cosmetics, not a mid-run power s
 ### Gate checkpoints
 
 - [ ] **G0** — X/Y move, pooled Laser, one enemy, Force Field → Integrity, score, death, restart, wireframe
-- [ ] **G1** — Itch build, asteroid drops, local best, essential audio (§7), pooled bullets and particles
+- [ ] **G1** — Itch build, asteroid drops, local best, essential audio (Howler behind SoundManager), pooled bullets and particles
 
 ---
 
@@ -238,6 +239,7 @@ From the POC-1 spike. None of these is a gate.
 - [ ] On-screen debug tags by subject (ship, limit box, camera, parallax) · `SDD-G08`
 - [ ] Larger debugger inputs · `SDD-G08`
 - [ ] Bind more live values into the debugger · `SDD-G08`
+- [ ] Howler backend: wire `SoundManager.emit` to Howl sprites (`laser-overheat` first) · §7 Audio
 
 ---
 
@@ -252,7 +254,7 @@ Never start a card whose `requires` are still open. Specs: [`.docs/specs/README.
 | C Craft | C01 Ship → C02 Controller · C03 ShipHealth |
 | D Combat | D01 WeaponShot · D03 Energy → **E04 ShotManager** → D02 Weapon+Laser → D04 Plasma · D05 Beam · D06 Mjolnir (G2 catalog-only) |
 | E Pressure | E01 Enemy · E02 Meteor · E03 EnemyShot → E04 ShotManager · E07 Firing → E05 EnemyManager · E06 MeteorManager |
-| F Interact | F01 Collision → F04 DamageResolver → F05 Vfx · F02 Drops · F03 Difficulty (needs G10) |
+| F Interact | F01 Collision → F04 DamageResolver → F05 Vfx · F02 Drops · F03 Difficulty (needs G10) · §7 SoundManager |
 | G Meta | G09 Renderer · G06 Areas · G10 RunState · G07 HUD · G08 Debugger · G01 SceneController · G03 Run · G02 Title · G04 Result · G05 Rankings · G11 Pause · G12 TouchControls |
 
 Suggested first slice: **A01 → A03 → A05 → A02 → A04 → B01 → C01 → C02 → B03 → B02 → G09 → G03** (Fase 0 playable).

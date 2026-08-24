@@ -51,7 +51,7 @@
 /**
  * Orchestrator : hub-v4.3 / 2026-08-18  owns weapon pool; E03 not a D02 blocker
  * Programming  : hub-v4.3 / 2026-08-18  ShotAcquirePort; scene.add on fill (D14)
- * Game Design  : hub-v4.3 / 2026-08-18  capacity max(loadout poolSize)=128; despawn
+ * Game Design  : hub-v4.3 / 2026-08-18  capacity max(loadout poolSize)=768; despawn
  * TDD          : hub-v4.3 / 2026-08-18  cases named; test file not yet written (red next)
  *
  * DoD (§6.1): spec · tests red · shape · lifecycle · BALANCE · memory ·
@@ -140,7 +140,7 @@ export declare class ShotManager {
 /**
  *   field       | type    | meaning / unit / range
  *   ------------|---------|-----------------------
- *   weaponPool  | pool    | D01 WeaponShot · capacity = max(loadout poolSizes) = 128
+ *   weaponPool  | pool    | D01 WeaponShot · capacity = max(loadout poolSizes) = 768
  *   enemyPool   | pool    | capacity 0 this pass; E03 later fills it
  *   bombPool    | pool    | capacity 0 until WPN-06; acquire('bomb') returns null
  *
@@ -191,9 +191,9 @@ export declare class ShotManager {
 // ─── 4. BALANCE, feel, leveling, graphics ────────────────────────────────────
 /**
  * No new feel numbers. Pool sizes live on the catalog; despawn lives on A01:
- *   BALANCE.weapons.catalog.laser.poolSize  = 128
+ *   BALANCE.weapons.catalog.laser.poolSize  = 768
  *   BALANCE.weapons.catalog.plasma.poolSize = 32
- *   weaponCapacity = max(loadout map poolSize) = 128 this pass
+ *   weaponCapacity = max(loadout map poolSize) = 768 this pass
  *   BALANCE.shot.despawn = { zNear: 16, zFar: -32, halfX: 16 }
  *     // slightly looser than enemy despawn so bolts can leave the field cleanly
  *   enemy / bomb capacity = 0 until those cards
@@ -219,7 +219,7 @@ export declare class ShotManager {
  * describe('ShotManager')
  *   it('exposes weapon, enemy and bomb origin pools')                                 // R1
  *   it('scene.add is called once per filled weapon shot (not per acquire)')           // R12, D14
- *   it('asAcquirePort().acquire() is the weapon origin')                              // R11
+ *   it('asAcquirePort().release() returns a weapon slot to the pool')                 // R11
  *   it('acquire(weapon) never returns a shot that lives in the enemy pool')           // R2
  *   it('clear(weapon) leaves enemy actives alive (no cross-cleanup)')                 // R3
  *   it('update releases a shot whose lifetime elapsed')                               // R4, WPN-01

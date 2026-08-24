@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
+import { SoundManager } from '../../audio/sound-manager'
 import type { ShotSpawn } from '../shot/weapon-shot'
 import { copyWeaponConfig, WEAPONS } from './catalog'
 import { applyLaserLevel } from './laser-levels'
@@ -21,6 +22,31 @@ function recordingPort() {
           spawns.push(spawn)
         },
       }
+    },
+    release() {
+      /* recording stub — shots are not pooled */
+    },
+  }
+  return { port, spawns }
+}
+
+function limitedPort(capacity: number) {
+  const spawns: ShotSpawn[] = []
+  let live = 0
+  const port = {
+    acquire(): RecordedShot | null {
+      if (live >= capacity) {
+        return null
+      }
+      live += 1
+      return {
+        activate(spawn: ShotSpawn) {
+          spawns.push(spawn)
+        },
+      }
+    },
+    release() {
+      live = Math.max(0, live - 1)
     },
   }
   return { port, spawns }
@@ -64,7 +90,7 @@ describe('Weapon', () => {
     const weapon = new Weapon({ id: 'laser', shots: port })
     weapon.applyLevel(12)
     expect(weapon.config.level).toBe(12)
-    expect(weapon.config.energyPerShot).toBe(1.5)
+    expect(weapon.config.energyPerShot).toBe(1)
     expect(weapon.config.laser?.totalShots).toBe(12)
     weapon.dispose()
   })
@@ -139,7 +165,7 @@ describe('LaserBehaviour', () => {
     laser.dispose()
   })
 
-  it('cooldown is 1 / (rate * rateMul); L1 rate 8 ⇒ 0.125s', () => {
+  it('spaces volleys by 1 / (rate * rateMul); L1 rate 8 ⇒ 0.125s', () => {
     const { port, spawns } = recordingPort()
     const laser = new LaserBehaviour(copyWeaponConfig(WEAPONS.laser), port)
     laser.update(ctx({ dt: 0 }))
@@ -149,6 +175,60 @@ describe('LaserBehaviour', () => {
     laser.update(ctx({ dt: 0.002 }))
     expect(spawns).toHaveLength(2)
     laser.dispose()
+  })
+
+  it('overheats after 15 uninterrupted volleys and cools for overheatSec', () => {
+    const { port, spawns } = recordingPort()
+    const laser = new LaserBehaviour(copyWeaponConfig(WEAPONS.laser), port)
+    const cue = vi.spyOn(laser, 'playOverheatCue')
+    const gap = 1 / WEAPONS.laser.rate
+    laser.update(ctx({ dt: 0 }))
+    for (let i = 0; i < 14; i++) {
+      laser.update(ctx({ dt: gap }))
+    }
+    expect(spawns).toHaveLength(15)
+    expect(cue).toHaveBeenCalledTimes(1)
+    laser.update(ctx({ dt: 0 }))
+    expect(spawns).toHaveLength(15)
+    laser.update(ctx({ dt: 0.49 }))
+    expect(spawns).toHaveLength(15)
+    laser.update(ctx({ dt: 0.02 }))
+    expect(spawns).toHaveLength(15)
+    laser.update(ctx({ dt: 0 }))
+    expect(spawns).toHaveLength(16)
+    expect(cue).toHaveBeenCalledTimes(1)
+    laser.dispose()
+    cue.mockRestore()
+  })
+
+  it('playOverheatCue dispatches the laser-overheat sfx cue', () => {
+    const { port } = recordingPort()
+    const sound = new SoundManager()
+    const laser = new LaserBehaviour(copyWeaponConfig(WEAPONS.laser), port, sound)
+    laser.playOverheatCue()
+    expect(sound.lastCue).toBe('laser-overheat')
+    sound.dispose()
+    laser.dispose()
+  })
+
+  it('releasing fire resets the burst count so a pause never overheats', () => {
+    const { port, spawns } = recordingPort()
+    const laser = new LaserBehaviour(copyWeaponConfig(WEAPONS.laser), port)
+    const cue = vi.spyOn(laser, 'playOverheatCue')
+    const gap = 1 / WEAPONS.laser.rate
+    laser.update(ctx({ dt: 0 }))
+    for (let i = 0; i < 9; i++) {
+      laser.update(ctx({ dt: gap }))
+    }
+    laser.update(ctx({ dt: 1, holding: false }))
+    laser.update(ctx({ dt: 0 }))
+    for (let i = 0; i < 9; i++) {
+      laser.update(ctx({ dt: gap }))
+    }
+    expect(spawns).toHaveLength(20)
+    expect(cue).not.toHaveBeenCalled()
+    laser.dispose()
+    cue.mockRestore()
   })
 
   it('L1 spawns 1 forward bolt with vx=0, vz=-30, aoeRadius 0, color 0x22d3ee', () => {
@@ -210,11 +290,15 @@ describe('LaserBehaviour', () => {
     laser.dispose()
   })
 
-  it('skips a bolt when acquire() returns null (no new)', () => {
-    const laser = new LaserBehaviour(copyWeaponConfig(WEAPONS.laser), {
-      acquire: () => null,
-    })
-    laser.update(ctx())
+  it('aborts the whole volley when the pool cannot cover every bolt', () => {
+    const { port, spawns } = limitedPort(3)
+    const energy = energyStub(true)
+    const cfg = copyWeaponConfig(WEAPONS.laser)
+    applyLaserLevel(cfg, 5)
+    const laser = new LaserBehaviour(cfg, port)
+    laser.update(ctx({}, energy))
+    expect(spawns).toHaveLength(0)
+    expect(energy.spent).toHaveLength(0)
     laser.dispose()
   })
 

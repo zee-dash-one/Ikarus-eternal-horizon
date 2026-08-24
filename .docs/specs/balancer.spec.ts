@@ -17,7 +17,7 @@
 /**
  * Owns:      The typed, read-only `BALANCE` namespace — the single source of every
  *            gameplay, camera, layout, weapon, health, difficulty, score, drop,
- *            vfx, **gamepad** and **haptics** number. One interface per section.
+ *            vfx, **audio**, **gamepad** and **haptics** number. One interface per section.
  *            Debugger-driven tuning slices may mutate at runtime; production code
  *            only reads.
  * Does not own: behaviour, THREE objects, input wiring, weapon factories (those
@@ -188,6 +188,13 @@ export interface HapticsConfig {
   }
 }
 
+export interface AudioConfig {
+  readonly masterVolume: number
+  readonly sfxVolume: number
+  readonly musicVolume: number
+  readonly muted: boolean
+}
+
 export interface Balance {
   readonly layout: {
     readonly playfield: PlayfieldLayout
@@ -223,6 +230,7 @@ export interface Balance {
   readonly score: ScoreConfig
   readonly drops: DropsConfig
   readonly vfx: VfxConfig
+  readonly audio: AudioConfig
   readonly haptics: HapticsConfig
   readonly loop: { readonly maxFrameDt: number; readonly sidecarHz: number }
 }
@@ -243,7 +251,7 @@ export declare const BALANCE: Balance
  *   R1. Every gameplay number in poc2/src is reachable from BALANCE (RUL-12).
  *   R2. Production code treats BALANCE as read-only (except G08 tuning slices).
  *   R3. New sections required by later cards (health, difficulty, score, drops, vfx,
- *       gamepad, haptics) exist in the type even if their first consumer is not yet
+ *       audio, gamepad, haptics) exist in the type even if their first consumer is not yet
  *       implemented.
  *   R4. Memory: N/A — no GPU, no pool. Module-level const, created once.
  *   R5. Per-frame allocation: none.
@@ -322,6 +330,10 @@ export declare const BALANCE: Balance
  *   vfx.shake.maxAmplitude      = 0.18
  *   vfx.shake.decayPerSec       = 6
  *   vfx.hitStopFrames           = 3
+ *   audio.masterVolume          = 1
+ *   audio.sfxVolume             = 1
+ *   audio.musicVolume           = 0.65
+ *   audio.muted                 = false
  *   haptics.enabled             = true
  *   haptics.presets.shieldHit   = { durationMs: 40,  strongMagnitude: 0.12, weakMagnitude: 0.35 }
  *   haptics.presets.hullHit     = { durationMs: 80,  strongMagnitude: 0.45, weakMagnitude: 0.28 }
@@ -356,6 +368,7 @@ export declare const BALANCE: Balance
  *   it('exposes ship.health with four speedMul slots')                     // R3, C03
  *   it('exposes difficulty milestones 50 / 100 / 500')                     // F03
  *   it('exposes score and drops and vfx.shake.maxAmplitude')               // G10 F02 F05
+ *   it('exposes audio mixer volumes and default unmuted')                  // §7 SoundManager
  *   it('exposes gamepad W3C map: deadzone 0.18, RT 7, LB 4, Start 9')      // D18, A02
  *   it('exposes D19 action keys, dash, mouse buttons and touch overlay')   // D19, C02 G12
  *   it('exposes haptics presets shieldHit / hullHit / shieldBreak / destroyed') // D18, F05

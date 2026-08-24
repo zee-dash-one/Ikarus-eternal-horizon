@@ -40,6 +40,9 @@ function makeShotPort(spawns: unknown[]) {
       }
       return shot
     },
+    release() {
+      /* stub */
+    },
   }
 }
 
@@ -391,10 +394,14 @@ describe('Enemy Warrior — squad life', () => {
     expect(enemy.currentGroup()).toBeNull()
 
     const startX = enemy.x
+    const startZ = enemy.z
+    enemy.vz = 6
     for (let i = 0; i < 40; i++) {
       enemy.update(0.05)
     }
     expect(enemy.x).toBeGreaterThan(startX)
+    expect(enemy.z).toBeLessThan(startZ)
+    expect(enemy.vz).toBeLessThan(0)
     enemy.dispose()
     geo.dispose()
   })

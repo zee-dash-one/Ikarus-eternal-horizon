@@ -88,6 +88,13 @@ describe('BALANCE', () => {
     expect(BALANCE.vfx.hitStopFrames).toBe(3)
   })
 
+  it('exposes audio mixer volumes and default unmuted', () => {
+    expect(BALANCE.audio.masterVolume).toBe(1)
+    expect(BALANCE.audio.sfxVolume).toBe(1)
+    expect(BALANCE.audio.musicVolume).toBe(0.65)
+    expect(BALANCE.audio.muted).toBe(false)
+  })
+
   it('exposes gamepad W3C map: deadzone 0.18, Y 3, X 2, Start 9', () => {
     expect(BALANCE.gameplay.pauseKey).toBe('Escape')
     expect(BALANCE.controls.gamepad.deadzone).toBe(0.18)
@@ -219,6 +226,8 @@ describe('BALANCE', () => {
     expect(BALANCE.enemy.squad.groupMaxSpeed).toBe(7)
     expect(BALANCE.enemy.squad.egressZMin).toBe(28)
     expect(BALANCE.enemy.squad.egressZMax).toBe(72)
+    expect(BALANCE.enemy.squad.fleeBackZ).toBe(28)
+    expect(BALANCE.enemy.squad.fleeEdgePaddingX).toBe(18)
     expect(BALANCE.enemy.squad.casualtyPct).toBe(0.5)
     expect(BALANCE.enemy.squad.targetHoldMinMs).toBe(3000)
     expect(BALANCE.enemy.squad.targetHoldMaxMs).toBe(5000)
@@ -238,7 +247,7 @@ describe('BALANCE', () => {
       Math.max(Math.abs(BALANCE.battlefield.offsetX.min), Math.abs(BALANCE.battlefield.offsetX.max)),
     )
     expect(BALANCE.weapons.loadout).toEqual(['laser', 'plasma', 'beam', 'mjolnir'])
-    expect(BALANCE.weapons.catalog.laser.poolSize).toBe(128)
+    expect(BALANCE.weapons.catalog.laser.poolSize).toBe(768)
     expect(BALANCE.weapons.catalog.plasma.poolSize).toBe(32)
   })
 

@@ -9,6 +9,13 @@ function mockScene(): Scene {
   return { add: vi.fn(), remove: vi.fn() } as unknown as Scene
 }
 
+const idleShots = {
+  acquire: () => null,
+  release() {
+    /* unused — beam does not pool bolts */
+  },
+}
+
 function energyStub(afford = true): EnergyPort & { spent: number[] } {
   const spent: number[] = []
   return {
@@ -27,7 +34,7 @@ describe('BeamBehaviour', () => {
     const cfg = copyWeaponConfig(WEAPONS.beam)
     applyWeaponLevel(cfg, 1)
     const energy = energyStub(true)
-    const beam = new BeamBehaviour(cfg, { acquire: () => null }, mockScene())
+    const beam = new BeamBehaviour(cfg, idleShots, mockScene())
     beam.update({
       dt: 0.1,
       holding: true,
@@ -43,7 +50,7 @@ describe('BeamBehaviour', () => {
     const cfg = copyWeaponConfig(WEAPONS.beam)
     applyWeaponLevel(cfg, 1)
     const energy = energyStub(false)
-    const beam = new BeamBehaviour(cfg, { acquire: () => null }, mockScene())
+    const beam = new BeamBehaviour(cfg, idleShots, mockScene())
     beam.update({
       dt: 0.1,
       holding: true,
@@ -72,7 +79,7 @@ describe('BeamBehaviour', () => {
         },
       },
     ]
-    const beam = new BeamBehaviour(cfg, { acquire: () => null }, mockScene())
+    const beam = new BeamBehaviour(cfg, idleShots, mockScene())
     beam.update({
       dt: 1,
       holding: true,

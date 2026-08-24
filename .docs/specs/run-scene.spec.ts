@@ -100,6 +100,7 @@ export interface RunWorldFactory {
   playerController(): Steppable
   cameraController(): Steppable
   energy(): Steppable & Disposable
+  soundManager(): Steppable & Disposable
   shotManager(): Steppable & Disposable
   enemyManager(): Steppable & Disposable
   meteorManager(): Steppable & Disposable
@@ -151,7 +152,7 @@ export declare class RunScene implements ScenePort {
  *   limitBox      | B03     | scene-owned (D14)
  *   gizmos        | B04     | scene-owned (D14); DEV / Q09
  *   ship          | C01     | scene-owned
- *   managers[]    | C02,D03,E04–E07,F01–F05 | scene-owned populations
+ *   managers[]    | C02,D03,E04–E07,F01–F05,§7 audio | scene-owned populations
  *   hud           | G07     | reads only
  *   runState      | G10     | only module that ends the run
  *   debugger      | G08     | optional, debugger-area
@@ -175,7 +176,7 @@ export declare class RunScene implements ScenePort {
  *       own them.
  *   R3. `update(dt)` is logic only. GPU / transform writes wait for `syncRender`.
  *   R4. Frame order: **input.update** → controllers → ship → follow/limit-box →
- *       camera → parallax → energy → firing → enemy/meteor/shot managers →
+ *       camera → parallax → energy → sound → firing → enemy/meteor/shot managers →
  *       collision → damage → drops → vfx → runState → hud.read. Then
  *       `syncRender` then `render`. GameLoop never polls pads.
  *   R5. When `runState.phase` becomes `'over'`, this scene calls

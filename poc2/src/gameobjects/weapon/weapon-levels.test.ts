@@ -46,7 +46,7 @@ describe('applyWeaponLevel', () => {
   it('applyWeaponLevel laser cfg 5 writes volley and energy', () => {
     const cfg = copyWeaponConfig(WEAPONS.laser)
     applyWeaponLevel(cfg, 5)
-    expect(cfg.damage).toBe(1.8)
+    expect(cfg.damage).toBe(2)
     expect(cfg.energyPerShot).toBe(0.5)
     expect(cfg.laser?.totalShots).toBe(5)
   })
@@ -82,6 +82,8 @@ describe('applyWeaponLevel', () => {
 describe('weaponLevelSnapshot', () => {
   it('statFieldsForWeapon returns profile-specific keys', () => {
     expect(statFieldsForWeapon('laser')).toContain('forwardShots')
+    expect(statFieldsForWeapon('laser')).toContain('burstShots')
+    expect(statFieldsForWeapon('laser')).toContain('overheatSec')
     expect(statFieldsForWeapon('plasma')).toContain('aoeRadius')
     expect(statFieldsForWeapon('beam')).toContain('width')
     expect(statFieldsForWeapon('mjolnir')).toContain('angleDeg')

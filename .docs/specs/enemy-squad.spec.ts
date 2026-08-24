@@ -117,6 +117,8 @@ export interface SquadConfig {
   readonly shipSeparationWeight: number
   readonly rogueAvoidRadius: number
   readonly rogueAvoidWeight: number
+  readonly fleeBackZ: number
+  readonly fleeEdgePaddingX: number
 }
 
 export declare class EnemyGroup {
@@ -156,6 +158,7 @@ export declare class EnemySquadManager {
  *
  *   EnemySquadManager.canEnterFury — furyCount() < maxFury (live, same frame)
  *   Enemy._enterRogue('fury')      — no-op when the cap is full; retries later
+ *   Enemy._steerFlee               — locked ±X edge + −Z (diagonal peel, not +Z)
  *   Enemy group label sprite       — "0"…"5" group id, "F" fury, "L" flee, "-" birth
  */
 
@@ -171,7 +174,8 @@ export declare class EnemySquadManager {
  *   R8. Structural decisions run at tickHz, not every render frame.
  *   R9. Per-frame allocation: none in integrate / ship steering hot path.
  *   R10. BattleField.contains false ⇒ EnemyManager pool.release (despawn).
- *   R11. All tunable numbers live on SquadConfig / Warrior sheet / BALANCE.enemy.
+ *   R12. FLEE seeks a locked X-edge and a point behind the ship (−Z). It never
+ *        continues the inbound +Z run.
  */
 
 // ─── 6. View / syncRender ────────────────────────────────────────────────────
@@ -242,6 +246,8 @@ export declare class EnemySquadManager {
  *   shipSeparationWeight = 6
  *   rogueAvoidRadius   = 6
  *   rogueAvoidWeight   = 10
+ *   fleeBackZ          = 28    // FLEE diagonal: this far toward spawn (−Z)
+ *   fleeEdgePaddingX   = 18    // past the arena wall so they leave
  *
  * Population (balancer.ts enemy spawn)
  *   spawnLeft/Right/Front.maxActive = 8   // 24 live
@@ -295,6 +301,7 @@ export declare class EnemySquadManager {
  *   it('registers in a group after birth / gate')
  *   it('refuses a fifth FURY while four are already raging')
  *   it('FURY keeps advancing past the player')
+ *   it('FLEE peels to the side and back (−Z) instead of continuing +Z')
  * describe('SquadTab')
  *   it('edits squad tuning live and resets to defaults')
  *   it('exposes patrolStandoffZ / maxFury on the live config bind')
@@ -303,6 +310,7 @@ export declare class EnemySquadManager {
  *   A-manual-1. [manual] group numbers 0–5 match nearby formation mates
  *   A-manual-2. [manual] at most four "F" labels at once
  *   A-manual-3. [manual] patrol holds ~10 Z in front; overshoot flies to the wall
+ *   A-manual-4. [manual] "L" ships cut to a screen corner, not straight +Z
  *
- * Coverage: R1–R11 + ENM-01/02 + RUL-12/13.
+ * Coverage: R1–R12 + ENM-01/02 + RUL-12/13.
  */

@@ -78,6 +78,15 @@ export interface SquadConfig {
   readonly shipSeparationWeight: number
   readonly rogueAvoidRadius: number
   readonly rogueAvoidWeight: number
+
+  /**
+   * FLEE: how far toward spawn (−Z) the escape point sits from the ship's
+   * current Z. Combined with the locked X-edge this is a diagonal peel, not a
+   * straight +Z run.
+   */
+  readonly fleeBackZ: number
+  /** Extra |X| past the arena wall so a fleeing ship actually leaves the field. */
+  readonly fleeEdgePaddingX: number
 }
 
 /** Mutable debugger copy. */
@@ -131,6 +140,9 @@ export const DEFAULT_SQUAD_CONFIG: SquadConfig = {
   shipSeparationWeight: 6,
   rogueAvoidRadius: 6,
   rogueAvoidWeight: 10,
+
+  fleeBackZ: 28,
+  fleeEdgePaddingX: 18,
 }
 
 export function cloneSquadConfig(src: SquadConfig | EditableSquadConfig): EditableSquadConfig {

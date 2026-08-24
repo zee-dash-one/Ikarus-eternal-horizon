@@ -96,6 +96,20 @@ describe('ShotManager', () => {
     manager.dispose()
   })
 
+  it('asAcquirePort().release() returns a weapon slot to the pool', () => {
+    const { manager } = makeManager({ weaponCapacity: 1, enemyCapacity: 0 })
+    const port = manager.asAcquirePort()
+    const shot = port.acquire()
+    expect(shot).toBeTruthy()
+    expect(manager.pool('weapon').activeCount).toBe(1)
+    if (shot) {
+      port.release(shot)
+    }
+    expect(manager.pool('weapon').activeCount).toBe(0)
+    expect(port.acquire()).toBeTruthy()
+    manager.dispose()
+  })
+
   it('acquire(weapon) never returns a shot that lives in the enemy pool', () => {
     const { manager } = makeManager()
     const weaponShot = manager.acquire('weapon')

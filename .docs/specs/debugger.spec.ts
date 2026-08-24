@@ -395,7 +395,8 @@ export declare class SquadTab implements DebuggerTab {
  *     Formation geometry: circleRadius, vSpacing, vAngleDeg, diamondW/H, slotLerpRate
  *     Group motion: groupMaxSpeed/Force/ArriveRadius/TurnLambda, separation, joinRadius
  *     Objectives: targetHold*, casualtyPct, patrolZ*, patrolStandoffZ,
- *                 patrolAdvance*, interceptStandoffZ, egressZ*, turnaroundChance
+ *                 patrolAdvance*, interceptStandoffZ, egressZ*, turnaroundChance,
+ *                 fleeBackZ, fleeEdgePaddingX
  *     Traffic / arena: shipSeparation*, rogueAvoid*, curvatureScale, containment*
  *   Later: Cam, LimitBox, Weapons catalog, Energy, Shots, Collision.
  *

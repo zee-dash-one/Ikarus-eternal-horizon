@@ -24,6 +24,9 @@ function recordingPort(nullAcquire = false) {
         },
       }
     },
+    release() {
+      /* recording stub */
+    },
   }
   return { port, spawns }
 }

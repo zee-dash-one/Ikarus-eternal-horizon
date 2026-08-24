@@ -119,6 +119,10 @@ function makeWorld(
       bump('energy')
       return makeStep(log, 'energy')
     },
+    soundManager: () => {
+      bump('soundManager')
+      return makeStep(log, 'soundManager')
+    },
     shotManager: () => {
       bump('shotManager')
       return makeStep(log, 'shotManager')
@@ -266,6 +270,7 @@ describe('RunScene', () => {
     expect(calls.ship).toBe(1)
     expect(calls.playerController).toBe(1)
     expect(calls.energy).toBe(1)
+    expect(calls.soundManager).toBe(1)
     expect(calls.shotManager).toBe(1)
     expect(calls.enemyManager).toBe(1)
     expect(calls.meteorManager).toBe(1)

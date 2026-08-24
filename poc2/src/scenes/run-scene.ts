@@ -61,6 +61,7 @@ export interface RunWorldFactory {
   playerController(): Steppable
   cameraController(): Steppable
   energy(): Steppable & Disposable
+  soundManager(): Steppable & Disposable
   shotManager(): Steppable & Disposable
   enemyManager(): Steppable & Disposable
   meteorManager(): Steppable & Disposable
@@ -94,6 +95,7 @@ export interface RunSceneOptions {
 
 const MANAGER_KEYS = [
   'energy',
+  'soundManager',
   'shotManager',
   'enemyManager',
   'meteorManager',

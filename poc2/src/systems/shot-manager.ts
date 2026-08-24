@@ -26,6 +26,7 @@ export interface ShotLike {
 
 export interface ShotAcquirePort {
   acquire(): ShotLike | null
+  release(shot: ShotLike): void
 }
 
 export interface ShotDespawn {
@@ -108,6 +109,9 @@ export class ShotManager {
     this._pools = [this._weapon, this._enemy, this._bomb]
     this._acquirePort = {
       acquire: () => this.acquire('weapon'),
+      release: (shot) => {
+        this.release('weapon', shot)
+      },
     }
   }
 
@@ -123,6 +127,9 @@ export class ShotManager {
   asEnemyAcquirePort(): ShotAcquirePort {
     return {
       acquire: () => this.acquire('enemy'),
+      release: (shot) => {
+        this.release('enemy', shot)
+      },
     }
   }
 

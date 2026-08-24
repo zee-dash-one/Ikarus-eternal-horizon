@@ -37,7 +37,6 @@ import {
   addArrive,
   addAvoidRogue,
   addContainmentX,
-  addFlee,
   addSeek,
   addSeparation,
   clampSpeed,
@@ -204,6 +203,8 @@ export class Enemy extends Mesh {
   private _proximityMs = 0
   private _hitStreak = 0
   private _hitStreakMs = 0
+  /** Locked FLEE side: −1 left, +1 right, 0 unset. */
+  private _fleeSide = 0
   private _rand: () => number = Math.random
 
   constructor(options: EnemyOptions) {
@@ -387,6 +388,7 @@ export class Enemy extends Mesh {
     this._proximityMs = 0
     this._hitStreak = 0
     this._hitStreakMs = 0
+    this._fleeSide = 0
     this._group = null
     this._slotIndex = -1
     this._slotSeeded = false
@@ -445,6 +447,7 @@ export class Enemy extends Mesh {
     this._proximityMs = 0
     this._hitStreak = 0
     this._hitStreakMs = 0
+    this._fleeSide = 0
     this._group = null
     this._slotIndex = -1
     this._slotSeeded = false
@@ -649,7 +652,7 @@ export class Enemy extends Mesh {
     if (this._aiState === 'fury') {
       this._steerFury(acc, cfg, agilityMul)
     } else if (this._aiState === 'flee') {
-      this._steerFlee(acc, agilityMul)
+      this._steerFlee(acc, cfg, agilityMul)
     } else {
       speedMul = this._steerFormation(acc, cfg, dt, boosting, agilityMul)
       addContainmentX(
@@ -818,12 +821,25 @@ export class Enemy extends Mesh {
     )
   }
 
-  /** Break for the nearest screen edge, pushing away from the player. */
-  private _steerFlee(acc: SteerAcc, agilityMul: number): void {
+  /** Diagonal peel: locked X-edge plus a point behind the ship (−Z, toward spawn). */
+  private _steerFlee(acc: SteerAcc, cfg: SquadConfig, agilityMul: number): void {
     const speed = this._cruiseSpeed * agilityMul
-    const edgeX = this.x >= this._seek.x ? this._arenaMaxX() : this._arenaMinX()
-    addFlee(acc, this.x, this.z, this._seek.x, this._seek.z, this.vx, this.vz, speed)
-    addSeek(acc, this.x, this.z, edgeX, this.z, this.vx, this.vz, speed)
+    const side = this._fleeSide === 0 ? this._pickFleeSide() : this._fleeSide
+    const pad = Math.max(0, cfg.fleeEdgePaddingX)
+    const edgeX = side >= 0 ? this._arenaMaxX() + pad : this._arenaMinX() - pad
+    const backZ = this.z - Math.max(1, cfg.fleeBackZ)
+    addSeek(acc, this.x, this.z, edgeX, backZ, this.vx, this.vz, speed)
+  }
+
+  private _pickFleeSide(): number {
+    const dx = this.x - this._seek.x
+    if (dx > 0.25) {
+      return 1
+    }
+    if (dx < -0.25) {
+      return -1
+    }
+    return this.x >= 0 ? 1 : -1
   }
 
   private _agilityMultiplier(): number {
@@ -901,6 +917,11 @@ export class Enemy extends Mesh {
       return
     }
     this._aiState = state
+    if (state === 'flee') {
+      this._fleeSide = this._pickFleeSide()
+    } else {
+      this._fleeSide = 0
+    }
     this._squad?.detachFromGroup(this)
     this._group = null
     this._slotIndex = -1

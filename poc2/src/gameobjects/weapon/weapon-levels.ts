@@ -232,7 +232,10 @@ const LEVELS_BY_ID: Record<WeaponId, readonly WeaponLevelRow[]> = {
   mjolnir: MJOLNIR_LEVELS,
 }
 
-export type WeaponLevelSnapshotField = Exclude<keyof WeaponLevelRow, 'level'>
+export type WeaponLevelSnapshotField =
+  | Exclude<keyof WeaponLevelRow, 'level'>
+  | 'burstShots'
+  | 'overheatSec'
 
 export type WeaponLevelSnapshot = Record<WeaponLevelSnapshotField, number>
 
@@ -249,6 +252,8 @@ const PROFILE_FIELDS: Record<WeaponProfile, readonly WeaponLevelSnapshotField[]>
     'diagonalShotsPerSide',
     'diagonalAngleDeg',
     'forwardSpread',
+    'burstShots',
+    'overheatSec',
   ],
   orb: [
     'damage',
@@ -292,6 +297,8 @@ export function weaponLevelSnapshot(cfg: WeaponConfig): WeaponLevelSnapshot {
     diagonalShotsPerSide: laser?.diagonalShotsPerSide ?? 0,
     diagonalAngleDeg: laser?.diagonalAngleDeg ?? 0,
     forwardSpread: laser?.forwardSpread ?? 0,
+    burstShots: laser?.burstShots ?? 0,
+    overheatSec: laser?.overheatSec ?? 0,
     width: beam?.width ?? 0,
     length: beam?.length ?? cone?.length ?? 0,
     angleDeg: cone?.angleDeg ?? 0,
@@ -353,6 +360,8 @@ export function patchWeaponStat(cfg: WeaponConfig, field: WeaponLevelSnapshotFie
     case 'diagonalShotsPerSide':
     case 'diagonalAngleDeg':
     case 'forwardSpread':
+    case 'burstShots':
+    case 'overheatSec':
       if (cfg.laser) {
         cfg.laser[field] = value
         if (field === 'forwardShots' || field === 'diagonalShotsPerSide') {

@@ -11,6 +11,10 @@ describe('WEAPONS catalog', () => {
       lifetime: 1,
       damageDecayPerUnit: 0,
     })
+    expect(WEAPONS.laser.laser).toMatchObject({
+      burstShots: 15,
+      overheatSec: 0.5,
+    })
     expect(WEAPONS.plasma.orb).toEqual({
       speed: 14,
       radius: 0.22,

@@ -3,15 +3,22 @@
  */
 
 import type { Scene } from 'three'
+import type { SoundPort } from '../../audio/sound-manager'
 import type { WeaponConfig, WeaponId } from './catalog'
 import type { ShotSpawn } from '../shot/weapon-shot'
 
+export interface ShotHandle {
+  activate(spawn: ShotSpawn): void
+}
+
 export interface ShotAcquirePort {
-  acquire(): { activate(spawn: ShotSpawn): void } | null
+  acquire(): ShotHandle | null
+  release(shot: ShotHandle): void
 }
 
 export interface WeaponDeps {
   readonly scene?: Scene
+  readonly sound?: SoundPort
 }
 
 export interface Vec3Like {

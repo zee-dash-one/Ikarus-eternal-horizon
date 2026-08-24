@@ -183,7 +183,7 @@ export declare function registerPlasma(): void
  *       unchanged (D12).
  *   R9. Per-frame allocation: none. dispose() is a no-op for GPU.
  *   R10. poolSize 32 is a catalog hint. E04 sizes the shared WeaponShot pool
- *        to max(loadout poolSizes) = 128. Plasma does not construct a pool.
+ *        to max(loadout poolSizes) = 768. Plasma does not construct a pool.
  *   R11. spawn.color is 0xfb923c so a bolt acquired after a laser shot
  *        recolours on activate.
  */

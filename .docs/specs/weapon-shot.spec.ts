@@ -238,7 +238,7 @@ export declare class WeaponShot extends THREE.Mesh implements WeaponShotPort {
  * Already in A01 (consumed as constructor colour / future pool capacity):
  *   BALANCE.weapons.catalog.laser.color     = 0x22d3ee
  *   BALANCE.weapons.catalog.laser.damage    = 1
- *   BALANCE.weapons.catalog.laser.poolSize  = 128
+ *   BALANCE.weapons.catalog.laser.poolSize  = 768
  *   BALANCE.weapons.catalog.laser.profile   = 'projectile'
  *
  * Filled on ShotSpawn by D02 (L1 laser — POC-1 / hub D02 R8):

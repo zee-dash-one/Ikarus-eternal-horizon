@@ -62,6 +62,8 @@ const OBJECTIVE_SPECS: readonly ScalarSpec[] = [
   { key: 'egressZMin', min: 0, max: 160, step: 1 },
   { key: 'egressZMax', min: 0, max: 200, step: 1 },
   { key: 'turnaroundChance', min: 0, max: 1, step: 0.01 },
+  { key: 'fleeBackZ', min: 1, max: 120, step: 1 },
+  { key: 'fleeEdgePaddingX', min: 0, max: 80, step: 1 },
 ]
 
 const TRAFFIC_SPECS: readonly ScalarSpec[] = [

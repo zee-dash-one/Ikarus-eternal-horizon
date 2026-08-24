@@ -137,15 +137,46 @@ describe('EnemyGroup objectives', () => {
     expect(group.targetX()).not.toBe(firstX)
   })
 
-  it('keeps the patrol target inside the arena and ahead of the player', () => {
+  it('always advances the patrol waypoint on +Z and stays inside the arena on X', () => {
     const group = makeGroup(() => 0.99)
     group.reserveSlot(new FakeShip())
+    const startZ = group.z
     group.tick(DEFAULT_SQUAD_CONFIG.targetHoldMaxMs, CTX)
     expect(group.targetX()).toBeLessThanOrEqual(CTX.maxX - DEFAULT_SQUAD_CONFIG.containmentInsetX)
     expect(group.targetX()).toBeGreaterThanOrEqual(
       CTX.minX + DEFAULT_SQUAD_CONFIG.containmentInsetX,
     )
-    expect(group.targetZ()).toBeLessThan(CTX.playerZ)
+    expect(group.targetZ()).toBeGreaterThan(startZ)
+    expect(group.targetZ()).toBeLessThanOrEqual(CTX.playerZ - DEFAULT_SQUAD_CONFIG.patrolStandoffZ)
+    expect(group.objective).toBe('patrol')
+  })
+
+  it('never aims a patrol closer than the Z standoff in front of the player', () => {
+    const group = makeGroup(() => 0.5)
+    group.reserveSlot(new FakeShip())
+    group.z = CTX.playerZ - DEFAULT_SQUAD_CONFIG.patrolStandoffZ
+    group.x = 0
+    for (let i = 0; i < 40; i += 1) {
+      group.tick(DEFAULT_SQUAD_CONFIG.targetHoldMaxMs, CTX)
+      group.integrate(0.05, CTX, [group])
+    }
+    expect(group.objective).toBe('patrol')
+    expect(group.z).toBeLessThan(CTX.playerZ)
+    expect(group.targetZ()).toBeLessThanOrEqual(CTX.playerZ - DEFAULT_SQUAD_CONFIG.patrolStandoffZ + 1e-6)
+  })
+
+  it('egresses to the near barrier after crossing the player Z line', () => {
+    const group = makeGroup(() => 0.5)
+    group.reserveSlot(new FakeShip())
+    group.z = CTX.playerZ + 1
+    group.tick(10, CTX)
+    expect(group.objective).toBe('egress')
+    expect(group.targetZ()).toBeGreaterThan(CTX.playerZ)
+    const startZ = group.z
+    for (let i = 0; i < 40; i += 1) {
+      group.integrate(0.05, CTX, [group])
+    }
+    expect(group.z).toBeGreaterThan(startZ)
   })
 
   it('switches to aggressive intercept after losing more than half the members', () => {
@@ -163,11 +194,12 @@ describe('EnemyGroup objectives', () => {
     expect(group.objective).toBe('patrol')
 
     group.releaseSlot(shipAt(ships, 2))
+    const zBefore = group.z
     group.tick(100, { ...CTX, playerX: 12, playerZ: 3 })
     expect(group.objective).toBe('intercept')
     expect(group.formation).toBe('vWing')
     expect(group.targetX()).toBe(12)
-    expect(group.targetZ()).toBe(3 - DEFAULT_SQUAD_CONFIG.interceptStandoffZ)
+    expect(group.targetZ()).toBeGreaterThan(zBefore)
   })
 
   it('picks a formation from the member count while patrolling', () => {

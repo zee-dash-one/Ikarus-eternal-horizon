@@ -142,6 +142,7 @@ export interface DebuggerSquadBind {
   activeGroups(): number
   trackedShips(): number
   rogueShips(): number
+  furyShips(): number
 }
 
 export interface DebuggerParallaxBind {

@@ -6,6 +6,10 @@
  * Two cadences: `integrate(dt)` runs every frame (centroid physics, group
  * separation, containment) while `tick(dtMs)` runs on the staggered structural
  * tick (objective, patrol target, formation re-index).
+ *
+ * Macro intent: patrol — close in until a Z standoff in front of the player,
+ * then sweep laterally. Crossing the player's Z commits the group to egress
+ * (fly to the BattleField near wall and despawn). FURY peel-offs are per-ship.
  */
 
 import { angleDelta, clamp, dampAngle, distXZ, lerp } from '../core/math'
@@ -19,6 +23,7 @@ import {
 import {
   addArrive,
   addContainmentX,
+  addSeek,
   addSeparation,
   clampSpeed,
   resetAcc,
@@ -27,7 +32,7 @@ import {
 } from './steering'
 import type { SquadConfig } from './squad-config'
 
-export type GroupObjective = 'patrol' | 'intercept'
+export type GroupObjective = 'patrol' | 'intercept' | 'egress'
 
 /** What EnemyGroup needs from a ship (Enemy satisfies it structurally). */
 export interface GroupMemberPort {
@@ -242,15 +247,27 @@ export class EnemyGroup {
     if (!this.active) {
       return
     }
-    if (this._shouldIntercept()) {
+    const wasEgress = this.objective === 'egress'
+    const wasIntercept = this.objective === 'intercept'
+    if (this.z >= ctx.playerZ) {
+      // Past the player: commit to the near barrier. Do not turn around.
+      this.objective = 'egress'
+    } else if (this.objective !== 'egress' && this._shouldIntercept()) {
       this.objective = 'intercept'
     }
 
     this._holdMs -= dtMs
-    if (this.objective === 'intercept') {
-      this._targetX = ctx.playerX
-      this._targetZ = ctx.playerZ - this._cfg.interceptStandoffZ
-    } else if (this._holdMs <= 0) {
+    const arrived =
+      distXZ(this.x, this.z, this._targetX, this._targetZ) <= this._cfg.groupArriveRadius * 0.6
+    if (this.objective === 'egress') {
+      if (!wasEgress || this._holdMs <= 0 || arrived) {
+        this._rollEgressTarget(ctx)
+      }
+    } else if (this.objective === 'intercept') {
+      if (!wasIntercept || this._holdMs <= 0 || arrived) {
+        this._rollInterceptTarget(ctx)
+      }
+    } else if (this._holdMs <= 0 || arrived) {
       this._rollPatrolTarget(ctx)
     }
 
@@ -262,7 +279,7 @@ export class EnemyGroup {
     this._recomputeSlots()
   }
 
-  /** Per-frame centroid physics: arrive + group separation + containment. */
+  /** Per-frame centroid physics: arrive/seek + group separation + containment. */
   integrate(dt: number, ctx: GroupWorldContext, groups: readonly EnemyGroup[]): void {
     if (!this.active || dt <= 0) {
       return
@@ -270,17 +287,30 @@ export class EnemyGroup {
     const cfg = this._cfg
     const acc = this._acc
     resetAcc(acc)
-    addArrive(
-      acc,
-      this.x,
-      this.z,
-      this._targetX,
-      this._targetZ,
-      this.vx,
-      this.vz,
-      cfg.groupMaxSpeed,
-      cfg.groupArriveRadius,
-    )
+    if (this.objective === 'egress') {
+      addSeek(
+        acc,
+        this.x,
+        this.z,
+        this._targetX,
+        this._targetZ,
+        this.vx,
+        this.vz,
+        cfg.groupMaxSpeed,
+      )
+    } else {
+      addArrive(
+        acc,
+        this.x,
+        this.z,
+        this._targetX,
+        this._targetZ,
+        this.vx,
+        this.vz,
+        cfg.groupMaxSpeed,
+        cfg.groupArriveRadius,
+      )
+    }
     for (let i = 0; i < groups.length; i += 1) {
       const other = groups[i]
       if (!other || other === this || !other.active) {
@@ -365,6 +395,10 @@ export class EnemyGroup {
     return 'vWing'
   }
 
+  /**
+   * Patrol: lateral sweep, close in on +Z until the standoff, then hold that
+   * gap. Never aims closer than `playerZ - patrolStandoffZ`.
+   */
   private _rollPatrolTarget(ctx: GroupWorldContext): void {
     const cfg = this._cfg
     const halfX = cfg.arenaHalfX * 0.8
@@ -373,7 +407,42 @@ export class EnemyGroup {
       ctx.minX + cfg.containmentInsetX,
       ctx.maxX - cfg.containmentInsetX,
     )
-    this._targetZ = ctx.playerZ + lerp(cfg.patrolZMin, cfg.patrolZMax, this._rand())
+    const standoffZ = ctx.playerZ - Math.max(1, cfg.patrolStandoffZ)
+    const minStep = Math.max(1, cfg.patrolAdvanceMin)
+    const maxStep = Math.max(minStep, cfg.patrolAdvanceMax)
+    this._targetZ = Math.min(this.z + lerp(minStep, maxStep, this._rand()), standoffZ)
+    this._refreshHold()
+  }
+
+  /** Damaged groups push toward the player's X, still stopping at the standoff. */
+  private _rollInterceptTarget(ctx: GroupWorldContext): void {
+    const cfg = this._cfg
+    this._targetX = clamp(
+      ctx.playerX,
+      ctx.minX + cfg.containmentInsetX,
+      ctx.maxX - cfg.containmentInsetX,
+    )
+    const standoffZ = ctx.playerZ - Math.max(1, cfg.patrolStandoffZ)
+    const push = Math.max(cfg.interceptStandoffZ, cfg.patrolAdvanceMax)
+    this._targetZ = Math.min(this.z + push, standoffZ)
+    this._refreshHold()
+  }
+
+  /** Past the player: fly +Z to the BattleField near wall (cull), never reverse. */
+  private _rollEgressTarget(ctx: GroupWorldContext): void {
+    const cfg = this._cfg
+    this._targetX = clamp(
+      this.x,
+      ctx.minX + cfg.containmentInsetX,
+      ctx.maxX - cfg.containmentInsetX,
+    )
+    const far = Math.max(cfg.egressZMax, cfg.egressZMin, 40)
+    this._targetZ = Math.max(this.z + far, ctx.playerZ + far)
+    this._refreshHold()
+  }
+
+  private _refreshHold(): void {
+    const cfg = this._cfg
     const span = Math.max(0, cfg.targetHoldMaxMs - cfg.targetHoldMinMs)
     this._holdMs = cfg.targetHoldMinMs + this._rand() * span
   }

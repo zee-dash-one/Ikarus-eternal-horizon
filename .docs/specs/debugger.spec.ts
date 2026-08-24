@@ -16,16 +16,17 @@
 
 // ─── 1. Scope ────────────────────────────────────────────────────────────────
 /**
- * Owns:      The debugger-area tuning surface. **One tab per subject.** This
- *            pass implements **Ship** (pose / pools / statuses) and **Equips**
- *            (loadout + equipped weapon level + dash level). Later tabs: Cam, LimitBox,
- *            Parallax, Weapons catalog, Energy, Shots, Collision — each a
- *            module, composed only in debugger.ts. Two-way sync ~15 Hz, skip
- *            focused control, Reset. Q09: `import.meta.env.DEV`.
- * Does not own: the values' meaning (A01 / C01 / C02 / C03 / D02 / D03),
+ * Owns:      The debugger-area tuning surface. **One tab per subject.** Live
+ *            tabs: **Ship**, **Equips**, **Enemy** (Warrior sheet including
+ *            formation / morale / affinity), **Squad** (`BALANCE.enemy.squad`),
+ *            **SpawnArea**, **Parallax**. Later: Cam, LimitBox, Weapons catalog,
+ *            Energy, Shots, Collision — each a module, composed only in
+ *            debugger.ts. Two-way sync ~15 Hz, skip focused control, Reset.
+ *            Q09: `import.meta.env.DEV`.
+ * Does not own: the values' meaning (A01 / C01 / E01 / enemy-squad / D02 / D03),
  *            gizmos (B04), the area shell (G06), the 15 Hz sidecar (A04).
- * Player-facing: N/A in production. In DEV, Ship + Equips must show the same
- *            sheet and weapon the sim uses — a second invented table is a bug.
+ * Player-facing: N/A in production. In DEV, each tab must show the same sheet
+ *            the sim uses — a second invented table is a bug.
  */
 
 // ─── 8. Requires ─────────────────────────────────────────────────────────────
@@ -35,13 +36,15 @@
  * Upstream (must exist before this starts):
  *   SDD-A01 Balancer — typed slices the tabs bind to
  *   SDD-C01 Ship     — ShipDebugPort (this pass: Ship tab)
+ *   SDD-E01 Enemy    — Warrior sheet (Enemy tab)
+ *   SDD-E05 EnemyManager — DebuggerSquadBind live groups / fury count
  *   SDD-G06 UI areas — `#debugger-area` host
  *
  * Downstream (who breaks if this contract changes):
  *   SDD-G03 RunScene — constructs only when DEV / factory non-null (Q09)
  *   SDD-A04 GameLoop — ~15 Hz sync sidecar calls `debugger.sync()`
  *
- * Later tabs (not this pass): Cam, LimitBox, Parallax, Weapons, Energy, Shots, Collision.
+ * Later tabs (not this pass): Cam, LimitBox, Weapons, Energy, Shots, Collision.
  */
 
 // ─── 9. Agent sign-off ───────────────────────────────────────────────────────
@@ -52,10 +55,13 @@
  * TDD          : hub-v4.3 / 2026-08-20  debugger.test.ts green
  * Game Design  : hub-v4.3 / 2026-08-19  loadout lives on Equips; laser/dash L1–L12
  * TDD          : hub-v4.3 / 2026-08-19  debugger.test.ts (Ship + Equips)
+ * Programming  : 2026-08-24  EnemyTab (squad knobs) + SquadTab (SquadConfig)
+ * TDD          : 2026-08-24  EnemyTab formation/morale + SquadTab live edit/reset
  *
  * DoD (§6.1): spec · tests red · shape · lifecycle · BALANCE · memory ·
  *             IDs · verify green · port fidelity
- * Status: done (Ship + Equips) · later tabs pending
+ * Status: done (Ship + Equips + Enemy + Squad + SpawnArea + Parallax)
+ *         · later tabs pending
  */
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -67,6 +73,8 @@
 export type DebuggerTabId =
   | 'ship'
   | 'equips'
+  | 'enemy'
+  | 'squad'
   | 'cam'
   | 'limit-box'
   | 'spawn-area'
@@ -141,10 +149,50 @@ export interface DebuggerWeaponsBind {
   setLevel(level: number): void
 }
 
+/** Warrior sheet + live status. Source: `poc2/src/ui/debugger/enemy-tab.ts`. */
+export interface DebuggerEnemyBind {
+  archetypeNames(): readonly string[]
+  setArchetype(index: number): void
+  sheet(): unknown
+  applyToActive(): void
+  resetSheet(defaults?: unknown): void
+  liveStatus(): unknown
+}
+
+/** Live readout of one EnemyGroup. Source: `DebuggerGroupSnapshot` in debugger.ts. */
+export interface DebuggerGroupSnapshot {
+  id: number
+  active: boolean
+  members: number
+  objective: string
+  formation: string
+  healthPct: number
+}
+
+/**
+ * Squad tab bind. Source of truth: `poc2/src/ui/debugger/squad-tab.ts`.
+ * `config()` is the live `BALANCE.enemy.squad` / EditableSquadConfig object.
+ * Sliders write it immediately (no restart except Reset).
+ */
+export interface DebuggerSquadBind {
+  config(): unknown
+  resetConfig(): void
+  groupCount(): number
+  groups(): readonly DebuggerGroupSnapshot[]
+  activeGroups(): number
+  trackedShips(): number
+  rogueShips(): number
+  /** Live FURY count; the tab shows `furyShips() / config().maxFury`. */
+  furyShips(): number
+}
+
 export interface DebuggerBinds {
   readonly ship: DebuggerShipBind
   readonly weapons: DebuggerWeaponsBind
   readonly dash: DebuggerWeaponsBind
+  readonly spawnArea?: object
+  readonly enemy: DebuggerEnemyBind
+  readonly squad: DebuggerSquadBind
   readonly camera?: object
   readonly cameraApply?: () => void
   readonly parallax?: object
@@ -232,11 +280,30 @@ export declare class WeaponsTab implements DebuggerTab {
   dispose(): void
 }
 
+export declare class EnemyTab implements DebuggerTab {
+  constructor(binds: DebuggerBinds)
+  readonly id: DebuggerTabId
+  mount(panel: HTMLElement): void
+  sync(): void
+  reset(): void
+  dispose(): void
+}
+
+export declare class SquadTab implements DebuggerTab {
+  constructor(binds: DebuggerBinds)
+  readonly id: DebuggerTabId
+  mount(panel: HTMLElement): void
+  sync(): void
+  reset(): void
+  dispose(): void
+}
+
 // ─── 3. Key fields and methods ───────────────────────────────────────────────
 /**
  * Files (one public class per file). This pass: debugger.ts + ship-tab.ts
- * + equips-tab.ts.
- * Later: cam-tab, limit-box-tab, parallax-tab, weapons-tab, energy/shots/collision.
+ * + equips-tab.ts + enemy-tab.ts + squad-tab.ts + spawn-area-tab.ts
+ * + parallax-tab.ts.
+ * Later: cam-tab, limit-box-tab, weapons-tab, energy/shots/collision.
  *
  *   defaults    | structuredClone of ship/equips snapshot at mount | Reset source
  *   focused     | document.activeElement skip                 | two-way sync
@@ -246,6 +313,8 @@ export declare class WeaponsTab implements DebuggerTab {
  *   reset       — restore mount-time snapshot, then apply hooks
  *   ShipTab     — pose, six byte pools, three statuses; id is 'ship'
  *   EquipsTab   — loadout lists + equipped weapon level 1–12 + dash level 1–12; id is 'equips'
+ *   EnemyTab    — Warrior sheet (hp/weapon + formation/morale/affinity); id is 'enemy'
+ *   SquadTab    — live groups + BALANCE.enemy.squad sliders; id is 'squad'
  *   SpawnAreaTab — offset/size/intervalSec/maxActive/lanesX + visual; id is 'spawn-area'
  */
 
@@ -253,7 +322,8 @@ export declare class WeaponsTab implements DebuggerTab {
 /**
  *   R1. One module per tab. Adding a tab does not edit an existing tab file
  *       (only debugger.ts composition), except when a subject moves (loadout
- *       left Ship for Equips). This pass mounts **Ship** then **Equips**.
+ *       left Ship for Equips). Live mount includes Ship, Equips, Enemy, Squad,
+ *       SpawnArea, Parallax.
  *   R2. Two-way: editing a slider/spin writes the bound object immediately
  *       and calls the matching apply hook. Sync pulls model → view at
  *       BALANCE.debug.syncHz (~15 Hz, POC-1 SYNC_INTERVAL 0.066).
@@ -263,7 +333,10 @@ export declare class WeaponsTab implements DebuggerTab {
  *       every loadout field plus equipped weapon level (LASER_LEVELS 1–12)
  *       via FiringManager.setWeaponLevel and dash level (DASH_LEVELS 1–12)
  *       via PlayerController.setDashLevel. Module selects call Ship.equip*
- *       so BALANCE.ship.modules mods apply. Neither invents a second table.
+ *       so BALANCE.ship.modules mods apply. EnemyTab edits the live Warrior
+ *       sheet (including formation / morale / affinity) without moving ship
+ *       pose. SquadTab edits BALANCE.enemy.squad live and shows fury N / maxFury.
+ *       None invents a second number table.
  *   R6. Q09: when `enabled === false`, mount writes nothing into the host
  *       and sync/reset are no-ops.
  *   R7. Memory: DOM created on mount, removed on dispose. Per-frame
@@ -307,7 +380,24 @@ export declare class WeaponsTab implements DebuggerTab {
  *     equippedArmor + armors[]
  *     equippedEnergyCollector + energyCollectors[]
  *     equippedEnergyConverter + energyConverters[]
- *   Later: Cam, LimitBox, Parallax, Weapons catalog, Energy, Shots, Collision.
+ *   Enemy — live Warrior sheet (does not move the player ship):
+ *     hp / shield / agility / intelligence / weapon stats
+ *     formation: slotTolerance, boostDistance, boostAgilityMul, hoverAmp,
+ *                hoverHz, imperfectionRadius
+ *     morale: furyProximityRadius/Sec, furyAgilityMul, retaliationHits/WindowMs,
+ *             fleeGroupHealthPct, fleeAgilityMul
+ *     affinity: gainPerSec, decayPerSec, radius, loyalty
+ *   Squad — live `BALANCE.enemy.squad` + group readout (enemy-squad.spec.ts §4):
+ *     readout: groups N / max, ships (rogue), fury N / maxFury, per-group
+ *              members · objective · formation · health%
+ *     Limits (read-only): maxGroups, maxPerGroup
+ *     Performance: tickHz, shipsPerTick, maxFury
+ *     Formation geometry: circleRadius, vSpacing, vAngleDeg, diamondW/H, slotLerpRate
+ *     Group motion: groupMaxSpeed/Force/ArriveRadius/TurnLambda, separation, joinRadius
+ *     Objectives: targetHold*, casualtyPct, patrolZ*, patrolStandoffZ,
+ *                 patrolAdvance*, interceptStandoffZ, egressZ*, turnaroundChance
+ *     Traffic / arena: shipSeparation*, rogueAvoid*, curvatureScale, containment*
+ *   Later: Cam, LimitBox, Weapons catalog, Energy, Shots, Collision.
  *
  * Feel:      A tuner, not a toy. Moving a Ship slider must move the sheet
  *            the sim reads. Reset is sacred.
@@ -357,11 +447,20 @@ export declare class WeaponsTab implements DebuggerTab {
  *   it('reset restores mount-time loadout and weapon level')                // R4
  *   it('does not import ShipTab form groups')                               // R1
  *
+ * describe('EnemyTab')
+ *   it('edits Warrior sheet hp live without touching ship pose')            // R5
+ *   it('edits the squad-driven formation knobs live')                       // R5, E01
+ *
+ * describe('SquadTab')
+ *   it('edits squad tuning live and resets it back to the balance defaults') // R2, R4, R5
+ *
  * Manual:
  *   A-manual-1. [manual] Ship tab current/max match the flying craft
  *   A-manual-2. [manual] dragging integrity current updates the sheet live
  *   A-manual-3. [manual] Equips weapon level 12 fans 12 laser bolts
  *   A-manual-4. [manual] production build (Q09) shows an empty debugger-area
+ *   A-manual-5. [manual] Squad tab fury line matches on-screen "F" labels (≤ maxFury)
+ *   A-manual-6. [manual] patrolStandoffZ slider changes how close groups hold
  *
- * Coverage: R1–R8 + Ship + Equips Acceptance. Other tabs: later passes.
+ * Coverage: R1–R8 + Ship + Equips + Enemy + Squad Acceptance. Other tabs: later passes.
  */

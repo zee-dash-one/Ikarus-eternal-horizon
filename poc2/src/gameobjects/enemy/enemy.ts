@@ -11,12 +11,16 @@
  */
 
 import {
+  CanvasTexture,
   CircleGeometry,
+  DataTexture,
   DoubleSide,
   Mesh,
   MeshBasicMaterial,
+  Sprite,
+  SpriteMaterial,
 } from 'three'
-import type { BoxGeometry } from 'three'
+import type { BoxGeometry, Texture } from 'three'
 import { BALANCE } from '../../core/balancer'
 import { DEG2RAD, clamp, damp, distXZ } from '../../core/math'
 import type { ShotAcquirePort } from '../../systems/shot-manager'
@@ -93,6 +97,42 @@ export interface EnemyStatusSnapshot {
 
 /** Below this the craft is considered parked and keeps its previous nose. */
 const MIN_HEADING_SPEED = 0.05
+const GROUP_LABEL_Y = 1.4
+const GROUP_LABEL_SCALE = 2.2
+const GROUP_LABEL_CACHE = new Map<string, Texture>()
+
+function groupLabelTexture(text: string): Texture {
+  const cached = GROUP_LABEL_CACHE.get(text)
+  if (cached) {
+    return cached
+  }
+  if (typeof document !== 'undefined') {
+    const canvas = document.createElement('canvas')
+    canvas.width = 128
+    canvas.height = 128
+    const ctx = canvas.getContext('2d')
+    if (ctx) {
+      ctx.clearRect(0, 0, 128, 128)
+      ctx.font = 'bold 72px Consolas, monospace'
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'middle'
+      ctx.lineWidth = 8
+      ctx.strokeStyle = '#000000'
+      ctx.strokeText(text, 64, 64)
+      ctx.fillStyle = '#f8fafc'
+      ctx.fillText(text, 64, 64)
+      const texture = new CanvasTexture(canvas)
+      texture.needsUpdate = true
+      GROUP_LABEL_CACHE.set(text, texture)
+      return texture
+    }
+  }
+  const data = new Uint8Array([255, 255, 255, 255])
+  const texture = new DataTexture(data, 1, 1)
+  texture.needsUpdate = true
+  GROUP_LABEL_CACHE.set(text, texture)
+  return texture
+}
 
 export class Enemy extends Mesh {
   readonly team: TeamId = 'enemy'
@@ -126,6 +166,9 @@ export class Enemy extends Mesh {
   private readonly _mat: MeshBasicMaterial
   private readonly _rangeMat: MeshBasicMaterial
   private readonly _rangeMesh: Mesh
+  private readonly _groupLabelMat: SpriteMaterial
+  private readonly _groupLabel: Sprite
+  private _groupLabelKey = ''
   private readonly _movement = new EnemyMovementManager()
   private readonly _pos = { x: 0, y: 0, z: 0 }
   private readonly _acc: SteerAcc = { x: 0, z: 0 }
@@ -192,6 +235,21 @@ export class Enemy extends Mesh {
     this._rangeMesh.name = 'enemy.range'
     this._rangeMesh.visible = false
     this.add(this._rangeMesh)
+
+    this._groupLabelMat = new SpriteMaterial({
+      map: groupLabelTexture('-'),
+      transparent: true,
+      depthWrite: false,
+    })
+    this._groupLabel = new Sprite(this._groupLabelMat)
+    this._groupLabel.name = 'enemy.groupLabel'
+    this._groupLabel.position.set(0, GROUP_LABEL_Y, 0)
+    this._groupLabel.scale.set(GROUP_LABEL_SCALE, GROUP_LABEL_SCALE, 1)
+    this._groupLabel.frustumCulled = false
+    this._groupLabel.visible = false
+    this._groupLabelKey = '-'
+    this.add(this._groupLabel)
+
     this.visible = false
   }
 
@@ -229,6 +287,10 @@ export class Enemy extends Mesh {
 
   isRogue(): boolean {
     return isRogueState(this._aiState)
+  }
+
+  isFury(): boolean {
+    return this._aiState === 'fury'
   }
 
   currentGroup(): EnemyGroup | null {
@@ -389,6 +451,7 @@ export class Enemy extends Mesh {
     this.vx = 0
     this.vz = 0
     this._rangeMesh.visible = false
+    this._groupLabel.visible = false
     this._movement.reset()
   }
 
@@ -435,6 +498,7 @@ export class Enemy extends Mesh {
     this.rotation.y = this._movement.facingY()
     this._mat.opacity = this.hpMax > 0 ? clamp(this.hp / this.hpMax, 0.2, 1) : 0.2
     this._rangeMesh.visible = this._sheet.status.rangeVisible
+    this._syncGroupLabel()
     this.visible = true
   }
 
@@ -531,6 +595,7 @@ export class Enemy extends Mesh {
     this._mat.dispose()
     this._rangeMesh.geometry.dispose()
     this._rangeMat.dispose()
+    this._groupLabelMat.dispose()
   }
 
   /* ---- birth ---------------------------------------------------------- */
@@ -582,16 +647,7 @@ export class Enemy extends Mesh {
 
     let speedMul = 1
     if (this._aiState === 'fury') {
-      addSeek(
-        acc,
-        this.x,
-        this.z,
-        this._seek.x,
-        this._seek.z,
-        this.vx,
-        this.vz,
-        this._cruiseSpeed * agilityMul,
-      )
+      this._steerFury(acc, cfg, agilityMul)
     } else if (this._aiState === 'flee') {
       this._steerFlee(acc, agilityMul)
     } else {
@@ -643,13 +699,13 @@ export class Enemy extends Mesh {
   ): number {
     const group = this._group
     if (!group || this._slotIndex < 0) {
-      // Slot-less craft holds the line until the squad hands one out.
+      // Slot-less craft keeps descending until the squad hands out a slot.
       addSeek(
         acc,
         this.x,
         this.z,
         this.x,
-        this._seek.z - cfg.interceptStandoffZ,
+        this.z + Math.max(cfg.patrolAdvanceMin, 1),
         this.vx,
         this.vz,
         this._cruiseSpeed * agilityMul,
@@ -740,6 +796,28 @@ export class Enemy extends Mesh {
     }
   }
 
+  /**
+   * Solo peel-off: always rush the player and keep going past them on +Z.
+   * Never aims exactly at playerZ (that parked ships on an imaginary line).
+   * Continues until BattleField cull removes the craft.
+   */
+  private _steerFury(acc: SteerAcc, cfg: SquadConfig, agilityMul: number): void {
+    const speed = this._cruiseSpeed * agilityMul
+    const push = Math.max(cfg.egressZMin, cfg.egressZMax * 0.5, 12)
+    // Home on the player's X, but always target a point past them (and past us).
+    const targetZ = Math.max(this._seek.z + push, this.z + push)
+    addSeek(
+      acc,
+      this.x,
+      this.z,
+      this._seek.x,
+      targetZ,
+      this.vx,
+      this.vz,
+      speed,
+    )
+  }
+
   /** Break for the nearest screen edge, pushing away from the player. */
   private _steerFlee(acc: SteerAcc, agilityMul: number): void {
     const speed = this._cruiseSpeed * agilityMul
@@ -818,6 +896,10 @@ export class Enemy extends Mesh {
     if (this.isRogue() || this._aiState === 'birth') {
       return
     }
+    if (state === 'fury' && this._squad && !this._squad.canEnterFury()) {
+      // Cap full — stay in formation; proximity/retaliation can retry next frames.
+      return
+    }
     this._aiState = state
     this._squad?.detachFromGroup(this)
     this._group = null
@@ -886,6 +968,23 @@ export class Enemy extends Mesh {
     this._rangeMat.color.setHex(this._sheet.status.rangeColor)
     this._rangeMat.opacity = this._sheet.status.rangeOpacity
     this._rangeMesh.visible = this.active && this._sheet.status.rangeVisible
+  }
+
+  private _syncGroupLabel(): void {
+    const key =
+      this._group !== null
+        ? String(this._group.id)
+        : this._aiState === 'fury'
+          ? 'F'
+          : this._aiState === 'flee'
+            ? 'L'
+            : '-'
+    if (key !== this._groupLabelKey) {
+      this._groupLabelKey = key
+      this._groupLabelMat.map = groupLabelTexture(key)
+      this._groupLabelMat.needsUpdate = true
+    }
+    this._groupLabel.visible = this.active
   }
 
   private _refreshGateAim(): { x: number; y: number; z: number } {

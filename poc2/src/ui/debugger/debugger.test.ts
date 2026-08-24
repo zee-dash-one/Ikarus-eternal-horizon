@@ -371,6 +371,7 @@ function makeBinds(sheet: LiveSheet): DebuggerBinds {
       activeGroups: () => squadGroups.filter((group) => group.active).length,
       trackedShips: () => 0,
       rogueShips: () => 0,
+      furyShips: () => 0,
     },
     parallax: {
       layerCount: () => parallaxLayers.length,

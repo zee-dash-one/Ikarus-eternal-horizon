@@ -7,7 +7,7 @@ The active build. POC2 grows the tuned prototype into a codebase that expands **
 **Behavior reference:** [`poc/README.md`](../poc/README.md) — POC-1, frozen. Camera, parallax, limit-box, ship feel and the four weapons are **ported without behavior change**; that document is the tuning contract.
 **Backlog:** [`todo.md`](./todo.md) — one entry per SDD card.
 
-**Stack:** TypeScript · Vite · Three.js · nipplejs (touch stick, `SDD-G12`). Yuka joins at `SDD-E01` (enemy steering), Howler post-G1 (audio). No library is installed before the card that needs it.
+**Stack:** TypeScript · Vite · Three.js · nipplejs (touch stick, `SDD-G12`). Enemy steering is first-party Reynolds (`systems/steering.ts`); Yuka remains deferred. Howler post-G1 (audio). No library is installed before the card that needs it.
 
 ---
 
@@ -31,11 +31,13 @@ npm run verify     # all three — the gate every card must pass (hub §6.1)
 
 ## State
 
-Fase 0 is playable (`npm run dev` in this folder). **Done:** Stages A–B, C01–C03, D01–D06 (four weapons, unified L1–12 levels), E01/E05 thin (SpawnArea + BattleField + 1-enemy test stream), E04, E07, G03, G06, G08 Ship + Equips + SpawnArea, G09, G12, G11 scheme picker.
+Fase 0 is playable (`npm run dev` in this folder). **Done:** Stages A–B, C01–C03, D01–D06 (four weapons, unified L1–12 levels), E01/E05 (SpawnArea + BattleField + Warrior squads), E04, E07, F01–F04, G03, G06, G08 Ship + Equips + Enemy + Squad + SpawnArea + Parallax, G09, G12, G11 scheme picker.
 
-**You can:** fly the modular airplane (WASD / stick / nipple), dash L1–L12, cycle **laser → plasma → beam → mjolnir**, hold fire per weapon profile. Three **red SpawnAreas** feed **Warrior** gunships. Amber **EnemyGate** entry slots → synchronizedLerp → seekChase + fire. **F01–F04 live:** layered collision (no friendly fire), DamageResolver (shield then hull / kills), magnet drops on kill, difficulty mul from kill counter. Blue **BattleField** culls leavers via pool release. Pause (Esc/Start) for scheme + remap. DEV debugger: Ship, Equips, Enemy, SpawnArea, Parallax.
+**You can:** fly the modular airplane (WASD / stick / nipple), dash L1–L12, cycle **laser → plasma → beam → mjolnir**, hold fire per weapon profile. Three **red SpawnAreas** (`maxActive` 8) feed **Warrior** gunships. Amber **EnemyGate** entry slots → synchronizedLerp → **squad life** (formation / BOOST / FURY cap 4 / FLEE). Groups hold **10 Z** in front of the player; overshoot flies to the blue **BattleField** wall and pool-releases. **F01–F04 live:** layered collision (no friendly fire), DamageResolver (shield then hull / kills), magnet drops on kill, difficulty mul from kill counter. Pause (Esc/Start) for scheme + remap. DEV debugger: Ship, Equips, Enemy, **Squad**, SpawnArea, Parallax. White billboard over each enemy: group id `"0"`–`"5"`, `"F"` fury, `"L"` flee, `"-"` birth.
 
-**Next:** F01 collision, remaining G08 tabs, wire C03 onto integrity/shield bytes, G11 inventory/restart/quit, Yuka seek, G01 Title flow.
+**Next:** remaining G08 tabs, wire C03 onto integrity/shield bytes, G07 HUD, G11 inventory/restart/quit, G01 Title flow.
+
+Squad numbers live in `BALANCE.enemy.squad` (`systems/squad-config.ts`). Contract: [`.docs/specs/enemy-squad.spec.ts`](../.docs/specs/enemy-squad.spec.ts).
 
 ---
 
@@ -48,8 +50,7 @@ Fase 0 is playable (`npm run dev` in this folder). **Done:** Stages A–B, C01�
 | Gamepad | Left stick | Y | A | X | B | RB | Start (Esc still works) |
 | Touch | Left stick | overlay Fire | Bomb | Wpn | Bomb× | Dash | Pause |
 
-Click a bind in the left column, then press the new key / mouse button / pad button. Collisions swap. **Reset binds** restores `BALANCE`. Overlay button slots remap on the Touch tab. In the debugger **Equips** tab, change weapon level (1–12) and edit resolved stats live. **SpawnArea** tab picks **left** / **right** / **front** / **gate** and tunes that volume (`opacity`, offset/size; spawn cadence on flanks only). **Enemy** tab edits the live Warrior sheet (hp/speed/weapon) without moving the player ship.
- **Parallax** tab picks a camera-anchored layer and edits speed / gain / offset / points live (Reset restores mount defaults).
+Click a bind in the left column, then press the new key / mouse button / pad button. Collisions swap. **Reset binds** restores `BALANCE`. Overlay button slots remap on the Touch tab. In the debugger **Equips** tab, change weapon level (1–12) and edit resolved stats live. **SpawnArea** tab picks **left** / **right** / **front** / **gate** and tunes that volume (`opacity`, offset/size; spawn cadence on flanks only). **Enemy** tab edits the live Warrior sheet (hp/weapon plus formation / morale / affinity) without moving the player ship. **Squad** tab shows live groups (`fury N / maxFury`) and edits `BALANCE.enemy.squad` — standoff, tick rate, formation radii, FURY cap (Reset restores defaults). **Parallax** tab picks a camera-anchored layer and edits speed / gain / offset / points live (Reset restores mount defaults).
 
 ---
 

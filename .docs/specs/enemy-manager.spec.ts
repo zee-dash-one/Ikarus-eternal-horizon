@@ -16,13 +16,12 @@
 // ─── 1. Scope ────────────────────────────────────────────────────────────────
 /**
  * Owns:      The enemy population — spawn schedule, live list, pooling, despawn,
- *            Yuka EntityManager orchestration (Vehicle/SteeringBehavior on each
- *            E01). Scales intensity from F03 (spawnRateMul, patternId). Registers
- *            / unregisters colliders with F01.
- * Does not own: Enemy class internals (E01), difficulty math (F03), damage (F04),
- *            archetypes / MiniBoss (ENM-03 seam, hub §7).
- * Player-facing: a continuous stream from the deep field that ramps with kills
- *            and never snowballs off-screen (RUL-02) or grows the heap (ENM-02).
+ *            and the composed `EnemySquadManager` (groups, affinity, FURY cap).
+ *            Registers / unregisters colliders with F01. Culls via BattleField.contains.
+ * Does not own: Enemy class internals (E01), group steering math (EnemyGroup),
+ *            difficulty math (F03), damage (F04).
+ * Player-facing: a continuous stream from the three SpawnAreas that forms up
+ *            after the EnemyGate and never snowballs off-screen (RUL-02).
  */
 
 // ─── 8. Requires ─────────────────────────────────────────────────────────────
@@ -33,7 +32,7 @@
  *   SDD-A01 Balancer — BALANCE.enemy.spawn / poolSize
  *   SDD-A03 Math     — scratch, random-in-range helper
  *   SDD-A05 ObjectPool<T>
- *   SDD-E01 Enemy    — pooled class + Yuka vehicle
+ *   SDD-E01 Enemy    — pooled class + first-party vehicle
  *   SDD-F03 DifficultyManager — spawnRateMul, patternId, pendingMilestone
  *
  * Downstream (who breaks if this contract changes):
@@ -49,10 +48,11 @@
  * Programming  : hub-v4.3 / 2026-08-20  ObjectPool + intervalSec; no F01 register yet
  * Game Design  : hub-v4.3 / 2026-08-20  BALANCE.enemy.spawn.* live via debugger
  * TDD          : hub-v4.3 / 2026-08-20  enemy-manager.test.ts green
+ * Programming  : 2026-08-24  owns EnemySquadManager; poolSize 48 / maxActive 8
  *
  * DoD (§6.1): spec · tests red · shape · lifecycle · BALANCE · memory ·
  *             IDs · verify green · port fidelity
- * Status: done (thin — Yuka EntityManager + F01 register deferred)
+ * Status: done (squad composed; Yuka EntityManager still deferred)
  */
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -61,8 +61,8 @@
 
 // ─── 2. Contract ─────────────────────────────────────────────────────────────
 /**
- * Lib: Yuka (EntityManager + Vehicle/SteeringBehavior orchestration) + Three.js
- *      (scene add/remove of Enemy meshes). Gameplay numbers from BALANCE / F03.
+ * Lib: Three.js (scene add/remove of Enemy meshes). Group AI is composed
+ *      EnemySquadManager (first-party Reynolds). Yuka EntityManager deferred.
  */
 
 export interface DifficultyPort {
@@ -127,18 +127,16 @@ export declare class EnemyManager {
  *   ---------------|----------|-----------------------
  *   liveCount      | int      | active pooled enemies
  *   spawnAcc       | sec      | accumulator toward next spawn
- *   entityManager  | Yuka     | owns vehicles; add on spawn, remove on release
+ *   squad          | EnemySquadManager | groups, affinity, FURY cap
  *   patternId      | string   | copied from F03; G0 generic ignores, §7 branches
  *
- *   spawnOne — acquire; null on exhaustion (no `new`). activate at zFar + random
- *              x in spawn.halfX (or shared lanes). scene.add, registerTarget,
- *              entityManager.add(vehicle).
- *   update   — spawnAcc += dt; while spawnAcc >= interval: spawnOne; spawnAcc -= interval.
- *              interval = BALANCE.enemy.spawn.intervalSec / difficulty.spawnRateMul.
- *              forEachActive: enemy.update; if !active || !battleField.contains || hp<=0
- *              → pool.release (reuse; no mesh destroy). BattleField = ship-relative
- *              BALANCE.battlefield (offset.x ±240, offset.z −160…30).
- *   despawn  — unregister, scene.remove, entityManager.remove, pool.release.
+ *   spawnOne — acquire; null on exhaustion (no `new`). activate in SpawnArea
+ *              lanes + EnemyGate entry offset. scene.add, registerTarget.
+ *   update   — spawnAcc per side; spawn while under that side's maxActive (8).
+ *              squad.update(dt, player, BattleField world X) THEN enemy.update.
+ *              forEachActive: if !active || !battleField.contains || hp<=0
+ *              → squad.unregister + pool.release (reuse; no mesh destroy).
+ *   squad()  — live EnemySquadManager for the Squad debugger tab.
  *   MiniBoss pendingMilestone: expose only; do not spawn a boss class (ENM-03/§7).
  */
 
@@ -147,8 +145,9 @@ export declare class EnemyManager {
  *   R1. Spawns continuously on a timer scaled by F03.spawnRateMul (ENM-01).
  *   R2. Population is pooled; exhaustion returns null; liveCount ≤ pool.capacity (ENM-02).
  *   R3. Off-field or killed enemies are released the same frame (RUL-02).
- *   R4. Yuka EntityManager (or equivalent) updates Vehicle/SteeringBehavior; the
- *       manager does not hand-roll seek math that duplicates E01.
+ *   R4. Owns EnemySquadManager. After spawn, squad.update(dt, shipX, shipZ)
+ *       then each live enemy.update(dt, shipX, shipZ). Squad does not duplicate
+ *       birth lerp (that's EnemyMovementManager).
  *   R5. Register with F01 on spawn, unregister on release — no stale colliders.
  *   R6. Per-frame allocation: none (no live[] rebuild; pool.forEachActive).
  *   R7. Does not spawn Tank/Warrior/Rogue or MiniBoss; patternId is stored only.
@@ -175,12 +174,10 @@ export declare class EnemyManager {
 // ─── 4. BALANCE, feel, leveling, graphics ────────────────────────────────────
 /**
  * New keys (declare on SDD-A01), consumed here:
- *   BALANCE.enemy.spawn.intervalSec = 1.6   // G0: a new body ~every 1.6s at mul=1
- *   BALANCE.enemy.spawn.zFar        = -20
- *   BALANCE.enemy.spawn.halfX       = 7
- *   BALANCE.enemy.spawn.lanesX      = [-4, -2, 0, 2, 4]  // shared with E06
- *   BALANCE.enemy.poolSize          = 32
- *   BALANCE.difficulty.spawnRateMulPerKill = 0.002  // F03; at 500 kills ≈ 2× rate
+ *   BALANCE.enemy.spawnLeft/Right/Front.maxActive = 8
+ *   BALANCE.enemy.spawn*.intervalSec = 1.2
+ *   BALANCE.enemy.poolSize          = 48
+ *   BALANCE.enemy.squad             = DEFAULT_SQUAD_CONFIG  // see enemy-squad.spec.ts
  *
  * Feel:      Always someone coming. At 0 kills the gap is breathable; by MiniBoss
  *            (50) the field is busy; by 500 it is twice as dense, not twice as
@@ -202,14 +199,14 @@ export declare class EnemyManager {
  * File: poc2/src/systems/enemy-manager.test.ts
  * Runner: vitest
  * Mocks: ObjectPoolPort, DifficultyPort, ColliderRegistryPort, SeekTargetPort,
- *        Yuka EntityManager stub, scene add/remove, BALANCE.enemy.spawn
+ *        EnemySquadManager, scene add/remove, BALANCE.enemy.spawn
  *
  * describe('EnemyManager')
  *   it('spawns one enemy when spawnAcc crosses intervalSec')                          // R1, ENM-01
  *   it('interval shrinks as difficulty.spawnRateMul grows')                           // R1
  *   it('spawnOne returns null and does not grow when the pool is exhausted')          // R2, ENM-02
  *   it('releases an enemy that isOffField or hp<=0 the same update')                  // R3, RUL-02
- *   it('adds the enemy vehicle to a Yuka EntityManager on spawn and removes on release') // R4
+ *   it('owns EnemySquadManager and updates it before live enemies')                   // R4
  *   it('registerTarget on spawn and unregisterTarget on release')                     // R5
  *   it('update does not allocate a new live array')                                   // R6
  *   it('does not instantiate a MiniBoss or archetype class when pendingMilestone is set') // R7

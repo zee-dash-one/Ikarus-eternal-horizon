@@ -16,13 +16,12 @@
 // ─── 1. Scope ────────────────────────────────────────────────────────────────
 /**
  * Owns:      The generic enemy game object — one public class `Enemy extends THREE.Mesh`.
- *            Pooled. HP, damage intake, Yuka drift-toward-player, TargetHit (team 'enemy',
- *            radius), off-field despawn flag. First Yuka card: install `yuka` here.
- * Does not own: spawn schedule / live list (E05), collision matrix (F01), applying
- *            damage to others (F04), drops (F02), archetypes Tank/Warrior/Rogue (hub §7).
- *            This card ships one generic silhouette only.
- * Player-facing: a neon hostile that enters from the deep field, closes in, dies to
- *            shots, and vanishes off-screen. Wrong tint reads as the player ship.
+ *            Pooled. Two lives: `birth` (reachGate lerp to EnemyGate) then squad
+ *            life (slot seek, BOOST, FURY/FLEE). Implements TargetHit (team 'enemy').
+ * Does not own: spawn schedule / live list (E05), group centroids (EnemySquadManager),
+ *            collision matrix (F01). Archetypes Tank/Rogue remain hub §7.
+ * Player-facing: rose wireframe gunships that form up after the gate, hold a
+ *            Z standoff, and peel off as capped kamikazes. Group-id label above each.
  */
 
 // ─── 8. Requires ─────────────────────────────────────────────────────────────
@@ -40,7 +39,7 @@
  *
  * Downstream (who breaks if this contract changes):
  *   SDD-E03 EnemyShot   — muzzle / team of the shooter
- *   SDD-E05 EnemyManager — pooling, Yuka EntityManager, spawn/despawn
+ *   SDD-E05 EnemyManager — pooling, EnemySquadManager, spawn/despawn
  *   SDD-F01 CollisionManager — Layer.Enemy colliders
  *   SDD-F04 DamageResolver — DamageSink.applyDamage
  *   SDD-F02 DropManager    — killed source for drop tables
@@ -53,10 +52,11 @@
  * Programming  : hub-v4.4 / 2026-08-20  EnemyMovementManager (synchronizedLerp → seekChase)
  * Game Design  : hub-v4.4 / 2026-08-20  Warrior sheet + gate y=0 play-plane handoff
  * TDD          : hub-v4.4 / 2026-08-20  enemy + enemy-movement-manager tests
+ * Programming  : 2026-08-24  squad life (formation/FURY/FLEE) + group-id sprite
  *
  * DoD (§6.1): spec · tests red · shape · lifecycle · BALANCE · memory ·
  *             IDs · verify green · port fidelity
- * Status: done (thin — Yuka SeekBehavior deferred; movement via EnemyMovementManager)
+ * Status: done (Warrior + squad AI — see enemy-squad.spec.ts)
  */
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -68,7 +68,8 @@
  * Public surface. Ports first, then the class. Constructor dependencies explicit.
  * No service locators. No globals besides BALANCE.
  * `extends THREE.Mesh` — the enemy *is* its visual (hub §4).
- * Lib: Three.js (Mesh) + Yuka (Vehicle + SeekBehavior) — first Yuka install.
+ * Lib: Three.js (Mesh). Post-gate motion is first-party Reynolds steering
+ *      (systems/steering.ts) — Yuka SeekBehavior remains deferred.
  */
 
 export type TeamId = 'player' | 'enemy'
@@ -130,7 +131,7 @@ export declare class Enemy extends THREE.Mesh implements TargetHit, DamageSink {
   z: number
   radius: number
   readonly contactDamage: number
-  /** Yuka Vehicle; steering SeekBehavior toward seekTarget. Not a THREE object. */
+  /** First-party vehicle; position + maxSpeed. Not a THREE object. */
   readonly vehicle: {
     position: { x: number; y: number; z: number }
     maxSpeed: number
@@ -139,7 +140,7 @@ export declare class Enemy extends THREE.Mesh implements TargetHit, DamageSink {
 
   activate(spawn: EnemySpawn): void
   deactivate(): void
-  /** Logic: Yuka seek, hp, off-field flag. No GPU. */
+  /** Logic: birth then squad AI, hp, off-field flag. No GPU. */
   update(dt: number): void
   /** Writes position / rotation / opacity / visible only. */
   syncRender(): void
@@ -163,7 +164,7 @@ export declare class Enemy extends THREE.Mesh implements TargetHit, DamageSink {
  *   x, z           | world    | play axes (hub D01 X/Y ≡ Three XZ; Y = height)
  *   radius         | world    | hit + visual half-extent
  *   contactDamage  | number   | F04 reads this on Enemy→Player
- *   vehicle        | Yuka     | SeekBehavior; maxSpeed from BALANCE
+ *   vehicle        | first-party | position + maxSpeed; squad / birth write it
  *
  *   activate   — pre: inactive slot. post: hp=hpMax, active, vehicle at spawn, visible.
  *   deactivate — pre: any. post: active=false, visible=false, hp=0; GPU kept.
@@ -176,16 +177,17 @@ export declare class Enemy extends THREE.Mesh implements TargetHit, DamageSink {
  *   R1. Enemy extends THREE.Mesh (the mesh *is* the enemy).
  *   R2. Implements TargetHit with team === 'enemy' and radius from BALANCE.
  *   R3. takeDamage / applyDamage reduce hp; hp<=0 ⇒ active=false, killed=true, once.
- *   R4. Movement is owned by EnemyMovementManager:
- *       reachGate → synchronizedLerp A(spawn)→B(gate marker): X/Y eased-linear,
- *       Z geometric progression (curved depth); no Y snap teleport on handoff.
- *       chase → seekChase flyby (always +Z past the player; X/Y damp to ship;
- *       facing locked on +Z).
+ *   R4. Movement is two-phase:
+ *       birth → EnemyMovementManager synchronizedLerp spawn → EnemyGate.
+ *       squad → slot arrive (formation), BOOST to rejoin, FURY kamikaze (capped
+ *       at BALANCE.enemy.squad.maxFury), FLEE to the X edge. Group centroid
+ *       motion is EnemyGroup (patrol standoff / intercept / egress).
+ *   R4b. syncRender shows a billboard group id ("0"–"5", "F", "L", or "-").
  *   R5. update(dt) never allocates and never writes material/geometry; syncRender
  *       writes position (from vehicle), rotation.y, opacity only.
  *   R6. Memory: pooled. activate/deactivate recycle the slot. dispose() only on
  *       pool teardown. Shared BoxGeometry created once by E05; per-slot material.
- *   R7. Per-frame allocation: none (Yuka vectors are instance fields / scratch).
+ *   R7. Per-frame allocation: none (scratch scalars / reused Vector3 for the label).
  *   R8. isOffField() is true outside BALANCE.enemy.despawn; Enemy does not release.
  *   R9. contactDamage is read-only from BALANCE; Enemy never damages the ship itself.
  *   R10. Archetype is generic only — no Tank/Warrior/Rogue branch in this class (§7).
@@ -220,16 +222,35 @@ export declare class Enemy extends THREE.Mesh implements TargetHit, DamageSink {
  *   BALANCE.enemy.spawn.halfX            = 7      // slightly wider than follow.halfX 6
  *   BALANCE.enemy.despawn.zNear          = 12     // past the ship / camera
  *   BALANCE.enemy.despawn.halfX          = 14     // off the sides
- *   BALANCE.enemy.poolSize               = 32     // E05; G0 one-type population
+ *   BALANCE.enemy.poolSize               = 48     // E05; 24 live (8 per SpawnArea) + slack
+ *   BALANCE.enemy.squad                  = DEFAULT_SQUAD_CONFIG  // enemy-squad.spec.ts
  *
- * Feel:      Closes in, not a turret. Pressure is presence + contact, not bullet hell
- *            (EnemyShot is E03, ranged patterns §7). TTK is one committed volley at L1.
+ * Warrior sheet squad knobs (debugger Enemy tab; warrior.ts):
+ *   formation.slotTolerance     = 1.2   // in-slot hover radius
+ *   formation.boostDistance     = 9     // beyond this → BOOST rejoin
+ *   formation.boostAgilityMul   = 2.2
+ *   formation.hoverAmp          = 0.35
+ *   formation.hoverHz           = 0.5
+ *   formation.imperfectionRadius = 0.3
+ *   morale.furyProximityRadius  = 14
+ *   morale.furyProximitySec     = 2
+ *   morale.furyAgilityMul       = 2
+ *   morale.retaliationHits      = 3
+ *   morale.retaliationWindowMs  = 1200
+ *   morale.fleeGroupHealthPct   = 15
+ *   morale.fleeAgilityMul       = 1.6
+ *   affinity.gainPerSec         = 0.6
+ *   affinity.decayPerSec        = 0.25
+ *   affinity.radius             = 18
+ *   affinity.loyalty            = 0.15
+ *
+ * Feel:      Closes in as a formation, not a turret. Pressure is the 10-unit
+ *            standoff plus capped FURY peels, not a wall stacked on the nose.
+ *            TTK is one committed volley at L1.
  * Leveling:  E05 scales spawn rate via F03, not this class's hp. Archetypes Tank
- *            (amber, slow, high hp) / Warrior (red, guns) / Rogue (green-magenta wedge)
- *            are §7 — this generic uses the Warrior-like balanced box so ENM-06 can
- *            swap skin later without changing the silhouette contract.
- * Graphics:  Neon wireframe rose on a dense box. Silhouette readable <0.3s vs cyan
- *            ship. Opacity tracks hp (readable damage, pillar 2). No fill (G0 wireframe).
+ *            / Rogue remain hub §7 — G0 uses the Warrior sheet.
+ * Graphics:  Neon wireframe rose on a dense box. White group-id billboard
+ *            ("0"–"5", "F", "L", "-"). Opacity tracks hp (readable damage, pillar 2).
  * Pillars:   4 legibility · 5 one-more-kill pressure · 1 visible risk (it is coming).
  */
 
@@ -243,26 +264,38 @@ export declare class Enemy extends THREE.Mesh implements TargetHit, DamageSink {
  * File: poc2/src/gameobjects/enemy/enemy.test.ts
  * Runner: vitest (`npm run test` in poc2/)
  * Mocks: BALANCE.enemy slice, THREE.Mesh/BoxGeometry/MeshBasicMaterial stub,
- *        Yuka Vehicle/SeekBehavior stub, SeekTargetPort {x:0,z:0}
+ *        EnemySquadManager stub, SeekTargetPort {x:0,z:0}
+ *
+ * describe('Warrior sheet')
+ *   it('carries squad knobs: formation, morale and affinity')                         // R4
+ *
+ * describe('Enemy Warrior — birth')
+ *   it('activate loads the Warrior sheet and starts the birth animation')             // R4
+ *   it('birth aims at gate centre + personal entry offset X')                         // R4
+ *
+ * describe('Enemy Warrior — squad life')
+ *   it('registers with a group once the gate is cleared')                             // R4
+ *   it('flies toward its reserved slot and settles into formation')                   // R4
+ *   it('BOOSTs after being knocked far away from its slot')                           // R4
+ *   it('goes FURY after sustained player proximity and leaves the formation')         // R4
+ *   it('refuses a fifth FURY while four are already raging')                          // R4, maxFury
+ *   it('FURY keeps advancing past the player instead of parking on their Z line')     // R4
+ *   it('FLEEs the moment its shield breaks')                                          // R4
  *
  * describe('Enemy')
  *   it('extends THREE.Mesh')                                                          // R1
  *   it('implements TargetHit with team enemy and BALANCE radius')                     // R2, ENM-01
  *   it('applyDamage reduces hp and sets killed+inactive once at hp 0')                // R3
- *   it('takeDamage forwards to applyDamage')                                          // R3, R11
- *   it('update steers a Yuka Vehicle toward the seek target')                         // R4
  *   it('syncRender writes mesh.position from vehicle and does not mutate hp')         // R5
  *   it('activate then deactivate recycles the slot without dispose')                  // R6, ENM-02
- *   it('dispose frees this slot material; release path does not')                     // R6
  *   it('update allocates no objects (Object.keys / no `new` in hot path spy)')        // R7
  *   it('isOffField is true past despawn.zNear / despawn.halfX')                       // R8, ENM-01
  *   it('exposes contactDamage from BALANCE and never calls into ShipHealth')          // R9
- *   it('has no archetype field or Tank/Warrior/Rogue branch')                         // R10
- *   it('spawns, closes in, dies from shots, despawns off-field (acceptance)')         // ENM-01
  *
  * Manual:
  *   A-manual-1. [manual] neon rose reads as hostile vs ship cyan in <0.3s
- *   A-manual-2. [manual] poc/src/gameobjects/testTarget.ts is not imported by poc2
+ *   A-manual-2. [manual] group-id labels match nearby formation mates
+ *   A-manual-3. [manual] poc/src/gameobjects/testTarget.ts is not imported by poc2
  *
  * Coverage: R1–R11 + ENM-01 + ENM-02 + card Acceptance.
  */

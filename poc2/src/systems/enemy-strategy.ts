@@ -50,7 +50,7 @@ export const DEFAULT_STATUS_CONFIG: WarriorStatusConfig = {
   hittedCdMs: 300,
   hittingCdMs: 300,
   inRangeRadius: 20,
-  rangeVisible: true,
+  rangeVisible: false,
   rangeColor: 0xcccccc,
   rangeOpacity: 0.18,
 }

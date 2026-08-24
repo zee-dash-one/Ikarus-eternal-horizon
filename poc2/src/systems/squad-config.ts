@@ -14,6 +14,8 @@ export interface SquadConfig {
   readonly tickHz: number
   /** Ships evaluated for affinity / migration on each structural tick. */
   readonly shipsPerTick: number
+  /** Hard cap of simultaneous FURY (kamikaze) ships. */
+  readonly maxFury: number
 
   readonly circleRadius: number
   readonly vSpacing: number
@@ -39,7 +41,26 @@ export interface SquadConfig {
   /** Patrol Z band relative to the player (negative = ahead of the ship). */
   readonly patrolZMin: number
   readonly patrolZMax: number
-  /** Intercept aims this far behind the player on Z. */
+  /**
+   * Closest Z gap a patrolling group may keep in front of the player.
+   * Groups never aim closer than `playerZ - patrolStandoffZ` while still ahead.
+   */
+  readonly patrolStandoffZ: number
+  /** How far a patrol waypoint advances along +Z from the group's current Z. */
+  readonly patrolAdvanceMin: number
+  readonly patrolAdvanceMax: number
+  /**
+   * FURY dive (solo ship): how far past the player (+Z) the locked lane aims
+   * after the peel-off attack, so the ship continues straight instead of parking.
+   */
+  readonly egressZMin: number
+  readonly egressZMax: number
+  /**
+   * Chance (0..1), rolled once when a FURY ship crosses the player's Z,
+   * to turn around and re-enter the combat band ahead of the ship.
+   */
+  readonly turnaroundChance: number
+  /** Extra +Z push past the player when a damaged group goes intercept. */
   readonly interceptStandoffZ: number
 
   /** Ship-relative half width of the visible arena used for containment. */
@@ -69,6 +90,7 @@ export const DEFAULT_SQUAD_CONFIG: SquadConfig = {
   maxPerGroup: 8,
   tickHz: 5,
   shipsPerTick: 12,
+  maxFury: 4,
 
   circleRadius: 7,
   vSpacing: 4,
@@ -77,9 +99,9 @@ export const DEFAULT_SQUAD_CONFIG: SquadConfig = {
   diamondH: 6,
   slotLerpRate: 4,
 
-  groupMaxSpeed: 3.5,
-  groupMaxForce: 6,
-  groupArriveRadius: 10,
+  groupMaxSpeed: 7,
+  groupMaxForce: 12,
+  groupArriveRadius: 8,
   groupTurnLambda: 2.5,
   groupSeparationRadius: 26,
   groupSeparationWeight: 8,
@@ -87,9 +109,15 @@ export const DEFAULT_SQUAD_CONFIG: SquadConfig = {
   targetHoldMinMs: 3000,
   targetHoldMaxMs: 5000,
   casualtyPct: 0.5,
-  patrolZMin: -70,
-  patrolZMax: -20,
-  interceptStandoffZ: 4,
+  patrolZMin: -55,
+  patrolZMax: -10,
+  patrolStandoffZ: 10,
+  patrolAdvanceMin: 8,
+  patrolAdvanceMax: 18,
+  egressZMin: 28,
+  egressZMax: 72,
+  turnaroundChance: 0.22,
+  interceptStandoffZ: 16,
 
   arenaHalfX: 34,
   containmentInsetX: 8,

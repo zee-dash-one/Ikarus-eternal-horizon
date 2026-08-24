@@ -27,6 +27,8 @@ export interface SquadShipPort extends GroupMemberPort {
   readonly vz: number
   /** FURY / FLEE ships own the right of way and never migrate. */
   isRogue(): boolean
+  /** True only while in FURY (subset of rogue). */
+  isFury(): boolean
   currentGroup(): EnemyGroup | null
   /** One float per group id, allocated once by the ship. */
   readonly affinity: Float32Array
@@ -42,6 +44,9 @@ export interface SquadRegistryPort {
   unregister(ship: SquadShipPort): void
   rogueCount(): number
   rogueAt(index: number): SquadShipPort | null
+  furyCount(): number
+  /** False when the concurrent FURY cap is already full. */
+  canEnterFury(): boolean
   liveConfig(): SquadConfig
   arenaMinX(): number
   arenaMaxX(): number
@@ -123,6 +128,21 @@ export class EnemySquadManager {
 
   rogueAt(index: number): SquadShipPort | null {
     return index >= 0 && index < this._rogueCount ? (this._rogues[index] ?? null) : null
+  }
+
+  furyCount(): number {
+    let n = 0
+    for (let i = 0; i < this._shipCount; i += 1) {
+      const ship = this._ships[i]
+      if (ship && ship.active && ship.isFury()) {
+        n += 1
+      }
+    }
+    return n
+  }
+
+  canEnterFury(): boolean {
+    return this.furyCount() < Math.max(0, Math.floor(this._config.maxFury))
   }
 
   /** Track a ship that just cleared the gate and give it a slot. */

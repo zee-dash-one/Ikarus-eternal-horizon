@@ -11,6 +11,7 @@ class FakeShip implements SquadShipPort {
   hpMax = 10
   active = true
   rogue = false
+  fury = false
   migrations = 0
   slot = -1
   readonly affinity = new Float32Array(6)
@@ -27,7 +28,11 @@ class FakeShip implements SquadShipPort {
   }
 
   isRogue(): boolean {
-    return this.rogue
+    return this.rogue || this.fury
+  }
+
+  isFury(): boolean {
+    return this.fury
   }
 
   currentGroup(): EnemyGroup | null {
@@ -214,5 +219,36 @@ describe('EnemySquadManager affinity mesh', () => {
     expect(squad.activeGroupCount()).toBe(0)
     expect(squad.trackedCount()).toBe(0)
     expect(squad.rogueCount()).toBe(0)
+    expect(squad.furyCount()).toBe(0)
+  })
+
+  it('caps concurrent FURY ships at maxFury', () => {
+    const squad = makeSquad()
+    squad.liveConfig().maxFury = 4
+    const ships: FakeShip[] = []
+    for (let i = 0; i < 6; i += 1) {
+      const ship = new FakeShip(i * 2, -40)
+      ships.push(ship)
+      squad.register(ship)
+    }
+    expect(squad.canEnterFury()).toBe(true)
+    for (let i = 0; i < 4; i += 1) {
+      const ship = ships[i]
+      if (!ship) {
+        throw new Error(`missing ship ${i}`)
+      }
+      expect(squad.canEnterFury()).toBe(true)
+      ship.fury = true
+    }
+    expect(squad.furyCount()).toBe(4)
+    expect(squad.canEnterFury()).toBe(false)
+
+    const first = ships[0]
+    if (!first) {
+      throw new Error('missing ship 0')
+    }
+    first.fury = false
+    expect(squad.furyCount()).toBe(3)
+    expect(squad.canEnterFury()).toBe(true)
   })
 })

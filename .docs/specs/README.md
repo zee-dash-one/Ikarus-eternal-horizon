@@ -30,6 +30,7 @@ POC-1 is frozen. These specs describe **`poc2/` only**.
 | E03 | [enemy-shot.spec.ts](./enemy-shot.spec.ts) | `poc2/src/gameobjects/shot/enemy-shot.test.ts` |
 | E04 | [shot-manager.spec.ts](./shot-manager.spec.ts) | `poc2/src/systems/shot-manager.test.ts` |
 | E05 | [enemy-manager.spec.ts](./enemy-manager.spec.ts) | `poc2/src/systems/enemy-manager.test.ts` |
+| E01/E05 follow-on | [enemy-squad.spec.ts](./enemy-squad.spec.ts) | `poc2/src/systems/enemy-group.test.ts`, `enemy-squad-manager.test.ts`, `formation-slots.test.ts`, `steering.test.ts`, `poc2/src/gameobjects/enemy/enemy.test.ts` |
 | E06 | [meteor-manager.spec.ts](./meteor-manager.spec.ts) | `poc2/src/systems/meteor-manager.test.ts` |
 | E07 | [firing-manager.spec.ts](./firing-manager.spec.ts) | `poc2/src/systems/firing-manager.test.ts` |
 | F01 | [collision-manager.spec.ts](./collision-manager.spec.ts) | `poc2/src/systems/collision-manager.test.ts` |
@@ -51,14 +52,14 @@ POC-1 is frozen. These specs describe **`poc2/` only**.
 | G11 | [pause-scene.spec.ts](./pause-scene.spec.ts) | `poc2/src/scenes/pause-scene.test.ts` |
 | G12 | [touch-controls.spec.ts](./touch-controls.spec.ts) | `poc2/src/ui/touch-controls/touch-controls.test.ts` |
 
-Each spec has four signed sections: **Orchestrator**, **Programming / Three.js**, **Game Design**, **TDD**. Stages A–B, C01–C03, D01–D06, E01 (Warrior + EnemyMovementManager), E04–E05 (triple spawn + BattleField + gate), G06, G08 (Ship + Equips + SpawnArea + Parallax), G09, G03 and G12 are **done**. D04–D06 register all four guns with unified `WeaponLevelRow` L1–12 (`weapon-levels.ts`). **SpawnArea** is three red volumes (`spawnLeft` / `spawnRight` / `spawnFront`); **EnemyGate** (amber, y=0) is the synchronizedLerp waypoint before seekChase (3 entry X per band: left←spawnLeft, middle←spawnFront, right←spawnRight). **BattleField** culls pool-released leavers. F01 hit-query still pending — beam/mjolnir use inline `HitTarget` loop until then; plasma AoE splash and shot→enemy / enemy→ship damage wait on F01. Fase 0 is playable; **F** / **Y** fires laser, **G** / **X** cycles weapons. The debugger-area shows Ship, Equips, **SpawnArea** and **Parallax** in DEV. Equips exposes editable weapon stats per level. D03 energy is the same pool as `ship.stats.energy`. **area-inputs** remaps live `InputBindings` (Escape still pauses).
+Each spec has four signed sections: **Orchestrator**, **Programming / Three.js**, **Game Design**, **TDD**. Stages A–B, C01–C03, D01–D06, E01 (Warrior + EnemyMovementManager + squad life), E04–E05 (triple spawn + BattleField + gate + `EnemySquadManager`), F01–F04, G06, G08 (Ship + Equips + Enemy + Squad + SpawnArea + Parallax), G09, G03 and G12 are **done**. D04–D06 register all four guns with unified `WeaponLevelRow` L1–L12 (`weapon-levels.ts`). **SpawnArea** is three red volumes (`spawnLeft` / `spawnRight` / `spawnFront`, `maxActive` 8); **EnemyGate** (amber, y=0) is the synchronizedLerp waypoint before squad register (3 entry X per band: left←spawnLeft, middle←spawnFront, right←spawnRight). After the gate, Warriors join up to 6 groups (`maxPerGroup` 8), hold a 10-unit Z standoff, and peel off at most 4 FURY dives — see [enemy-squad.spec.ts](./enemy-squad.spec.ts). **BattleField** culls pool-released leavers. Fase 0 is playable; **F** / **Y** fires laser, **G** / **X** cycles weapons. The debugger-area shows Ship, Equips, **Enemy**, **Squad**, **SpawnArea** and **Parallax** in DEV. Equips exposes editable weapon stats per level. D03 energy is the same pool as `ship.stats.energy`. **area-inputs** remaps live `InputBindings` (Escape still pauses).
 
 ## Next steps (playable order)
 
-1. **G08 remaining tabs** after Ship / Equips / SpawnArea / Parallax: Camera · LimitBox · Weapons catalog · Energy · Shots · Collision.
+1. **G08 remaining tabs** after Ship / Equips / Enemy / Squad / SpawnArea / Parallax: Camera · LimitBox · Weapons catalog · Energy · Shots · Collision.
 2. **Wire C03 combat onto the byte pools.** Integrity/shield become the same 0–255 pools the Ship tab shows. Energy is already bound (D03).
 3. **Statuses.** `flickering` / `shooting` / `dashing` / `recovering` timers live in `BALANCE.ship.cooldowns`. Dash is allowed when energy remains and `status.dashing` is false. Energy regen waits `recoveringMs` after spend and only while `recovering`.
-4. **F01 Collision** — Player / PlayerShot hitboxes, plasma splash, wire beam/mjolnir + shots to Enemy. Then F04 / F05 / G07 HUD bars.
-5. **G11 Pause** inventory / restart / quit (scheme picker is live). Yuka seek on E01.
+4. **G07 HUD bars** and remaining F05 VFX polish. Then G11 inventory / restart / quit (scheme picker is live).
+5. **G01 Title** flow. Yuka steering remains deferred (first-party Reynolds is live on E01).
 
-C01 ship sheet is live (`debugSnapshot`). G08 **Ship**, **Equips**, **SpawnArea** and **Parallax** tabs are mounted in `#debugger-area` (DEV).
+C01 ship sheet is live (`debugSnapshot`). G08 **Ship**, **Equips**, **Enemy**, **Squad**, **SpawnArea** and **Parallax** tabs are mounted in `#debugger-area` (DEV).

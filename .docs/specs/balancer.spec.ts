@@ -296,10 +296,14 @@ export declare const BALANCE: Balance
  *   weapons.loadout             = ['laser', 'plasma']  // WPN-03; catalog holds all four
  *   weapons.catalog             = WEAPONS from catalog.ts (D02 extract; A01 re-exports)
  *   shot.despawn                = { zNear: 16, zFar: -32, halfX: 16 }  // E04
- *   enemy.spawn                 = { offset, size, visible, color, opacity, intervalSec, lanesX, maxActive: 1 }
- *   enemy.generic               = { hp: 3, radius: 0.55, color: 0xf43f5e, maxSpeed: 4, contactDamage: 8 }
+ *   enemy.spawnLeft/Right/Front = { intervalSec: 1.2, maxActive: 8, … }
+ *   enemy.generic / warrior     = Warrior sheet (hp 3, shield, agility 55, …)
  *   enemy.despawn               = { zNear: 18, zFar: -40, halfX: 22 }
- *   enemy.poolSize              = 32
+ *   enemy.poolSize              = 48
+ *   enemy.squad                 = DEFAULT_SQUAD_CONFIG  // systems/squad-config.ts
+ *     maxGroups 6 · maxPerGroup 8 · tickHz 5 · shipsPerTick 12 · maxFury 4
+ *     patrolStandoffZ 10 · patrolAdvance 8–18 · groupMaxSpeed 7
+ *     Full table: .docs/specs/enemy-squad.spec.ts §4
  *
  * New sections (placeholders, Q08 owns the hull curve). Combat still reads
  * ship.health until C03 consume the C01 integrity/shield bytes; D03 already
@@ -358,6 +362,8 @@ export declare const BALANCE: Balance
  *   it('exposes loop maxFrameDt 0.05 and sidecarHz 15')                    // A04, RUL-01
  *   it('exposes ship inventory caps 999 / 99 / 49 / 9')                    // C01, RES-05
  *   it('exposes ship.stats byteCap 255 and spawn pools 100/100')           // C01 sheet, G08
+ *   it('exposes enemy.squad maxGroups 6, maxPerGroup 8, tickHz 5, maxFury 4, patrolStandoffZ 10') // E01 squad
+ *   it('exposes enemy.poolSize 48 and spawn maxActive 8 per side')           // E05
  *   it('treats BALANCE as a frozen object (Object.isFrozen or as const)')  // R2
  *
  * Manual:

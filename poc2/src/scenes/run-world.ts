@@ -873,6 +873,7 @@ export function createRunWorld(options: RunWorldOptions): RunWorldFactory {
           activeGroups: () => world.enemies.squad().activeGroupCount(),
           trackedShips: () => world.enemies.squad().trackedCount(),
           rogueShips: () => world.enemies.squad().rogueCount(),
+          furyShips: () => world.enemies.squad().furyCount(),
         },
         parallax: {
           layerCount: () => world.parallax.layerCount(),

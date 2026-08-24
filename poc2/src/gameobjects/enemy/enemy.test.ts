@@ -214,6 +214,10 @@ describe('Enemy Warrior — squad life', () => {
     expect(snap.groupId).toBe(0)
     expect(snap.slotIndex).toBe(0)
     expect(squad.activeGroupCount()).toBe(1)
+    enemy.syncRender()
+    const label = enemy.getObjectByName('enemy.groupLabel')
+    expect(label).not.toBeNull()
+    expect(label?.visible).toBe(true)
     enemy.dispose()
     geo.dispose()
   })
@@ -282,7 +286,39 @@ describe('Enemy Warrior — squad life', () => {
     expect(squad.rogueCount()).toBe(0)
     squad.update(0.016, seek.x, seek.z, -60, 60)
     expect(squad.rogueCount()).toBe(1)
+    expect(squad.furyCount()).toBe(1)
     enemy.dispose()
+    geo.dispose()
+  })
+
+  it('refuses a fifth FURY while four are already raging', () => {
+    const seek = { x: 0, y: 0, z: 0 }
+    const gate = { x: 0, y: 0, z: -8 }
+    const geo = new BoxGeometry(1, 1, 1)
+    const squad = makeSquad()
+    squad.liveConfig().maxFury = 4
+    const sheet = cloneWarriorSheet(WARRIOR)
+    sheet.targets = ['player']
+    sheet.morale.furyProximitySec = 0.05
+    const enemies: Enemy[] = []
+    for (let i = 0; i < 5; i += 1) {
+      const enemy = new Enemy({ geometry: geo, seekTarget: seek, gateTarget: gate, squad })
+      enemy.activate({ x: i * 0.5, y: 0, z: -3, sheet })
+      enemies.push(enemy)
+    }
+    for (let frame = 0; frame < 8; frame += 1) {
+      squad.update(0.05, seek.x, seek.z, -60, 60)
+      for (const enemy of enemies) {
+        enemy.update(0.05)
+      }
+    }
+    const fury = enemies.filter((enemy) => enemy.aiState() === 'fury').length
+    expect(fury).toBe(4)
+    expect(squad.furyCount()).toBe(4)
+    expect(squad.canEnterFury()).toBe(false)
+    for (const enemy of enemies) {
+      enemy.dispose()
+    }
     geo.dispose()
   })
 
@@ -293,17 +329,46 @@ describe('Enemy Warrior — squad life', () => {
     const squad = makeSquad()
     const sheet = cloneWarriorSheet(WARRIOR)
     sheet.targets = ['player']
+    sheet.morale.furyProximitySec = 0.05
     const enemy = new Enemy({ geometry: geo, seekTarget: seek, gateTarget: gate, squad })
-    enemy.activate({ x: 4, y: 0, z: -2, sheet })
-    for (let i = 0; i < 60; i++) {
+    enemy.activate({ x: 8, y: 0, z: -6, sheet })
+    for (let i = 0; i < 8; i++) {
       enemy.update(0.05)
     }
     expect(enemy.aiState()).toBe('fury')
-    const before = Math.hypot(enemy.x - seek.x, enemy.z - seek.z)
-    for (let i = 0; i < 20; i++) {
+    const beforeX = Math.abs(enemy.x - seek.x)
+    const beforeZ = enemy.z
+    for (let i = 0; i < 40; i++) {
       enemy.update(0.05)
     }
-    expect(Math.hypot(enemy.x - seek.x, enemy.z - seek.z)).toBeLessThan(before)
+    expect(Math.abs(enemy.x - seek.x)).toBeLessThan(beforeX)
+    expect(enemy.z).toBeGreaterThan(beforeZ)
+    enemy.dispose()
+    geo.dispose()
+  })
+
+  it('FURY keeps advancing past the player instead of parking on their Z line', () => {
+    const seek = { x: 0, y: 0, z: 0 }
+    const gate = { x: 0, y: 0, z: -8 }
+    const geo = new BoxGeometry(1, 1, 1)
+    const squad = makeSquad()
+    const sheet = cloneWarriorSheet(WARRIOR)
+    sheet.targets = ['player']
+    sheet.morale.furyProximitySec = 0.05
+    const enemy = new Enemy({ geometry: geo, seekTarget: seek, gateTarget: gate, squad })
+    enemy.activate({ x: 0, y: 0, z: -3, sheet })
+    for (let i = 0; i < 4; i++) {
+      enemy.update(0.05)
+    }
+    expect(enemy.aiState()).toBe('fury')
+    // Sit on the old parking line — FURY must still push through.
+    enemy.z = seek.z
+    enemy.vz = 0
+    for (let i = 0; i < 40; i++) {
+      enemy.update(0.05)
+    }
+    expect(enemy.z).toBeGreaterThan(seek.z + 5)
+    expect(enemy.vz).toBeGreaterThan(0)
     enemy.dispose()
     geo.dispose()
   })

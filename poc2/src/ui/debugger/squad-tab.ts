@@ -55,7 +55,13 @@ const OBJECTIVE_SPECS: readonly ScalarSpec[] = [
   { key: 'casualtyPct', min: 0, max: 1, step: 0.05 },
   { key: 'patrolZMin', min: -160, max: 0, step: 1 },
   { key: 'patrolZMax', min: -160, max: 30, step: 1 },
-  { key: 'interceptStandoffZ', min: 0, max: 40, step: 0.5 },
+  { key: 'patrolStandoffZ', min: 1, max: 80, step: 1 },
+  { key: 'patrolAdvanceMin', min: 1, max: 60, step: 1 },
+  { key: 'patrolAdvanceMax', min: 1, max: 80, step: 1 },
+  { key: 'interceptStandoffZ', min: 0, max: 80, step: 0.5 },
+  { key: 'egressZMin', min: 0, max: 160, step: 1 },
+  { key: 'egressZMax', min: 0, max: 200, step: 1 },
+  { key: 'turnaroundChance', min: 0, max: 1, step: 0.01 },
 ]
 
 const TRAFFIC_SPECS: readonly ScalarSpec[] = [
@@ -76,6 +82,7 @@ const ARENA_SPECS: readonly ScalarSpec[] = [
 const BUDGET_SPECS: readonly ScalarSpec[] = [
   { key: 'tickHz', min: 1, max: 30, step: 1 },
   { key: 'shipsPerTick', min: 1, max: 48, step: 1 },
+  { key: 'maxFury', min: 0, max: 24, step: 1 },
 ]
 
 export class SquadTab implements DebuggerTab {
@@ -101,6 +108,11 @@ export class SquadTab implements DebuggerTab {
     this._group(form, 'Live squads')
     this._readOnly(form, 'groups', () => `${squad.activeGroups()} / ${squad.groupCount()}`)
     this._readOnly(form, 'ships', () => `${squad.trackedShips()} (${squad.rogueShips()} rogue)`)
+    this._readOnly(
+      form,
+      'fury',
+      () => `${squad.furyShips()} / ${squad.config().maxFury}`,
+    )
     for (let i = 0; i < squad.groupCount(); i += 1) {
       this._readOnly(form, `group ${i}`, () => {
         const snap = squad.groups()[i]

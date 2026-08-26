@@ -33,15 +33,17 @@ function thrusterOf(ship: Ship): Mesh {
 }
 
 function hullOf(ship: Ship): Mesh {
-  const mesh = ship.children.find((child) => {
-    if (!(child instanceof Mesh) || !(child.geometry instanceof BoxGeometry)) {
-      return false
-    }
-    const mat = child.material
-    return !Array.isArray(mat) && mat.wireframe
-  })
+  const mesh = ship.getObjectByName('hull')
   if (!(mesh instanceof Mesh)) {
-    throw new Error('expected a hull wireframe mesh')
+    throw new Error('expected a named hull mesh')
+  }
+  return mesh
+}
+
+function hitboxOf(ship: Ship): Mesh {
+  const mesh = ship.getObjectByName('hitbox')
+  if (!(mesh instanceof Mesh)) {
+    throw new Error('expected a named hitbox mesh')
   }
   return mesh
 }
@@ -50,15 +52,16 @@ describe('Ship', () => {
   it('extends THREE.Group and constructs hull, accent, thruster, weaponTip as children', () => {
     const ship = makeShip()
     expect(ship).toBeInstanceOf(Group)
-    expect(ship.children).toHaveLength(4)
+    expect(ship.children).toHaveLength(5)
     expect(ship.weaponTip).toBeInstanceOf(Mesh)
     expect(ship.weaponTip.parent?.name).toBe('modules')
     expect(ship.weaponTip.geometry).toBeInstanceOf(SphereGeometry)
     expect(
       ship.children.filter((child) => child instanceof Mesh && child.geometry instanceof BoxGeometry),
-    ).toHaveLength(2)
+    ).toHaveLength(3)
     expect(thrusterOf(ship).parent).toBe(ship)
-    expect(ship.hitbox).toBe(hullOf(ship))
+    expect(ship.hitbox).toBe(hitboxOf(ship))
+    expect(ship.hitbox).not.toBe(hullOf(ship))
     ship.dispose()
   })
 
@@ -250,7 +253,7 @@ describe('Ship', () => {
     ship.dispose()
   })
 
-  it('visual size is 1.5 × 1 × 2 and hull material colour is 0x22d3ee wireframe', () => {
+  it('visual size is 1.5 × 1 × 2 and hull material is solid 0x22d3ee', () => {
     const ship = makeShip()
     const hull = hullOf(ship)
     const geo = hull.geometry
@@ -261,9 +264,27 @@ describe('Ship', () => {
     expect(geo.parameters.width).toBe(1.5)
     expect(geo.parameters.height).toBe(1)
     expect(geo.parameters.depth).toBe(2)
-    expect(mat.wireframe).toBe(true)
+    expect(mat.wireframe).toBe(false)
     expect(mat.color.getHex()).toBe(0x22d3ee)
-    expect(mat.opacity).toBe(0.9)
+    expect(mat.opacity).toBe(0.95)
+    ship.dispose()
+  })
+
+  it('hitbox is a blue wireframe cube sized to 2×hitRadius', () => {
+    const ship = makeShip()
+    const hitbox = hitboxOf(ship)
+    const geo = hitbox.geometry
+    const mat = hitbox.material
+    if (!(geo instanceof BoxGeometry) || Array.isArray(mat) || !(mat instanceof MeshBasicMaterial)) {
+      throw new Error('expected a BoxGeometry hitbox with MeshBasicMaterial')
+    }
+    const side = BALANCE.ship.visual.hitRadius * 2
+    expect(geo.parameters.width).toBe(side)
+    expect(geo.parameters.height).toBe(side)
+    expect(geo.parameters.depth).toBe(side)
+    expect(mat.wireframe).toBe(true)
+    expect(mat.color.getHex()).toBe(BALANCE.debug.hitbox.color)
+    expect(ship.hitbox).toBe(hitbox)
     ship.dispose()
   })
 
@@ -480,13 +501,13 @@ describe('Ship', () => {
     ship.dispose()
   })
 
-  it('hitbox stays the hull when modules are equipped', () => {
+  it('hitbox stays the blue cube when modules are equipped', () => {
     const ship = makeShip()
-    const hull = hullOf(ship)
+    const hitbox = hitboxOf(ship)
     ship.equipWings('armored')
     ship.equipShield('heavy')
     ship.equipBomb(0, 'pulseNova', 1)
-    expect(ship.hitbox).toBe(hull)
+    expect(ship.hitbox).toBe(hitbox)
     expect(ship.hitbox.geometry).toBeInstanceOf(BoxGeometry)
     ship.dispose()
   })

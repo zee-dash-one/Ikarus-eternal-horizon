@@ -96,9 +96,9 @@ export type EditableSquadConfig = {
 
 export const DEFAULT_SQUAD_CONFIG: SquadConfig = {
   maxGroups: 6,
-  maxPerGroup: 8,
+  maxPerGroup: 6,
   tickHz: 5,
-  shipsPerTick: 12,
+  shipsPerTick: 6,
   maxFury: 4,
 
   circleRadius: 7,
@@ -118,15 +118,15 @@ export const DEFAULT_SQUAD_CONFIG: SquadConfig = {
   targetHoldMinMs: 3000,
   targetHoldMaxMs: 5000,
   casualtyPct: 0.5,
-  patrolZMin: -55,
-  patrolZMax: -10,
-  patrolStandoffZ: 10,
-  patrolAdvanceMin: 8,
-  patrolAdvanceMax: 18,
+  patrolZMin: -60,
+  patrolZMax: -30,
+  patrolStandoffZ: 20,
+  patrolAdvanceMin: 10,
+  patrolAdvanceMax: 25,
   egressZMin: 28,
   egressZMax: 72,
-  turnaroundChance: 0.22,
-  interceptStandoffZ: 16,
+  turnaroundChance: 0.15,
+  interceptStandoffZ: 20,
 
   arenaHalfX: 34,
   containmentInsetX: 8,
@@ -141,8 +141,8 @@ export const DEFAULT_SQUAD_CONFIG: SquadConfig = {
   rogueAvoidRadius: 6,
   rogueAvoidWeight: 10,
 
-  fleeBackZ: 28,
-  fleeEdgePaddingX: 18,
+  fleeBackZ: 15,
+  fleeEdgePaddingX: 35,
 }
 
 export function cloneSquadConfig(src: SquadConfig | EditableSquadConfig): EditableSquadConfig {

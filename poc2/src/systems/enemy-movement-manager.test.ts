@@ -105,7 +105,35 @@ describe('EnemyMovementManager facing', () => {
     manager.turnToward(1, 0.5, 10)
     manager.reset()
     expect(manager.birthActive()).toBe(false)
+    expect(manager.birthProgress()).toBe(0)
     expect(manager.facingY()).toBe(0)
     expect(manager.desiredFacingY()).toBe(0)
+  })
+})
+
+describe('EnemyMovementManager rush-to-cruise handoff', () => {
+  it('does not stop at B: the last step still travels at cruise', () => {
+    const manager = new EnemyMovementManager()
+    const from = { x: 0, y: 0, z: 0 }
+    const to = { x: 0, y: 0, z: 100 }
+    manager.beginBirth(from, to, 30, 'front', 10)
+    const position = { ...from }
+    const input = { position, dt: 0.05, target: to, agilityLambda: 3 }
+    manager.updateBirth(input)
+    const firstStep = position.z - from.z
+    let lastFullStep = 0
+    for (let i = 0; i < 400; i++) {
+      const prevZ = position.z
+      const { arrived } = manager.updateBirth(input)
+      const step = position.z - prevZ
+      if (arrived) {
+        break
+      }
+      lastFullStep = step
+    }
+    expect(manager.birthActive()).toBe(false)
+    expect(firstStep).toBeGreaterThan(lastFullStep)
+    expect(lastFullStep).toBeGreaterThan(0.35)
+    expect(position.z).toBeCloseTo(100, 5)
   })
 })

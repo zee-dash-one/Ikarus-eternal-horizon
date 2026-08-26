@@ -185,6 +185,7 @@ describe('BALANCE', () => {
       expect(BALANCE.ship.stats[key]).toEqual({ current: 100, max: 100 })
     }
     expect(BALANCE.debug.syncHz).toBe(15)
+    expect(BALANCE.debug.hitbox).toEqual({ color: 0x3b82f6, opacity: 0.9 })
   })
 
   it('exposes ship.modules airplane mounts and stat mods', () => {
@@ -228,7 +229,7 @@ describe('BALANCE', () => {
 
   it('exposes squad macro-AI limits (6 groups, staggered ticks)', () => {
     expect(BALANCE.enemy.squad.maxGroups).toBe(6)
-    expect(BALANCE.enemy.squad.maxPerGroup).toBe(8)
+    expect(BALANCE.enemy.squad.maxPerGroup).toBe(6)
     expect(BALANCE.enemy.squad.tickHz).toBe(5)
     expect(BALANCE.enemy.squad.maxFury).toBe(4)
     expect(BALANCE.enemy.squad.patrolStandoffZ).toBe(10)

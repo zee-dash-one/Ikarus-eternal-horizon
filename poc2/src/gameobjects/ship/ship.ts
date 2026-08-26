@@ -259,6 +259,7 @@ export class Ship extends Group {
   private readonly _thruster: Mesh
   private readonly _hull: Mesh
   private readonly _accent: Mesh
+  private readonly _hitbox: Mesh
   private readonly _modules: ShipModuleParts
   private readonly _baseStats: ShipStats
   private _energyGain = 0
@@ -333,23 +334,39 @@ export class Ship extends Group {
     const hullGeo = new BoxGeometry(visual.size.w, visual.size.h, visual.size.d)
     const hullMat = new MeshBasicMaterial({
       color: visual.wireframeColor,
-      wireframe: true,
       transparent: true,
-      opacity: 0.9,
+      opacity: 0.95,
     })
     this._hull = new Mesh(hullGeo, hullMat)
+    this._hull.name = 'hull'
 
     const accentGeo = new BoxGeometry(
-      visual.size.w * 0.82,
-      visual.size.h * 0.82,
-      visual.size.d * 0.82,
+      visual.size.w * 0.42,
+      visual.size.h * 0.38,
+      visual.size.d * 0.4,
     )
     const accentMat = new MeshBasicMaterial({
       color: visual.accentColor,
       transparent: true,
-      opacity: 0.45,
+      opacity: 0.85,
     })
     this._accent = new Mesh(accentGeo, accentMat)
+    this._accent.name = 'accent'
+    this._accent.position.set(0, visual.size.h * 0.42, -visual.size.d * 0.12)
+
+    const hitSide = (visual.hitRadius ?? BALANCE.ship.visual.hitRadius) * 2
+    const hitboxCfg = BALANCE.debug.hitbox
+    const hitboxGeo = new BoxGeometry(hitSide, hitSide, hitSide)
+    const hitboxMat = new MeshBasicMaterial({
+      color: hitboxCfg.color,
+      wireframe: true,
+      transparent: true,
+      opacity: hitboxCfg.opacity,
+      depthWrite: false,
+    })
+    this._hitbox = new Mesh(hitboxGeo, hitboxMat)
+    this._hitbox.name = 'hitbox'
+    this._hitbox.renderOrder = 1
 
     const thrusterGeo = new ConeGeometry(thruster.width, thruster.length, 8)
     thrusterGeo.rotateX(Math.PI / 2)
@@ -379,12 +396,12 @@ export class Ship extends Group {
       accent: visual.accentColor,
     })
     this._modules.group.add(this.weaponTip)
-    this.add(this._hull, this._accent, this._thruster, this._modules.group)
+    this.add(this._hull, this._accent, this._thruster, this._modules.group, this._hitbox)
     this._applyModules()
   }
 
   get hitbox(): Mesh {
-    return this._hull
+    return this._hitbox
   }
 
   get energyGain(): number {
@@ -555,6 +572,7 @@ export class Ship extends Group {
     this._disposed = true
     this._disposeMesh(this._hull)
     this._disposeMesh(this._accent)
+    this._disposeMesh(this._hitbox)
     this._disposeMesh(this._thruster)
     this._disposeMesh(this.weaponTip)
     for (const wing of this._modules.wings) {

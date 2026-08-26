@@ -21,7 +21,7 @@
  *            **ship sheet** G08 reads: pose, byte stats (0–255), statuses,
  *            equipped item + owned lists, plus modular airplane parts
  *            (body / 4 wings / shield / twin bombs / collector / cockpit converter)
- *            that write those stats. Body hull is the hitbox.
+ *            that write those stats. Collision volume is a blue wireframe cube.
  * Does not own: motion/tilt (C02), applyDamage routing (C03 — writes integrity
  *            / shield once wired), firing (E07), energy spend/regen (D03 — writes
  *            energy once wired), camera (B01), drop magnet (F02).
@@ -259,7 +259,8 @@ export declare class Ship extends THREE.Group {
 /**
  *   R1. Ship extends THREE.Group. Hull, accent, thruster cone are direct children.
  *       Weapon tip + wings + shield + bombs + collector + converter live in a
- *       `modules` group. Hull is `hitbox`.
+ *       `modules` group. `hitbox` is a separate blue wireframe cube
+ *       (side = 2×hitRadius); hull/modules are filled meshes.
  *   R14. Equipped modules apply BALANCE.ship.modules deltas onto stats max
  *        (body: integrity/energy, wings: agility/deflection, shield: shield/
  *        deflection, collector: energyGain, converter: labFusion). WeaponSlot
@@ -304,8 +305,9 @@ export declare class Ship extends THREE.Group {
 // ─── 6. View / syncRender ────────────────────────────────────────────────────
 /**
  * Visual:      THREE.Group
- *              · hull  BoxGeometry(w,h,d) MeshBasicMaterial wireframe 0x22d3ee opacity 0.9
- *              · accent BoxGeometry(w*0.82,h*0.82,d*0.82) MeshBasicMaterial 0x6d28d9 opacity 0.45
+ *              · hull  BoxGeometry(w,h,d) MeshBasicMaterial filled 0x22d3ee opacity 0.95
+ *              · accent canopy BoxGeometry MeshBasicMaterial 0x6d28d9
+ *              · hitbox cube BoxGeometry(2r) MeshBasicMaterial wireframe 0x3b82f6
  *              · thruster ConeGeometry(width, length) MeshBasicMaterial 0x60c5ff additive
  *                depthWrite false, transparent; local position.y = BALANCE.thruster.position.y
  *              · tip SphereGeometry MeshBasicMaterial, default colour laser cyan
@@ -322,7 +324,8 @@ export declare class Ship extends THREE.Group {
 // ─── 4. BALANCE, feel, leveling, graphics ────────────────────────────────────
 /**
  *   BALANCE.ship.visual.size            = { w: 1.5, h: 1, d: 2 }   // readable shmup brick
- *   BALANCE.ship.visual.wireframeColor  = 0x22d3ee                 // hull wire; <0.3s read
+ *   BALANCE.ship.visual.wireframeColor  = 0x22d3ee                 // hull fill; <0.3s read
+ *   BALANCE.debug.hitbox.color          = 0x3b82f6                 // blue cube gizmo
  *   BALANCE.ship.visual.accentColor     = 0x6d28d9                 // indigo fill
  *   BALANCE.ship.visual.thrusterColor   = 0x60c5ff                 // additive jet
  *   BALANCE.thruster.position.y         = -0.55                    // jet sits under the hull
@@ -363,7 +366,7 @@ export declare class Ship extends THREE.Group {
  *            in one frame so the loadout is readable without a HUD glance.
  * Leveling:  N/A for the mesh. Hull degradation is C03; weapon levels are D02.
  *            Inventory counts grow via F02; caps are the only leveling here.
- * Graphics:  wireframe hull + darker accent + additive thruster. Palette is
+ * Graphics:  filled hull + darker canopy + additive thruster + blue hitbox cube. Palette is
  *            the player-identity colour (cyan) against indigo. Tip sphere is
  *            the weapon colour (laser 0x22d3ee at spawn).
  * Pillars:   4 legibility at high speed; 1 visible risk (the craft is the HUD
@@ -397,7 +400,8 @@ export declare class Ship extends THREE.Group {
  *   it('inventory.tryAdd stores Metal Scrap and rejects surplus above cap')                // R8, SHIP-06, RES-05
  *   it('inventory.tryAdd on a full stack returns 0 and leaves the count unchanged')        // R8, RES-05
  *   it('constructor does not call scene.add')                                              // D14
- *   it('visual size is 1.5 × 1 × 2 and hull material colour is 0x22d3ee wireframe')        // port fidelity
+ *   it('visual size is 1.5 × 1 × 2 and hull material is solid 0x22d3ee')                   // port fidelity
+ *   it('hitbox is a blue wireframe cube sized to 2×hitRadius')                             // hitbox gizmo
  *   it('thruster sits at y=-0.55 with length 0.5 and width 0.3, additive 0x60c5ff')         // BALANCE.thruster
  *   it('byte pools start at current=max=100 with byteCap 255')                             // R10
  *   it('debugSnapshot exposes position, rotation, stats, status, loadout')                 // R13, G08
@@ -410,7 +414,7 @@ export declare class Ship extends THREE.Group {
  *   it('mounts four wings, twin bombs, shield, collector and cockpit on the body')        // R14
  *   it('body and wing modules change integrity/energy and agility/deflection')            // R14, SHIP-10
  *   it('shield, collector and converter write shield/deflection, energyGain and labFusion') // R14
- *   it('hitbox stays the hull when modules are equipped')                                 // R14
+ *   it('hitbox stays the blue cube when modules are equipped')                            // R14
  *
  * Manual:
  *   A-manual-1. [manual] ship is readable as the player craft in the default camera

@@ -4,9 +4,14 @@
  * LIVE_REACH_PATH is the mutable debugger copy.
  */
 
-import { clamp, easeInOutCubic, lerp, lerpGeometric } from '../core/math'
+import { clamp, easeInOutCubic, lerp, lerpGeometric, rushToCruiseEase } from '../core/math'
 
-export type PathEaseId = 'linear' | 'easeInOutCubic' | 'easeInCubic' | 'easeOutCubic'
+export type PathEaseId =
+  | 'linear'
+  | 'easeInOutCubic'
+  | 'easeInCubic'
+  | 'easeOutCubic'
+  | 'rushToCruise'
 export type AxisLerpMode = 'linear' | 'geometric' | 'power'
 export type ReachPreviewSide = 'left' | 'right' | 'front'
 
@@ -23,6 +28,8 @@ export interface ReachAxisProfile {
 export interface ReachPathConfig {
   /** Time ease applied before per-axis lerp (shared). */
   ease: PathEaseId
+  /** Start/end speed ratio for `rushToCruise` (preview + default). */
+  easeSpeedMul: number
   /** Active edit buffer — mirrors sides[previewSide]. */
   xMode: AxisLerpMode
   yMode: AxisLerpMode
@@ -77,7 +84,8 @@ function cloneSides(
 }
 
 export const DEFAULT_REACH_PATH: ReachPathConfig = {
-  ease: 'easeInOutCubic',
+  ease: 'rushToCruise',
+  easeSpeedMul: 3,
   ...DEFAULT_SIDE_LEFT,
   sides: cloneSides(),
   samples: 48,
@@ -137,6 +145,7 @@ export function commitEditBufferToSide(
 
 export function resetLiveReachPath(defaults: ReachPathConfig = DEFAULT_REACH_PATH): void {
   LIVE_REACH_PATH.ease = defaults.ease
+  LIVE_REACH_PATH.easeSpeedMul = defaults.easeSpeedMul
   LIVE_REACH_PATH.samples = defaults.samples
   LIVE_REACH_PATH.visible = defaults.visible
   LIVE_REACH_PATH.extendToZero = defaults.extendToZero
@@ -154,7 +163,7 @@ export function resetLiveReachPath(defaults: ReachPathConfig = DEFAULT_REACH_PAT
   syncEditBufferFromSide(LIVE_REACH_PATH, LIVE_REACH_PATH.previewSide)
 }
 
-export function applyPathEase(t: number, ease: PathEaseId): number {
+export function applyPathEase(t: number, ease: PathEaseId, speedMul = 3): number {
   const x = clamp(t, 0, 1)
   if (ease === 'linear') {
     return x
@@ -164,6 +173,9 @@ export function applyPathEase(t: number, ease: PathEaseId): number {
   }
   if (ease === 'easeOutCubic') {
     return 1 - Math.pow(1 - x, 3)
+  }
+  if (ease === 'rushToCruise') {
+    return rushToCruiseEase(x, speedMul)
   }
   return easeInOutCubic(x)
 }
@@ -216,8 +228,9 @@ export function sampleReachPoint(
   out: { x: number; y: number; z: number },
   config: ReachPathConfig = LIVE_REACH_PATH,
   side: ReachPreviewSide | null = null,
+  skipEase = false,
 ): void {
-  const u = applyPathEase(t, config.ease)
+  const u = skipEase ? clamp(t, 0, 1) : applyPathEase(t, config.ease, config.easeSpeedMul)
   const axis = profileFor(config, side)
   out.x = axisPathLerp(from.x, to.x, u, axis.xMode, axis.xPower)
   out.y = axisPathLerp(from.y, to.y, u, axis.yMode, axis.yPower)

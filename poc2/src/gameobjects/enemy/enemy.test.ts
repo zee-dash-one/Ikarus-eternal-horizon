@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { BoxGeometry } from 'three'
+import { BoxGeometry, Mesh, MeshBasicMaterial } from 'three'
 import { BALANCE } from '../../core/balancer'
 import { EnemySquadManager } from '../../systems/enemy-squad-manager'
 import type { ShotLike } from '../../systems/shot-manager'
@@ -181,18 +181,37 @@ describe('Enemy Warrior — birth', () => {
     geo.dispose()
   })
 
-  it('speed ramps up gradually when entering the birth rush', () => {
+  it('speed eases from rush down to cruise along the birth path', () => {
     const seek = { x: 0, y: 0, z: 0 }
     const gate = { x: 0, y: 0, z: -90 }
     const geo = new BoxGeometry(1, 1, 1)
     const enemy = new Enemy({ geometry: geo, seekTarget: seek, gateTarget: gate })
     enemy.activate({ x: 0, y: 50, z: -140 })
-    const start = enemy.currentSpeed()
-    expect(start).toBe(WARRIOR.maxSpeed)
+    const rush = WARRIOR.maxSpeed * WARRIOR.reachSpeedMul
+    expect(enemy.currentSpeed()).toBe(rush)
     enemy.update(0.05)
     const mid = enemy.currentSpeed()
-    expect(mid).toBeGreaterThan(start)
-    expect(mid).toBeLessThan(WARRIOR.maxSpeed * WARRIOR.reachSpeedMul)
+    expect(mid).toBeLessThan(rush)
+    expect(mid).toBeGreaterThan(WARRIOR.maxSpeed)
+    enemy.dispose()
+    geo.dispose()
+  })
+
+  it('clears the gate at cruise speed and joins formation without stopping', () => {
+    const seek = { x: 0, y: 0, z: 0 }
+    const gate = { x: 0, y: 0, z: -90 }
+    const geo = new BoxGeometry(1, 1, 1)
+    const enemy = new Enemy({ geometry: geo, seekTarget: seek, gateTarget: gate })
+    enemy.activate({ x: 0, y: 50, z: -140 })
+    for (let i = 0; i < 400; i++) {
+      enemy.update(0.05)
+      if (enemy.aiState() !== 'birth') {
+        break
+      }
+    }
+    expect(enemy.aiState()).toBe('formation')
+    expect(enemy.currentSpeed()).toBeCloseTo(WARRIOR.maxSpeed, 5)
+    expect(Math.hypot(enemy.vx, enemy.vz)).toBeCloseTo(WARRIOR.maxSpeed, 5)
     enemy.dispose()
     geo.dispose()
   })
@@ -530,6 +549,36 @@ describe('Enemy Warrior — combat', () => {
     expect(enemy.applyDamage(WARRIOR.hp + WARRIOR.shieldMax, 0).killed).toBe(true)
     expect(enemy.active).toBe(false)
     expect(enemy.applyDamage(2, 0).killed).toBe(false)
+    enemy.dispose()
+    geo.dispose()
+  })
+
+  it('draws a solid gunship body and a blue wireframe cube as the hitbox', () => {
+    const seek = { x: 0, y: 0, z: 0 }
+    const gate = { x: 0, y: 0, z: -90 }
+    const geo = new BoxGeometry(1, 1, 1)
+    const enemy = new Enemy({ geometry: geo, seekTarget: seek, gateTarget: gate })
+    enemy.activate({ x: 0, y: 0, z: 0 })
+    const hitboxMat = enemy.material
+    if (!(hitboxMat instanceof MeshBasicMaterial)) {
+      throw new Error('expected a MeshBasicMaterial hitbox')
+    }
+    expect(hitboxMat.wireframe).toBe(true)
+    expect(hitboxMat.color.getHex()).toBe(BALANCE.debug.hitbox.color)
+    expect(enemy.scale.x).toBeCloseTo(WARRIOR.radius * 2, 5)
+    const fuselage = enemy.getObjectByName('enemy.fuselage')
+    if (!(fuselage instanceof Mesh)) {
+      throw new Error('expected a solid fuselage mesh')
+    }
+    const bodyMat = fuselage.material
+    if (!(bodyMat instanceof MeshBasicMaterial)) {
+      throw new Error('expected a MeshBasicMaterial body')
+    }
+    expect(bodyMat.wireframe).toBe(false)
+    expect(bodyMat.color.getHex()).toBe(WARRIOR.color)
+    expect(enemy.getObjectByName('enemy.wings')).toBeTruthy()
+    expect(enemy.getObjectByName('enemy.nose')).toBeTruthy()
+    expect(enemy.getObjectByName('enemy.tail')).toBeTruthy()
     enemy.dispose()
     geo.dispose()
   })

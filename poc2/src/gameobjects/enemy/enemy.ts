@@ -11,18 +11,21 @@
  */
 
 import {
+  BoxGeometry,
   CanvasTexture,
   CircleGeometry,
+  ConeGeometry,
   DataTexture,
   DoubleSide,
+  Group,
   Mesh,
   MeshBasicMaterial,
   Sprite,
   SpriteMaterial,
 } from 'three'
-import type { BoxGeometry, Texture } from 'three'
+import type { Texture } from 'three'
 import { BALANCE } from '../../core/balancer'
-import { DEG2RAD, clamp, damp, distXZ } from '../../core/math'
+import { DEG2RAD, clamp, damp, distXZ, lerp } from '../../core/math'
 import type { ShotAcquirePort } from '../../systems/shot-manager'
 import { EnemyMovementManager } from '../../systems/enemy-movement-manager'
 import type { EnemyGroup } from '../../systems/enemy-group'
@@ -100,6 +103,13 @@ const GROUP_LABEL_Y = 1.4
 const GROUP_LABEL_SCALE = 2.2
 const GROUP_LABEL_CACHE = new Map<string, Texture>()
 
+/** Unit-cube gunship silhouette. Parent Mesh is scaled to 2×radius (hitbox cube). */
+const ENEMY_FUSELAGE_GEO = new BoxGeometry(0.38, 0.22, 0.72)
+const ENEMY_WING_GEO = new BoxGeometry(0.92, 0.07, 0.28)
+const ENEMY_TAIL_GEO = new BoxGeometry(0.06, 0.28, 0.18)
+const ENEMY_NOSE_GEO = new ConeGeometry(0.12, 0.28, 4)
+ENEMY_NOSE_GEO.rotateX(-Math.PI / 2)
+
 function groupLabelTexture(text: string): Texture {
   const cached = GROUP_LABEL_CACHE.get(text)
   if (cached) {
@@ -162,7 +172,8 @@ export class Enemy extends Mesh {
   private readonly _gate: SeekTargetPort
   private readonly _shots: ShotAcquirePort | null
   private readonly _squad: SquadRegistryPort | null
-  private readonly _mat: MeshBasicMaterial
+  private readonly _hitboxMat: MeshBasicMaterial
+  private readonly _bodyMat: MeshBasicMaterial
   private readonly _rangeMat: MeshBasicMaterial
   private readonly _rangeMesh: Mesh
   private readonly _groupLabelMat: SpriteMaterial
@@ -208,20 +219,43 @@ export class Enemy extends Mesh {
   private _rand: () => number = Math.random
 
   constructor(options: EnemyOptions) {
-    const mat = new MeshBasicMaterial({
-      color: BALANCE.enemy.warrior.color,
+    const hitbox = BALANCE.debug.hitbox
+    const hitboxMat = new MeshBasicMaterial({
+      color: hitbox.color,
       wireframe: true,
+      transparent: true,
+      opacity: hitbox.opacity,
+      depthWrite: false,
+    })
+    super(options.geometry, hitboxMat)
+    this._hitboxMat = hitboxMat
+    this._bodyMat = new MeshBasicMaterial({
+      color: BALANCE.enemy.warrior.color,
       transparent: true,
       opacity: 1,
     })
-    super(options.geometry, mat)
-    this._mat = mat
     this._seek = options.seekTarget
     this._gate = options.gateTarget
     this._shots = options.shots ?? null
     this._squad = options.squad ?? null
     this.contactDamage = BALANCE.enemy.warrior.contactDamage
     this.affinity = new Float32Array(Math.max(1, BALANCE.enemy.squad.maxGroups))
+
+    const body = new Group()
+    body.name = 'enemy.body'
+    const fuselage = new Mesh(ENEMY_FUSELAGE_GEO, this._bodyMat)
+    fuselage.name = 'enemy.fuselage'
+    const wings = new Mesh(ENEMY_WING_GEO, this._bodyMat)
+    wings.name = 'enemy.wings'
+    wings.position.y = -0.04
+    const tail = new Mesh(ENEMY_TAIL_GEO, this._bodyMat)
+    tail.name = 'enemy.tail'
+    tail.position.set(0, 0.12, 0.3)
+    const nose = new Mesh(ENEMY_NOSE_GEO, this._bodyMat)
+    nose.name = 'enemy.nose'
+    nose.position.z = -0.5
+    body.add(fuselage, wings, tail, nose)
+    this.add(body)
 
     const rangeGeo = new CircleGeometry(1, 48)
     rangeGeo.rotateX(-Math.PI / 2)
@@ -350,7 +384,7 @@ export class Enemy extends Mesh {
     this._reachSpeedMul = sheet.reachSpeedMul
     this._agilityLambda = warriorAgilityLambda(sheet.agility)
     this._intelligence = sheet.intelligence
-    this._mat.color.setHex(sheet.color)
+    this._bodyMat.color.setHex(sheet.color)
     this.scale.setScalar(this.radius * 2)
     this._movement.setTurnRate(this._sheet.turnRateDeg)
     this._syncRangeVisual()
@@ -379,7 +413,7 @@ export class Enemy extends Mesh {
     this._entryOffsetX = spawn.gateEntryOffsetX ?? 0
     this._pathSide = spawn.pathSide ?? 'front'
     this._aiState = sheet.targets[0] === 'enemyGate' ? 'birth' : 'formation'
-    this._currentSpeed = this._cruiseSpeed
+    this._currentSpeed = this._cruiseSpeed * this._reachSpeedMul
     this._fireAcc = 0
     this._hittedMs = 0
     this._hittingMs = 0
@@ -409,8 +443,8 @@ export class Enemy extends Mesh {
     this.active = true
     this._killed = false
     this.visible = true
-    this._mat.opacity = 1
-    this._mat.color.setHex(sheet.color)
+    this._bodyMat.opacity = 1
+    this._bodyMat.color.setHex(sheet.color)
     this.scale.setScalar(this.radius * 2)
     this._movement.reset()
     this._movement.setTurnRate(sheet.turnRateDeg)
@@ -423,6 +457,7 @@ export class Enemy extends Mesh {
         { x: aim.x, y: aim.y, z: aim.z },
         this._cruiseSpeed * this._reachSpeedMul,
         this._pathSide,
+        this._cruiseSpeed,
       )
     } else {
       this._joinSquad()
@@ -499,7 +534,7 @@ export class Enemy extends Mesh {
     }
     this.position.set(this.x, this.y, this.z)
     this.rotation.y = this._movement.facingY()
-    this._mat.opacity = this.hpMax > 0 ? clamp(this.hp / this.hpMax, 0.2, 1) : 0.2
+    this._bodyMat.opacity = this.hpMax > 0 ? clamp(this.hp / this.hpMax, 0.2, 1) : 0.2
     this._rangeMesh.visible = this._sheet.status.rangeVisible
     this._syncGroupLabel()
     this.visible = true
@@ -595,7 +630,8 @@ export class Enemy extends Mesh {
 
   dispose(): void {
     this.deactivate()
-    this._mat.dispose()
+    this._hitboxMat.dispose()
+    this._bodyMat.dispose()
     this._rangeMesh.geometry.dispose()
     this._rangeMat.dispose()
     this._groupLabelMat.dispose()
@@ -604,9 +640,7 @@ export class Enemy extends Mesh {
   /* ---- birth ---------------------------------------------------------- */
 
   private _updateBirth(dt: number): void {
-    const targetSpeed = this._cruiseSpeed * this._reachSpeedMul
-    this._currentSpeed = damp(this._currentSpeed, targetSpeed, this._agilityLambda, dt)
-    this.vehicle.maxSpeed = this._currentSpeed
+    const rush = this._cruiseSpeed * this._reachSpeedMul
 
     this._pos.x = this.x
     this._pos.y = this.y
@@ -621,8 +655,12 @@ export class Enemy extends Mesh {
     this.x = this._pos.x
     this.y = this._pos.y
     this.z = this._pos.z
+    this._currentSpeed = lerp(rush, this._cruiseSpeed, this._movement.birthProgress())
+    this.vehicle.maxSpeed = this._currentSpeed
 
     if (arrived) {
+      this._currentSpeed = this._cruiseSpeed
+      this.vehicle.maxSpeed = this._currentSpeed
       const heading = this._movement.facingY()
       this.vx = Math.sin(heading) * this._currentSpeed
       this.vz = Math.cos(heading) * this._currentSpeed

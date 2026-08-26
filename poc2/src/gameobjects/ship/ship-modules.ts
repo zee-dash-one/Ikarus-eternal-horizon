@@ -1,5 +1,5 @@
 /**
- * SDD-C01 modular ship parts — catalog apply + airplane rig. Body (hull) stays the hitbox.
+ * SDD-C01 modular ship parts — catalog apply + airplane rig. Hitbox is a separate cube.
  */
 
 import { BoxGeometry, Group, Mesh, MeshBasicMaterial } from 'three'
@@ -87,11 +87,11 @@ export function createShipModules(colors: { readonly wire: number; readonly acce
   const layout = BALANCE.ship.modules.layout
   const group = new Group()
   group.name = 'modules'
-  const wings = layout.wings.map((mount) => mountMesh(mount, colors.wire, 0.85, true, 'wing'))
-  const shield = mountMesh(layout.shield, colors.accent, 0.55, false, 'shield')
-  const bombs = layout.bombs.map((mount) => mountMesh(mount, 0xf97316, 0.9, false, 'bomb'))
-  const collector = mountMesh(layout.collector, 0x2dd4bf, 0.85, true, 'collector')
-  const converter = mountMesh(layout.converter, 0x67e8f9, 0.7, false, 'converter')
+  const wings = layout.wings.map((mount) => mountMesh(mount, colors.wire, 0.95, false, 'wing'))
+  const shield = mountMesh(layout.shield, colors.accent, 0.7, false, 'shield')
+  const bombs = layout.bombs.map((mount) => mountMesh(mount, 0xf97316, 0.95, false, 'bomb'))
+  const collector = mountMesh(layout.collector, 0x2dd4bf, 0.95, false, 'collector')
+  const converter = mountMesh(layout.converter, 0x67e8f9, 0.9, false, 'converter')
   group.add(...wings, shield, ...bombs, collector, converter)
   return { group, wings, shield, bombs, collector, converter }
 }

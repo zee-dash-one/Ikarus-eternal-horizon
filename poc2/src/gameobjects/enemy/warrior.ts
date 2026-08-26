@@ -179,20 +179,20 @@ export function warriorEngageRange(intelligence: number, weaponRange: number): n
 export const DEFAULT_FORMATION_CONFIG: WarriorFormationConfig = {
   slotTolerance: 1.2,
   boostDistance: 9,
-  boostAgilityMul: 2.2,
+  boostAgilityMul: 2.5,
   hoverAmp: 0.35,
   hoverHz: 0.5,
   imperfectionRadius: 0.3,
 }
 
 export const DEFAULT_MORALE_CONFIG: WarriorMoraleConfig = {
-  furyProximityRadius: 14,
+  furyProximityRadius: 20,
   furyProximitySec: 2,
-  furyAgilityMul: 2,
+  furyAgilityMul: 1.5,
   retaliationHits: 3,
   retaliationWindowMs: 1200,
-  fleeGroupHealthPct: 15,
-  fleeAgilityMul: 1.6,
+  fleeGroupHealthPct: 20,
+  fleeAgilityMul: 1,
 }
 
 export const DEFAULT_AFFINITY_CONFIG: WarriorAffinityConfig = {
@@ -205,9 +205,9 @@ export const DEFAULT_AFFINITY_CONFIG: WarriorAffinityConfig = {
 export const WARRIOR: WarriorSheet = {
   id: 'warrior',
   name: 'Warrior',
-  hp: 3,
-  shieldMax: 2,
-  shieldRegenPerSec: 0.35,
+  hp: 1,
+  shieldMax: 3,
+  shieldRegenPerSec: 0.25,
   radius: 0.55,
   color: 0xf43f5e,
   contactDamage: 8,
@@ -221,16 +221,16 @@ export const WARRIOR: WarriorSheet = {
   reachSpeedMul: 3,
   turnRateDeg: 120,
   weapon: {
-    rate: 1.6,
-    damage: 4,
-    speed: 16,
-    lifetime: 2.2,
-    range: 28,
-    radius: 0.18,
+    rate: 2,
+    damage: 3,
+    speed: 15,
+    lifetime: 2,
+    range: 35,
+    radius: 0.12,
     color: 0xfb923c,
     muzzleZ: 0.6,
     decayPerUnit: 0,
-    fireConeDeg: 30,
+    fireConeDeg: 33,
   },
   status: { ...DEFAULT_STATUS_CONFIG },
   formation: { ...DEFAULT_FORMATION_CONFIG },

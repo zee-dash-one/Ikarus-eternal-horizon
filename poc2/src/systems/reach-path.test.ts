@@ -27,7 +27,7 @@ describe('reach-path', () => {
     const to = { x: 0, y: 0, z: -90 }
     const out = { x: 0, y: 0, z: 0 }
     sampleReachPoint(from, to, 0.5, out, DEFAULT_REACH_PATH, 'left')
-    const linearZ = lerp(from.z, to.z, applyPathEase(0.5, DEFAULT_REACH_PATH.ease))
+    const linearZ = lerp(from.z, to.z, applyPathEase(0.5, DEFAULT_REACH_PATH.ease, DEFAULT_REACH_PATH.easeSpeedMul))
     expect(Math.abs(out.z - linearZ)).toBeGreaterThan(0.1)
   })
 

@@ -370,8 +370,15 @@ export interface ShipStatsConfig {
   readonly energy: BytePoolConfig
 }
 
+export interface DebugHitboxConfig {
+  readonly color: number
+  readonly opacity: number
+}
+
 export interface DebugConfig {
   readonly syncHz: number
+  /** Blue wireframe cube overlay on player + enemy crafts. */
+  readonly hitbox: DebugHitboxConfig
 }
 
 export interface ShipHealthConfig {
@@ -1033,6 +1040,10 @@ const BALANCE_DATA: Balance = {
   },
   debug: {
     syncHz: 15,
+    hitbox: {
+      color: 0x3b82f6,
+      opacity: 0.9,
+    },
   },
 }
 

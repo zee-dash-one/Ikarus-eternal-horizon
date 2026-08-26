@@ -49,6 +49,20 @@ export function easeInOutCubic(t: number): number {
   return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2
 }
 
+/**
+ * Time remap: start at `speedMul` × end speed, finish at end speed without
+ * stopping. `speedMul === 1` is linear. Derivative at t=1 stays > 0.
+ */
+export function rushToCruiseEase(t: number, speedMul: number): number {
+  const x = clamp(t, 0, 1)
+  const mul = Math.max(1, speedMul)
+  if (mul <= 1 + 1e-9) {
+    return x
+  }
+  const integral = (mul + 1) / 2
+  return (mul * x + (1 - mul) * ((x * x) / 2)) / integral
+}
+
 export interface LerpVec3 {
   readonly x: number
   readonly y: number

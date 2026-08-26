@@ -164,7 +164,8 @@ export declare class EnemySquadManager {
 
 // ─── 5. Rules and invariants ─────────────────────────────────────────────────
 /**
- *   R1. Birth (reachGate) is unchanged; squad register happens at the gate handoff.
+ *   R1. Birth (reachGate) eases rush → cruise and hands off without stopping;
+ *       squad register happens at the gate.
  *   R2. At most maxGroups (6) active groups; at most maxPerGroup (8) ships each.
  *   R3. Formation templates never place a slot on the group centroid.
  *   R4. Patrol never aims closer than playerZ − patrolStandoffZ (default 10).

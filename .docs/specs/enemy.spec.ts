@@ -20,7 +20,7 @@
  *            life (slot seek, BOOST, FURY/FLEE). Implements TargetHit (team 'enemy').
  * Does not own: spawn schedule / live list (E05), group centroids (EnemySquadManager),
  *            collision matrix (F01). Archetypes Tank/Rogue remain hub §7.
- * Player-facing: rose wireframe gunships that form up after the gate, hold a
+ * Player-facing: rose filled gunships (plus a blue wireframe hitbox cube) that form up after the gate, hold a
  *            Z standoff, and peel off as capped kamikazes. Group-id label above each.
  */
 
@@ -178,7 +178,8 @@ export declare class Enemy extends THREE.Mesh implements TargetHit, DamageSink {
  *   R2. Implements TargetHit with team === 'enemy' and radius from BALANCE.
  *   R3. takeDamage / applyDamage reduce hp; hp<=0 ⇒ active=false, killed=true, once.
  *   R4. Movement is two-phase:
- *       birth → EnemyMovementManager synchronizedLerp spawn → EnemyGate.
+ *       birth → spawn→EnemyGate at rush speed, easing down to cruise (never 0).
+ *       Gate handoff keeps cruise velocity and switches to formation seek.
  *       squad → slot arrive (formation), BOOST to rejoin, FURY kamikaze (capped
  *       at BALANCE.enemy.squad.maxFury), FLEE diagonally to the X edge and
  *       back toward spawn (−Z). Group centroid
@@ -197,8 +198,8 @@ export declare class Enemy extends THREE.Mesh implements TargetHit, DamageSink {
 
 // ─── 6. View / syncRender ────────────────────────────────────────────────────
 /**
- * Visual:      THREE.Mesh · BoxGeometry (shared) · MeshBasicMaterial wireframe
- *              · colour BALANCE.enemy.generic.color · no additive (distinct from shots)
+ * Visual:      THREE.Mesh · shared 1×1×1 BoxGeometry scaled to 2×radius (blue wireframe hitbox)
+ *              · child gunship (fuselage/wings/nose/tail) MeshBasicMaterial filled warrior.color
  * Inheritance: extends THREE.Mesh
  * syncRender writes: position (x,y,z), rotation.y (facing seek), material.opacity (hp/hpMax), visible
  * Never writes: hp, vehicle.position, active, BALANCE
@@ -250,7 +251,7 @@ export declare class Enemy extends THREE.Mesh implements TargetHit, DamageSink {
  *            TTK is one committed volley at L1.
  * Leveling:  E05 scales spawn rate via F03, not this class's hp. Archetypes Tank
  *            / Rogue remain hub §7 — G0 uses the Warrior sheet.
- * Graphics:  Neon wireframe rose on a dense box. White group-id billboard
+ * Graphics:  Filled rose gunship inside a blue wireframe hitbox cube. White group-id billboard
  *            ("0"–"5", "F", "L", "-"). Opacity tracks hp (readable damage, pillar 2).
  * Pillars:   4 legibility · 5 one-more-kill pressure · 1 visible risk (it is coming).
  */
@@ -273,6 +274,8 @@ export declare class Enemy extends THREE.Mesh implements TargetHit, DamageSink {
  * describe('Enemy Warrior — birth')
  *   it('activate loads the Warrior sheet and starts the birth animation')             // R4
  *   it('birth aims at gate centre + personal entry offset X')                         // R4
+ *   it('speed eases from rush down to cruise along the birth path')                   // R4
+ *   it('clears the gate at cruise speed and joins formation without stopping')        // R4
  *
  * describe('Enemy Warrior — squad life')
  *   it('registers with a group once the gate is cleared')                             // R4
@@ -292,6 +295,7 @@ export declare class Enemy extends THREE.Mesh implements TargetHit, DamageSink {
  *   it('update allocates no objects (Object.keys / no `new` in hot path spy)')        // R7
  *   it('isOffField is true past despawn.zNear / despawn.halfX')                       // R8, ENM-01
  *   it('exposes contactDamage from BALANCE and never calls into ShipHealth')          // R9
+ *   it('draws a solid gunship body and a blue wireframe cube as the hitbox')          // visual
  *
  * Manual:
  *   A-manual-1. [manual] neon rose reads as hostile vs ship cyan in <0.3s

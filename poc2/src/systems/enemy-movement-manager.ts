@@ -7,7 +7,7 @@
  * never snaps its nose when its behaviour changes.
  */
 
-import { dampAngle, distXYZ } from '../core/math'
+import { dampAngle, distXYZ, rushToCruiseEase } from '../core/math'
 import { LIVE_REACH_PATH, sampleReachPoint, type ReachPreviewSide } from './reach-path'
 
 export interface Vec3 {
@@ -50,6 +50,7 @@ export class EnemyMovementManager {
   private _active = false
   private _pathSide: ReachPreviewSide = 'front'
   private _turnRateRad = (DEFAULT_TURN_RATE_DEG * Math.PI) / 180
+  private _speedMul = 1
 
   /** Smoothed heading (radians; 0 = +Z). Nose, travel and muzzle share it. */
   facingY(): number {
@@ -89,19 +90,32 @@ export class EnemyMovementManager {
     return this._active
   }
 
-  /** Start the scripted reach curve from spawn to the gate entry point. */
+  /** Normalised birth time in [0, 1]. 1 after arrival. */
+  birthProgress(): number {
+    return this._t
+  }
+
+  /**
+   * Start the scripted reach curve from spawn to the gate entry point.
+   * `endSpeed` (default = start) is the cruise handoff — the craft must not
+   * stop at B.
+   */
   beginBirth(
     from: Readonly<Vec3>,
     to: Readonly<Vec3>,
-    cruiseSpeed: number,
+    startSpeed: number,
     pathSide: ReachPreviewSide = 'front',
+    endSpeed?: number,
   ): void {
     copyVec(from, this._from)
     copyVec(to, this._to)
     this._pathSide = pathSide
     const dist = distXYZ(from.x, from.y, from.z, to.x, to.y, to.z)
-    const speed = Math.max(0.01, cruiseSpeed)
-    this._duration = Math.max(MIN_DURATION, dist / speed)
+    const start = Math.max(0.01, startSpeed)
+    const end = Math.max(0.01, endSpeed ?? startSpeed)
+    this._speedMul = start / end
+    const avg = (start + end) / 2
+    this._duration = Math.max(MIN_DURATION, dist / avg)
     this._t = 0
     this._active = true
   }
@@ -113,13 +127,15 @@ export class EnemyMovementManager {
     }
     copyVec(input.target, this._to)
     this._t = Math.min(1, this._t + input.dt / this._duration)
+    const u = rushToCruiseEase(this._t, this._speedMul)
     sampleReachPoint(
       this._from,
       this._to,
-      this._t,
+      u,
       input.position,
       LIVE_REACH_PATH,
       this._pathSide,
+      true,
     )
     const dx = this._to.x - input.position.x
     const dz = this._to.z - input.position.z
@@ -137,6 +153,7 @@ export class EnemyMovementManager {
   reset(): void {
     this._t = 0
     this._active = false
+    this._speedMul = 1
     this._facing.current = 0
     this._facing.desired = 0
   }

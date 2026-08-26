@@ -8,6 +8,7 @@ import {
   distXZ,
   distXYZ,
   easeInOutCubic,
+  rushToCruiseEase,
   lerp,
   lerpVec3,
   scratchV3A,
@@ -34,6 +35,15 @@ describe('math', () => {
     expect(easeInOutCubic(0)).toBe(0)
     expect(easeInOutCubic(1)).toBe(1)
     expect(easeInOutCubic(0.5)).toBeCloseTo(0.5, 10)
+  })
+
+  it('rushToCruiseEase stays at endpoints and keeps moving at t=1', () => {
+    expect(rushToCruiseEase(0, 3)).toBe(0)
+    expect(rushToCruiseEase(1, 3)).toBeCloseTo(1, 10)
+    expect(rushToCruiseEase(0.5, 1)).toBeCloseTo(0.5, 10)
+    const late = rushToCruiseEase(0.99, 3)
+    const end = rushToCruiseEase(1, 3)
+    expect(end - late).toBeGreaterThan(0.001)
   })
 
   it('lerpVec3 keeps XYZ in the same proportion', () => {

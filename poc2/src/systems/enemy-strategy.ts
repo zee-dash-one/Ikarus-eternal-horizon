@@ -49,10 +49,10 @@ export interface WarriorStatusConfig {
 export const DEFAULT_STATUS_CONFIG: WarriorStatusConfig = {
   hittedCdMs: 300,
   hittingCdMs: 300,
-  inRangeRadius: 20,
+  inRangeRadius: 25,
   rangeVisible: false,
   rangeColor: 0xcccccc,
-  rangeOpacity: 0.18,
+  rangeOpacity: 0.02,
 }
 
 /** True when player lies inside the nose fire cone (XZ). */

@@ -1,8 +1,9 @@
 /**
  * SDD-F04 DamageResolver — HitPairs → applyDamage + events. Detect-only stays in F01.
+ * Body ram: shield absorbs first. Player ↔ Enemy detonates the enemy.
  */
 
-import { Layer } from './layers'
+import { Layer, isBodyLayer, isShotLayer } from './layers'
 
 export { Layer }
 
@@ -55,9 +56,6 @@ export interface HitPairLike {
 
 export type DamageListener = (e: DamageEvent) => void
 
-const PROJECTILES = new Set<Layer>([Layer.PlayerShot, Layer.EnemyShot])
-const CONTACTS = new Set<Layer>([Layer.Enemy, Layer.Meteor])
-
 function isShot(o: unknown): o is ShotDamagePort {
   return (
     typeof o === 'object' &&
@@ -82,29 +80,44 @@ function isSink(o: unknown): o is DamageSink {
   )
 }
 
+function isPlayerEnemyRam(a: Layer, b: Layer): boolean {
+  return (a === Layer.Player && b === Layer.Enemy) || (a === Layer.Enemy && b === Layer.Player)
+}
+
+/** Shield + hull still on the object. Ram kill routes through applyDamage (shield first). */
+function combatRemaining(o: unknown): number {
+  if (typeof o !== 'object' || o === null) {
+    return 0
+  }
+  const rec = o as { hp?: unknown; shield?: unknown }
+  const hull = typeof rec.hp === 'number' ? rec.hp : 0
+  const shield = typeof rec.shield === 'number' ? rec.shield : 0
+  return Math.max(0, hull) + Math.max(0, shield)
+}
+
 export function damageAmount(pair: HitPairLike): number {
   const a = pair.a
   const b = pair.b
-  if (PROJECTILES.has(a.layer) && isShot(a)) {
+  if (isShotLayer(a.layer) && isShot(a)) {
     return a.effectiveDamage()
   }
-  if (PROJECTILES.has(b.layer) && isShot(b)) {
+  if (isShotLayer(b.layer) && isShot(b)) {
     return b.effectiveDamage()
   }
-  if (CONTACTS.has(a.layer) && isContact(a)) {
+  if (isBodyLayer(a.layer) && isContact(a)) {
     return a.contactDamage
   }
-  if (CONTACTS.has(b.layer) && isContact(b)) {
+  if (isBodyLayer(b.layer) && isContact(b)) {
     return b.contactDamage
   }
   return 0
 }
 
 export function sourceLayer(pair: HitPairLike): Layer {
-  if (PROJECTILES.has(pair.aLayer) || CONTACTS.has(pair.aLayer)) {
+  if (isShotLayer(pair.aLayer) || isBodyLayer(pair.aLayer)) {
     return pair.aLayer
   }
-  if (PROJECTILES.has(pair.bLayer) || CONTACTS.has(pair.bLayer)) {
+  if (isShotLayer(pair.bLayer) || isBodyLayer(pair.bLayer)) {
     return pair.bLayer
   }
   return pair.aLayer
@@ -112,6 +125,9 @@ export function sourceLayer(pair: HitPairLike): Layer {
 
 export function sinkOf(pair: HitPairLike): DamageSink | null {
   if (pair.aLayer === Layer.Drop || pair.bLayer === Layer.Drop) {
+    return null
+  }
+  if (isBodyLayer(pair.aLayer) && isBodyLayer(pair.bLayer)) {
     return null
   }
   const src = sourceLayer(pair)
@@ -179,6 +195,23 @@ export class DamageResolver {
         }
         this._seen.add(key)
 
+        if (isBodyLayer(pair.aLayer) && isBodyLayer(pair.bLayer)) {
+          const fromA = isContact(pair.a) ? pair.a.contactDamage : 0
+          const fromB = isContact(pair.b) ? pair.b.contactDamage : 0
+          if (isPlayerEnemyRam(pair.aLayer, pair.bLayer)) {
+            const enemyIsA = pair.aLayer === Layer.Enemy
+            const enemyObj = enemyIsA ? pair.a : pair.b
+            const playerObj = enemyIsA ? pair.b : pair.a
+            const fromEnemy = enemyIsA ? fromA : fromB
+            this._applyBodyContact(playerObj, fromEnemy, Layer.Enemy)
+            this._applyBodyContact(enemyObj, combatRemaining(enemyObj), Layer.Player)
+            continue
+          }
+          this._applyBodyContact(pair.b, fromA, pair.aLayer)
+          this._applyBodyContact(pair.a, fromB, pair.bLayer)
+          continue
+        }
+
         const sink = sinkOf(pair)
         if (!sink) {
           continue
@@ -188,9 +221,7 @@ export class DamageResolver {
           continue
         }
         const source = sourceLayer(pair)
-        const raw = sink.applyDamage(amount, source)
-        const outcome = this._normalize(raw)
-        this._emitFacets(sink, source, amount, outcome)
+        this._applyToSink(sink, amount, source)
       }
     } finally {
       this._resolving = false
@@ -201,6 +232,23 @@ export class DamageResolver {
 
   resetFrame(): void {
     this._seen.clear()
+  }
+
+  private _applyBodyContact(
+    sinkObj: HitPairLike['a'] | HitPairLike['b'],
+    amount: number,
+    source: Layer,
+  ): void {
+    if (!isSink(sinkObj) || amount <= 0) {
+      return
+    }
+    this._applyToSink(sinkObj, amount, source)
+  }
+
+  private _applyToSink(sink: DamageSink, amount: number, source: Layer): void {
+    const raw = sink.applyDamage(amount, source)
+    const outcome = this._normalize(raw)
+    this._emitFacets(sink, source, amount, outcome)
   }
 
   private _normalize(raw: DamageOutcome | Omit<DamageOutcome, 'killed'>): DamageOutcome {

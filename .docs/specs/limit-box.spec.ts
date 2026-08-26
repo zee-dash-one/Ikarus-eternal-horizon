@@ -81,6 +81,7 @@ export interface FollowBoxVisualConfig {
   readonly color: number
   readonly opacity: number
   readonly position: Vec3Params
+  readonly visible: boolean
   readonly centerLine: { readonly color: number; readonly opacity: number }
   readonly restLine: {
     readonly color: number
@@ -88,6 +89,7 @@ export interface FollowBoxVisualConfig {
     readonly position: Vec3Params
     readonly width: number
     readonly height: number
+    readonly visible: boolean
   }
 }
 
@@ -106,6 +108,7 @@ export interface ShipPosition {
 export interface LimitBoxPort {
   update(ship: ShipPosition, dt: number): void
   syncRender(): void
+  visible(): boolean
   setVisible(visible: boolean): void
   dispose(): void
 }
@@ -213,14 +216,16 @@ export declare class LimitBox implements LimitBoxPort {
  *   BALANCE.ship.follow.recenter.maxSpeed  = 12
  *
  *   BALANCE.ship.followBox.position        = { x: 0, y: 0, z: -3 }  // initial anchor
+ *   BALANCE.ship.followBox.visible         = false
  *   BALANCE.ship.followBox.color           = 0xf0ab4a
  *   BALANCE.ship.followBox.opacity         = 0.1
  *   BALANCE.ship.followBox.centerLine      = { color: 0x50e3c2, opacity: 0.1 }
  *   BALANCE.ship.followBox.restLine.color  = 0x2d6bff
  *   BALANCE.ship.followBox.restLine.opacity= 0.9
- *   BALANCE.ship.followBox.restLine.position = { x: 0, y: 0, z: -1 }
+ *   BALANCE.ship.followBox.restLine.visible= false  // followBox.visible also gates this
+ *   BALANCE.ship.followBox.restLine.position = { x: 0, y: 0, z: 0 }
  *       // X relative to box centre; Z from the BASE EDGE
- *       // (anchor.z + halfZ + z) → with halfZ 8, rest sits 7 units forward of centre
+ *       // (anchor.z + halfZ + z) → with halfZ 8, rest sits 8 units forward of centre
  *   BALANCE.ship.followBox.restLine.width  = 2
  *   BALANCE.ship.followBox.restLine.height = 4
  *
@@ -258,7 +263,9 @@ export declare class LimitBox implements LimitBoxPort {
  *   it('interrupts recenter when the ship moves on that axis')               // R6, Acceptance
  *   it('waits stillMs after interrupt before delay can start again')         // R6
  *   it('uses halfX 6, halfZ 8, bounce 500, delay 1500, still 800, accel 3')  // port
- *   it('uses restLine.position {0,0,-1}')                                    // port
+ *   it('uses restLine.position {0,0,0}')                                    // port
+ *   it('starts with followBox and restLine hidden from BALANCE.visible')     // visible
+ *   it('setVisible shows the box and the restLine together')                 // visible
  *   it('syncRender writes loop / center / rest without allocating')          // R8
  *   it('dispose frees the three geometries and materials')                   // R7
  *

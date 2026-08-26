@@ -17,19 +17,22 @@ import {
   WEAPON_LEVEL_COUNT,
 } from '../gameobjects/weapon/weapon-levels'
 import type { WeaponLevelRow } from '../gameobjects/weapon/weapon-levels'
-import { WARRIOR } from '../gameobjects/enemy/warrior'
+import { ENEMY_ARCHETYPES, ROGUE, TANK, WARRIOR } from '../gameobjects/enemy/warrior'
 import type { WarriorSheet } from '../gameobjects/enemy/warrior'
 import { DEFAULT_SQUAD_CONFIG } from '../systems/squad-config'
 import type { SquadConfig } from '../systems/squad-config'
 import { DEFAULT_REACH_PATH } from '../systems/reach-path'
 import type { ReachPathConfig } from '../systems/reach-path'
-import { HIT_MATRIX, type Layer } from '../systems/layers'
+import { HIT_MATRIX, contactDamageFromIntegrity, type Layer } from '../systems/layers'
 
 export type { WeaponConfig, WeaponId, WeaponProfile }
 export type { WeaponLevelRow }
 export type { DashLevel }
 export type { ReachPathConfig }
 export type WeaponCatalogEntry = WeaponConfig
+
+/** Fraction of current hull dealt on body ram (player and enemies). */
+const CONTACT_INTEGRITY_FRAC = 0.2
 
 export interface WeaponLevelTables {
   readonly laser: readonly WeaponLevelRow[]
@@ -189,6 +192,8 @@ export interface FollowBoxConfig {
   readonly position: Vec3Params
   readonly color: number
   readonly opacity: number
+  /** Debug gizmo: amber box + teal spine + blue rest cross. */
+  readonly visible: boolean
   readonly centerLine: { readonly color: number; readonly opacity: number }
   readonly restLine: {
     readonly color: number
@@ -196,6 +201,7 @@ export interface FollowBoxConfig {
     readonly position: Vec3Params
     readonly width: number
     readonly height: number
+    readonly visible: boolean
   }
 }
 
@@ -264,6 +270,9 @@ export interface EnemyConfig {
   /** @deprecated Prefer warrior sheet; kept as combat fallback snapshot. */
   readonly generic: EnemyGenericConfig
   readonly warrior: WarriorSheet
+  readonly rogue: WarriorSheet
+  readonly tank: WarriorSheet
+  readonly archetypes: readonly WarriorSheet[]
   /** Macro AI: groups, formations, staggered ticks (post-gate). */
   readonly squad: SquadConfig
   /** A→B birth curve defaults (live copy is LIVE_REACH_PATH). */
@@ -488,6 +497,8 @@ export interface AudioConfig {
 
 export interface CollisionConfig {
   readonly hitMatrix: Readonly<Record<Layer, readonly Layer[]>>
+  /** Fraction of current hull/integrity dealt on body ram. */
+  readonly contactIntegrityFrac: number
 }
 
 export interface ShotDespawnConfig {
@@ -736,14 +747,16 @@ const BALANCE_DATA: Balance = {
     followBox: {
       position: { x: 0, y: 0, z: -3 },
       color: 0xf0ab4a,
-      opacity: 0.01,
+      visible: false,
+      opacity: 0.02,
       centerLine: { color: 0x50e3c2, opacity: 0.02 },
       restLine: {
         color: 0x2d6bff,
-        opacity: 0.1,
-        position: { x: 0, y: 0, z: -1 },
+        opacity: 0.2,
+        position: { x: 0, y: 0, z: 0 },
         width: 2,
         height: 4,
+        visible: false,
       },
     },
     visual: {
@@ -775,7 +788,7 @@ const BALANCE_DATA: Balance = {
     modules: SHIP_MODULES,
     health: {
       integrityMax: 100,
-      shieldMax: 50,
+      shieldMax: 100,
       shieldRegenPerSec: 2,
       regenDelayMs: 1500,
       hullThresholds: [0.75, 0.5, 0.25],
@@ -956,7 +969,7 @@ const BALANCE_DATA: Balance = {
       offset: { x: 0, y: 100, z: -140 },
       size: { x: 10, y: 2, z: 10 },
       visible: false,
-      color: 0xff2222,
+      color: 0xff2222, 
       opacity: 0.02,
       intervalSec: 2,
       lanesX: [-4, -2, 0, 2, 4],
@@ -983,9 +996,12 @@ const BALANCE_DATA: Balance = {
       radius: WARRIOR.radius,
       color: WARRIOR.color,
       maxSpeed: WARRIOR.maxSpeed,
-      contactDamage: WARRIOR.contactDamage,
+      contactDamage: contactDamageFromIntegrity(WARRIOR.hp, CONTACT_INTEGRITY_FRAC),
     },
     warrior: WARRIOR,
+    rogue: ROGUE,
+    tank: TANK,
+    archetypes: ENEMY_ARCHETYPES,
     squad: DEFAULT_SQUAD_CONFIG,
     reachPath: DEFAULT_REACH_PATH,
     despawn: { zNear: 30, zFar: -160, halfX: 240 },
@@ -1002,6 +1018,7 @@ const BALANCE_DATA: Balance = {
   },
   collision: {
     hitMatrix: HIT_MATRIX,
+    contactIntegrityFrac: CONTACT_INTEGRITY_FRAC,
   },
   vfx: {
     shake: { maxAmplitude: 0.18, decayPerSec: 6 },
@@ -1042,7 +1059,7 @@ const BALANCE_DATA: Balance = {
     syncHz: 15,
     hitbox: {
       color: 0x3b82f6,
-      opacity: 0.9,
+      opacity: 0.2,
     },
   },
 }

@@ -2,6 +2,7 @@
  * SDD-G08 Enemy tab — archetype sheet (Warrior) editable live. No ship pose.
  */
 
+import { BALANCE } from '../../core/balancer'
 import {
   warriorMaxForce,
   warriorMaxSpeed,
@@ -36,7 +37,6 @@ type SheetNumberKey =
   | 'shieldMax'
   | 'shieldRegenPerSec'
   | 'radius'
-  | 'contactDamage'
   | 'agility'
   | 'intelligence'
   | 'reachSpeedMul'
@@ -109,11 +109,18 @@ export class EnemyTab implements DebuggerTab {
     })
 
     this._group(form, 'Combat sheet')
-    this._sheetScalar(form, 'hp', 'hp', 1, 50, 1)
-    this._sheetScalar(form, 'shieldMax', 'shieldMax', 0, 30, 1)
+    this._sheetScalar(form, 'hp', 'hp', 1, 200, 1)
+    this._sheetScalar(form, 'shieldMax', 'shieldMax', 0, 150, 1)
     this._sheetScalar(form, 'shieldRegenPerSec', 'shieldRegenPerSec', 0, 5, 0.05)
     this._sheetScalar(form, 'radius', 'radius', 0.1, 3, 0.05)
-    this._sheetScalar(form, 'contactDamage', 'contactDamage', 0, 40, 1)
+    this._readOnly(
+      form,
+      'contactDamage',
+      () => {
+        const frac = BALANCE.collision.contactIntegrityFrac
+        return `${frac * 100}% current hp (${formatNum(enemy.sheet().hp * frac)} at full)`
+      },
+    )
     this._sheetScalar(form, 'agility', 'agility', 0, 100, 1)
     this._readOnly(
       form,

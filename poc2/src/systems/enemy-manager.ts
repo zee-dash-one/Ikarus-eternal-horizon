@@ -13,6 +13,7 @@ import type { EnemyGate, GateEntryBand } from '../gameobjects/enemy-gate/enemy-g
 import { Enemy, type EnemyStatusSnapshot, type SeekTargetPort } from '../gameobjects/enemy/enemy'
 import {
   cloneWarriorSheet,
+  ENEMY_ARCHETYPES,
   type EditableWarriorSheet,
   WARRIOR,
 } from '../gameobjects/enemy/warrior'
@@ -71,6 +72,7 @@ export class EnemyManager {
   private readonly _squad: EnemySquadManager
   private readonly _pool: ObjectPool<Enemy>
   private readonly _liveSheet: EditableWarriorSheet = cloneWarriorSheet(WARRIOR)
+  private _archetypeIndex = 0
   private readonly _acc: Record<SpawnSide, number> = { left: 0, right: 0, front: 0 }
   private readonly _lane: Record<SpawnSide, number> = { left: 0, right: 0, front: 0 }
   private _disposed = false
@@ -130,17 +132,20 @@ export class EnemyManager {
     return this._liveSheet
   }
 
+  archetypeNames(): readonly string[] {
+    return ENEMY_ARCHETYPES.map((sheet) => sheet.id)
+  }
+
+  setArchetype(index: number): void {
+    const sheet = ENEMY_ARCHETYPES[index] ?? WARRIOR
+    this._archetypeIndex = index
+    this._copySheet(sheet)
+    this._applyLiveSheetToActive()
+  }
+
   resetLiveSheet(): void {
-    const fresh = cloneWarriorSheet(WARRIOR)
-    Object.assign(this._liveSheet, {
-      ...fresh,
-      targets: [...fresh.targets],
-      weapon: { ...fresh.weapon },
-      status: { ...fresh.status },
-      formation: { ...fresh.formation },
-      morale: { ...fresh.morale },
-      affinity: { ...fresh.affinity },
-    })
+    const sheet = ENEMY_ARCHETYPES[this._archetypeIndex] ?? WARRIOR
+    this._copySheet(sheet)
     this._applyLiveSheetToActive()
   }
 
@@ -267,6 +272,19 @@ export class EnemyManager {
 
   private _pickSide(): SpawnSide {
     return SPAWN_SIDES[Math.floor(Math.random() * SPAWN_SIDES.length)] ?? 'front'
+  }
+
+  private _copySheet(src: (typeof ENEMY_ARCHETYPES)[number] | EditableWarriorSheet): void {
+    const fresh = cloneWarriorSheet(src)
+    Object.assign(this._liveSheet, {
+      ...fresh,
+      targets: [...fresh.targets],
+      weapon: { ...fresh.weapon },
+      status: { ...fresh.status },
+      formation: { ...fresh.formation },
+      morale: { ...fresh.morale },
+      affinity: { ...fresh.affinity },
+    })
   }
 
   private _applyLiveSheetToActive(): void {

@@ -8,13 +8,19 @@ function makeHealth(): ShipHealth {
   return new ShipHealth({ config: BALANCE.ship.health })
 }
 
+function dumpShield(health: ShipHealth): void {
+  if (health.shield > 0) {
+    health.applyDamage(health.shield, Layer.EnemyShot)
+  }
+}
+
 describe('ShipHealth', () => {
-  it('starts at integrity 100 and shield 50', () => {
+  it('starts at integrity 100 and shield 100', () => {
     const health = makeHealth()
     expect(health.integrity).toBe(100)
     expect(health.integrityMax).toBe(100)
-    expect(health.shield).toBe(50)
-    expect(health.shieldMax).toBe(50)
+    expect(health.shield).toBe(100)
+    expect(health.shieldMax).toBe(100)
     health.dispose()
   })
 
@@ -23,24 +29,24 @@ describe('ShipHealth', () => {
     const outcome = health.applyDamage(20, Layer.EnemyShot)
     expect(outcome.absorbedByShield).toBe(20)
     expect(outcome.dealtToHull).toBe(0)
-    expect(health.shield).toBe(30)
+    expect(health.shield).toBe(80)
     expect(health.integrity).toBe(100)
     health.dispose()
   })
 
   it('spills remainder onto Integrity in the same call that breaks the shield', () => {
     const health = makeHealth()
-    const outcome = health.applyDamage(70, Layer.Meteor)
-    expect(outcome.absorbedByShield).toBe(50)
+    const outcome = health.applyDamage(health.shield + 20, Layer.Meteor)
+    expect(outcome.absorbedByShield).toBe(100)
     expect(outcome.dealtToHull).toBe(20)
     expect(health.shield).toBe(0)
     expect(health.integrity).toBe(80)
     health.dispose()
   })
 
-  it('sets shieldBroke true only on the call that drives shield 50→0', () => {
+  it('sets shieldBroke true only on the call that drives shield to 0', () => {
     const health = makeHealth()
-    const first = health.applyDamage(49, Layer.EnemyShot)
+    const first = health.applyDamage(health.shield - 1, Layer.EnemyShot)
     expect(first.shieldBroke).toBe(false)
     expect(health.shield).toBe(1)
     const broke = health.applyDamage(1, Layer.EnemyShot)
@@ -53,7 +59,7 @@ describe('ShipHealth', () => {
 
   it('never increases integrity in update()', () => {
     const health = makeHealth()
-    health.applyDamage(70, Layer.EnemyShot)
+    health.applyDamage(health.shield + 20, Layer.EnemyShot)
     const hull = health.integrity
     health.update(10)
     expect(health.integrity).toBe(hull)
@@ -65,7 +71,7 @@ describe('ShipHealth', () => {
     const health = makeHealth()
     health.applyDamage(10, Layer.EnemyShot)
     health.update(1.5 - 1e-6)
-    expect(health.shield).toBe(40)
+    expect(health.shield).toBe(90)
     health.dispose()
   })
 
@@ -77,7 +83,7 @@ describe('ShipHealth', () => {
     health.update(1)
     expect(health.shield).toBeCloseTo(atDelay + 2, 5)
     health.update(100)
-    expect(health.shield).toBe(50)
+    expect(health.shield).toBe(100)
     health.dispose()
   })
 
@@ -96,7 +102,7 @@ describe('ShipHealth', () => {
   it('reports hullLevel 0 above 75, 1 above 50, 2 above 25, 3 at or below 25', () => {
     const health = makeHealth()
     expect(health.hullLevel).toBe(0)
-    health.applyDamage(50, Layer.EnemyShot)
+    dumpShield(health)
     health.applyDamage(24, Layer.EnemyShot)
     expect(health.integrity).toBe(76)
     expect(health.hullLevel).toBe(0)
@@ -123,7 +129,7 @@ describe('ShipHealth', () => {
     const expected = BALANCE.ship.health.speedMul
     expect(health.hullLevel).toBe(0)
     expect(health.modifiers.speedMul).toBe(expected[0])
-    health.applyDamage(50, Layer.EnemyShot)
+    dumpShield(health)
     health.applyDamage(25, Layer.EnemyShot)
     expect(health.hullLevel).toBe(1)
     expect(health.modifiers.speedMul).toBe(expected[1])
@@ -140,7 +146,7 @@ describe('ShipHealth', () => {
     const health = makeHealth()
     expect(health.modifiers.accelMul).toBe(1)
     expect(health.modifiers.fireRateMul).toBe(1)
-    health.applyDamage(50, Layer.EnemyShot)
+    dumpShield(health)
     health.applyDamage(25, Layer.EnemyShot)
     expect(health.modifiers.accelMul).toBe(0.85)
     expect(health.modifiers.fireRateMul).toBe(0.9)
@@ -157,6 +163,7 @@ describe('ShipHealth', () => {
     const health = makeHealth()
     const shieldOnly = health.applyDamage(50, Layer.EnemyShot)
     expect(shieldOnly.hullLevelChanged).toBe(false)
+    dumpShield(health)
     const crossed = health.applyDamage(25, Layer.EnemyShot)
     expect(health.hullLevel).toBe(1)
     expect(crossed.hullLevelChanged).toBe(true)
@@ -168,9 +175,10 @@ describe('ShipHealth', () => {
 
   it('emits destroyed exactly once when integrity reaches 0', () => {
     const health = makeHealth()
+    dumpShield(health)
     const emptying = health.applyDamage(50, Layer.EnemyShot)
     expect(emptying.destroyed).toBe(false)
-    const death = health.applyDamage(100, Layer.EnemyShot)
+    const death = health.applyDamage(50, Layer.EnemyShot)
     expect(health.integrity).toBe(0)
     expect(death.destroyed).toBe(true)
     const again = health.applyDamage(10, Layer.EnemyShot)
@@ -184,7 +192,7 @@ describe('ShipHealth', () => {
     expect(source).not.toMatch(/RunState|SceneController|GameLoop/)
     expect(source).not.toMatch(/scene\.add|scene\.remove/)
     const health = makeHealth()
-    health.applyDamage(50, Layer.EnemyShot)
+    dumpShield(health)
     health.applyDamage(100, Layer.EnemyShot)
     expect(health.integrity).toBe(0)
     health.dispose()
@@ -202,6 +210,36 @@ describe('ShipHealth', () => {
       ;(health as unknown as { integrity: number }).integrity = 0
     }).toThrow()
     expect(health.integrity).toBe(100)
+    health.dispose()
+  })
+
+  it('immortal ignores applyDamage and leaves pools unchanged', () => {
+    const health = makeHealth()
+    health.immortal = true
+    const outcome = health.applyDamage(70, Layer.Meteor)
+    expect(outcome.absorbedByShield).toBe(0)
+    expect(outcome.dealtToHull).toBe(0)
+    expect(outcome.shieldBroke).toBe(false)
+    expect(outcome.destroyed).toBe(false)
+    expect(health.shield).toBe(100)
+    expect(health.integrity).toBe(100)
+    health.immortal = false
+    const after = health.applyDamage(20, Layer.EnemyShot)
+    expect(after.absorbedByShield).toBe(20)
+    expect(health.shield).toBe(80)
+    health.dispose()
+  })
+
+  it('debugSetShield and debugSetIntegrity clamp into the combat pools', () => {
+    const health = makeHealth()
+    health.debugSetShield(12)
+    health.debugSetIntegrity(80)
+    expect(health.shield).toBe(12)
+    expect(health.integrity).toBe(80)
+    health.debugSetShield(999)
+    health.debugSetIntegrity(-4)
+    expect(health.shield).toBe(100)
+    expect(health.integrity).toBe(0)
     health.dispose()
   })
 

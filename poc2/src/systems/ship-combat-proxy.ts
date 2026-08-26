@@ -2,9 +2,10 @@
  * Ship as F01 ColliderPort + F04 DamageSink (C03 ShipHealth underneath).
  */
 
+import { BALANCE } from '../core/balancer'
 import type { Ship } from '../gameobjects/ship/ship'
 import type { ShipHealth, DamageOutcome } from '../gameobjects/ship/ship-health'
-import { Layer } from './layers'
+import { Layer, contactDamageFromIntegrity } from './layers'
 
 export class ShipCombatProxy {
   readonly layer = Layer.Player
@@ -29,6 +30,13 @@ export class ShipCombatProxy {
 
   get radius(): number {
     return this._radius
+  }
+
+  get contactDamage(): number {
+    return contactDamageFromIntegrity(
+      this._health.integrity,
+      BALANCE.collision.contactIntegrityFrac,
+    )
   }
 
   applyDamage(amount: number, source: Layer): DamageOutcome {

@@ -26,6 +26,7 @@ import {
 import type { Texture } from 'three'
 import { BALANCE } from '../../core/balancer'
 import { DEG2RAD, clamp, damp, distXZ, lerp } from '../../core/math'
+import { Layer, contactDamageFromIntegrity } from '../../systems/layers'
 import type { ShotAcquirePort } from '../../systems/shot-manager'
 import { EnemyMovementManager } from '../../systems/enemy-movement-manager'
 import type { EnemyGroup } from '../../systems/enemy-group'
@@ -48,7 +49,6 @@ import {
   type SteerAcc,
 } from '../../systems/steering'
 import type { ReachPreviewSide } from '../../systems/reach-path'
-import { Layer } from '../../systems/layers'
 import type { ShotSpawn } from '../shot/weapon-shot'
 import {
   cloneWarriorSheet,
@@ -157,7 +157,6 @@ export class Enemy extends Mesh {
   vx = 0
   vz = 0
   radius = 0
-  contactDamage = 0
   /** One slot per group id; written by the squad affinity tick. */
   readonly affinity: Float32Array
   readonly vehicle = {
@@ -238,7 +237,6 @@ export class Enemy extends Mesh {
     this._gate = options.gateTarget
     this._shots = options.shots ?? null
     this._squad = options.squad ?? null
-    this.contactDamage = BALANCE.enemy.warrior.contactDamage
     this.affinity = new Float32Array(Math.max(1, BALANCE.enemy.squad.maxGroups))
 
     const body = new Group()
@@ -294,6 +292,10 @@ export class Enemy extends Mesh {
 
   currentSpeed(): number {
     return this._currentSpeed
+  }
+
+  get contactDamage(): number {
+    return contactDamageFromIntegrity(this.hp, BALANCE.collision.contactIntegrityFrac)
   }
 
   sheet(): EditableWarriorSheet {
@@ -376,7 +378,6 @@ export class Enemy extends Mesh {
     this.shieldMax = sheet.shieldMax
     this.shield = Math.min(this.shield, this.shieldMax)
     this.radius = sheet.radius
-    this.contactDamage = sheet.contactDamage
     this._sheet.maxSpeed = warriorMaxSpeed(sheet.agility)
     this._sheet.maxForce = warriorMaxForce(sheet.agility)
     this._cruiseSpeed = this._sheet.maxSpeed
@@ -402,7 +403,6 @@ export class Enemy extends Mesh {
     this.shieldMax = sheet.shieldMax
     this.shield = this.shieldMax
     this.radius = sheet.radius
-    this.contactDamage = sheet.contactDamage
     this._sheet.maxSpeed = warriorMaxSpeed(sheet.agility)
     this._sheet.maxForce = warriorMaxForce(sheet.agility)
     this._cruiseSpeed = this._sheet.maxSpeed

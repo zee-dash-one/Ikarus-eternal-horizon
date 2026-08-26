@@ -311,15 +311,16 @@ export declare const BALANCE: Balance
  *   debug.syncHz                = 15  // G08 sidecar; same as loop.sidecarHz
  *   weapons.loadout             = ['laser', 'plasma', 'beam', 'mjolnir']
  *   weapons.catalog             = WEAPONS from catalog.ts (D02; L1 stats from LASER_LEVELS[0])
- *                                 Laser L1: damage 1.5, rate 10, energyPerShot 0.5
+ *                                 Laser L1: damage 40, rate 10, energyPerShot 0.5
  *   weapons.levels              = LASER_LEVELS / PLASMA_LEVELS / BEAM_LEVELS / MJOLNIR_LEVELS
  *   weapons.levelCount          = 12
  *   controls.dash.levels        = DASH_LEVELS
  *   enemy.reachPath             = DEFAULT_REACH_PATH
  *   collision.hitMatrix         = HIT_MATRIX
+ *   collision.contactIntegrityFrac = 0.2  // ram = 20% of current hull/integrity
  *   shot.despawn                = { zNear: 16, zFar: -32, halfX: 16 }  // E04
  *   enemy.spawnLeft/Right/Front = { intervalSec: 1.2, maxActive: 8, … }
- *   enemy.generic / warrior     = Warrior sheet (hp 3, shield, agility 55, …)
+ *   enemy.generic / warrior / rogue / tank = sheets (Warrior 80/40, Rogue 60/30, Tank 140/70)
  *   enemy.despawn               = { zNear: 18, zFar: -40, halfX: 22 }
  *   enemy.poolSize              = 48
  *   enemy.squad                 = DEFAULT_SQUAD_CONFIG  // systems/squad-config.ts
@@ -331,7 +332,7 @@ export declare const BALANCE: Balance
  * ship.health until C03 consume the C01 integrity/shield bytes; D03 already
  * writes ship.stats.energy; G08 shows ship.stats.
  *   ship.health.integrityMax    = 100
- *   ship.health.shieldMax       = 50
+ *   ship.health.shieldMax       = 100
  *   ship.health.shieldRegenPerSec = 2
  *   ship.health.regenDelayMs    = 1500
  *   ship.health.hullThresholds  = [0.75, 0.50, 0.25]

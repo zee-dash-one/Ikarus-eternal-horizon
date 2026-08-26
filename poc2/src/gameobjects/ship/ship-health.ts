@@ -60,6 +60,7 @@ export class ShipHealth implements DamageSink {
   private _destroyedEmitted = false
   private _lastSource: Layer | null = null
   private _disposed = false
+  private _immortal = false
   private readonly _outcome: DamageOutcome = {
     absorbedByShield: 0,
     dealtToHull: 0,
@@ -105,8 +106,37 @@ export class ShipHealth implements DamageSink {
     return this._modifiers
   }
 
+  get immortal(): boolean {
+    return this._immortal
+  }
+
+  set immortal(value: boolean) {
+    this._immortal = value
+  }
+
+  debugSetShield(value: number): void {
+    this._shield = clamp(value, 0, this._config.shieldMax)
+  }
+
+  debugSetIntegrity(value: number): void {
+    this._integrity = clamp(value, 0, this._config.integrityMax)
+    if (this._integrity > 0) {
+      this._destroyedEmitted = false
+    }
+    this._syncModifiers()
+  }
+
   applyDamage(amount: number, source: Layer): DamageOutcome {
     this._lastSource = source
+    if (this._immortal) {
+      this._outcome.absorbedByShield = 0
+      this._outcome.dealtToHull = 0
+      this._outcome.shieldBroke = false
+      this._outcome.hullLevelChanged = false
+      this._outcome.destroyed = false
+      this._outcome.killed = false
+      return this._outcome
+    }
     this._regenClockMs = 0
 
     const incoming = amount < 0 ? 0 : amount

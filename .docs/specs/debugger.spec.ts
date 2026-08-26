@@ -135,6 +135,16 @@ export interface DebuggerShipBind {
   setFlickering(value: boolean): void
   setDashing(value: boolean): void
   setShooting(value: boolean): void
+  combat(): {
+    integrity: number
+    integrityMax: number
+    shield: number
+    shieldMax: number
+    hullLevel: number
+  }
+  immortal(): boolean
+  setImmortal(value: boolean): void
+  setCombat(field: 'integrity' | 'shield', value: number): void
   equipWeapon(id: string | null): void
   equipBomb(id: string | null): void
   equipWings(id: string | null): void
@@ -199,6 +209,7 @@ export interface DebuggerBinds {
   readonly parallaxApply?: () => void
   readonly limitBox?: object
   readonly follow?: object
+  readonly followBox?: { visible(): boolean; setVisible(visible: boolean): void }
   readonly recenterPoint?: object
   readonly controls?: object
 }
@@ -431,10 +442,14 @@ export declare class SquadTab implements DebuggerTab {
  *
  * describe('ShipTab')
  *   it('shows position and rotation from ShipDebugPort')                    // R5
- *   it('shows agility/deflection/integrity/shield/precision/energy 0–255')  // R5
+ *   it('shows agility/deflection/precision/energy 0–255')                   // R5
+ *   it('binds integrity and shield sliders to live C03 combat pools')       // R5, C03
  *   it('shows flickering, dashing, shooting, recovering flags')             // R5
+ *   it('shows live C03 combat shield and integrity')                        // R5, C03
+ *   it('writes the immortal checkbox into the ship bind')                   // R2, C03
+ *   it('sync pushes live C03 combat values into the integrity/shield sliders') // R3, C03
  *   it('does not host loadout controls (Equips tab owns them)')             // R5
- *   it('writes a slider change into the bound stats pool immediately')      // R2
+ *   it('writes a slider change into the bound combat pool immediately')     // R2
  *   it('sync skips the focused slider')                                     // R3
  *   it('reset restores mount-time ship sheet defaults')                     // R4
  *   it('does not import CamTab or invent a second number table')            // R1, R5

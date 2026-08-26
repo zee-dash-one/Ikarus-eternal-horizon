@@ -10,6 +10,8 @@ import {
   warriorEngageRange,
   warriorMaxForce,
   warriorMaxSpeed,
+  ROGUE,
+  TANK,
   WARRIOR,
 } from './warrior'
 
@@ -90,6 +92,15 @@ describe('Warrior sheet', () => {
     expect(WARRIOR.affinity.radius).toBeGreaterThan(0)
     expect(WARRIOR.shieldMax).toBeGreaterThan(0)
   })
+
+  it('starts Warrior 80/40, Rogue 60/30, Tank 140/70', () => {
+    expect(WARRIOR.hp).toBe(80)
+    expect(WARRIOR.shieldMax).toBe(40)
+    expect(ROGUE.hp).toBe(60)
+    expect(ROGUE.shieldMax).toBe(30)
+    expect(TANK.hp).toBe(140)
+    expect(TANK.shieldMax).toBe(70)
+  })
 })
 
 describe('Enemy Warrior — birth', () => {
@@ -102,8 +113,30 @@ describe('Enemy Warrior — birth', () => {
     expect(enemy.archetype()).toBe('warrior')
     expect(enemy.sheet().weapon.damage).toBe(WARRIOR.weapon.damage)
     expect(enemy.hp).toBe(WARRIOR.hp)
+    expect(enemy.contactDamage).toBeCloseTo(
+      WARRIOR.hp * BALANCE.collision.contactIntegrityFrac,
+      5,
+    )
     expect(enemy.shield).toBe(WARRIOR.shieldMax)
     expect(enemy.aiState()).toBe('birth')
+    enemy.dispose()
+    geo.dispose()
+  })
+
+  it('contactDamage is 20% of current hull hp', () => {
+    const seek = { x: 0, y: 0, z: 0 }
+    const gate = { x: 0, y: 0, z: -90 }
+    const geo = new BoxGeometry(1, 1, 1)
+    const enemy = new Enemy({ geometry: geo, seekTarget: seek, gateTarget: gate })
+    const frac = BALANCE.collision.contactIntegrityFrac
+    const sheet = cloneWarriorSheet(WARRIOR)
+    sheet.hp = 10
+    sheet.shieldMax = 0
+    enemy.activate({ x: 0, y: 0, z: 0, sheet })
+    expect(enemy.contactDamage).toBeCloseTo(10 * frac, 5)
+    enemy.applyDamage(4, 0)
+    expect(enemy.hp).toBe(6)
+    expect(enemy.contactDamage).toBeCloseTo(6 * frac, 5)
     enemy.dispose()
     geo.dispose()
   })

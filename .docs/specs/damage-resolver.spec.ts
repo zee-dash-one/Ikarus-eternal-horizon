@@ -16,12 +16,13 @@
 // ─── 1. Scope ────────────────────────────────────────────────────────────────
 /**
  * Owns:      The single place a detected hit becomes damage. Consumes F01 HitPairs,
- *            reads effectiveDamage() from shots or contactDamage from Enemy/Meteor,
+ *            reads effectiveDamage() from shots or contactDamage from Player/Enemy/Meteor,
  *            calls DamageSink.applyDamage, emits shieldHit / hullHit / shieldBroke /
- *            killed / destroyed. One hit pair resolves once per frame.
+ *            killed / destroyed. Shot pairs resolve once; body rams damage both sinks.
  * Does not own: hit-testing (F01), hull/shield math internals (C03), VFX (F05),
  *            score/kills (G10), drop spawn (F02). Emits only — never reaches upward.
- * Player-facing: a laser kills an enemy once; contact drains shield then hull;
+ * Player-facing: a laser kills an enemy once; ramming an enemy or asteroid hurts
+ *            both; contact drains shield then hull. Ramming an enemy detonates it.
  *            double-kills, hull chips through a live shield, or silent deaths are bugs.
  */
 
@@ -148,11 +149,15 @@ export declare function sourceLayer(pair: HitPair): Layer
  *   listeners | set             | F05 / G07 / G10; unsubscribe via returned fn
  *   seen      | pair-key set    | cleared at start of resolve (one pair / frame)
  *
- *   damageAmount — PlayerShot/EnemyShot → effectiveDamage(); Enemy/Meteor → contactDamage.
- *   sinkOf       — the DamageSink on the *hit* side (Player C03, Enemy, Meteor).
+ *   damageAmount — PlayerShot/EnemyShot → effectiveDamage(); body → contactDamage.
+ *   sinkOf       — the DamageSink on the *hit* side for shot pairs.
+ *                  Body-body returns null (resolve applies both sides).
  *                  Drop → null (F02's channel).
  *   resolve      — skip inactive, skip Drop, skip duplicate pair key, skip amount<=0.
- *                  outcome = sink.applyDamage(amount, source).
+ *                  Body-body: each contactDamage is applied to the other sink.
+ *                  Player ↔ Enemy: player takes the enemy's contactDamage; the enemy
+ *                  is killed via remaining shield+hull (still through applyDamage).
+ *                  Shot pairs: outcome = sink.applyDamage(amount, source).
  *                  emit: absorbedByShield>0 → shieldHit; dealtToHull>0 → hullHit;
  *                  shieldBroke → shieldBroke; killed → killed; destroyed → destroyed.
  *                  A single resolve may emit several kinds (shieldBroke+hullHit).
@@ -168,8 +173,14 @@ export declare function sourceLayer(pair: HitPair): Layer
  *   R3. Each unordered (a,b) pair is applied at most once per resolve/frame.
  *   R4. Layer.Drop pairs are ignored (collection is F02).
  *   R5. PlayerShot → Enemy/Meteor uses shot.effectiveDamage() (WPN-02).
- *   R6. EnemyShot → Player uses shot.effectiveDamage() into C03 (SHIP-05).
- *   R7. Enemy/Meteor → Player uses contactDamage into C03.
+ *   R6. EnemyShot → Player/Meteor uses shot.effectiveDamage() into the hit sink.
+ *   R7. Body contact snapshots each side's contactDamage (20% of current hull).
+ *       Player ↔ Meteor and Enemy ↔ Meteor apply that amount to the other sink.
+ *       Player ↔ Enemy: the player takes the enemy's contactDamage (shield first);
+ *       the enemy explodes (one applyDamage of remaining shield+hull, shield first).
+ *   R7b. Enemy/Meteor → Player still uses contactDamage into C03 when the other
+ *        side is not a sink. Shot and ram damage always enter applyDamage; C03/E01
+ *        absorb with the Force Field first regardless of source.
  *   R8. C03 outcome absorbedByShield>0 emits shieldHit; dealtToHull>0 emits hullHit;
  *       shieldBroke emits shieldBroke; destroyed emits destroyed exactly when
  *       integrity hits 0 (SHIP-02). Enemy/Meteor hp 0 emits killed, not destroyed.
@@ -195,11 +206,10 @@ export declare function sourceLayer(pair: HitPair): Layer
 // ─── 4. BALANCE, feel, leveling, graphics ────────────────────────────────────
 /**
  * No unique numbers — F04 is a pipe. Amounts come from:
- *   BALANCE.enemy.generic.contactDamage = 15
- *   BALANCE.meteor.sizes.*.contactDamage = 8 / 16 / 28
+ *   BALANCE.collision.contactIntegrityFrac = 0.2
  *   BALANCE.enemy.shot.damage            = 8
  *   D02 laser damage                     = 1 (× decay)
- *   BALANCE.ship.health.shieldMax        = 50
+ *   BALANCE.ship.health.shieldMax        = 100
  *   BALANCE.ship.health.integrityMax     = 100
  *
  * Feel:      One hit = one read. Shield ticks first (SHIP-05); hull ticks only
@@ -228,7 +238,11 @@ export declare function sourceLayer(pair: HitPair): Layer
  *   it('ignores a Player-Drop pair')                                                  // R4
  *   it('PlayerShot vs Enemy applies shot.effectiveDamage and emits killed at 0 hp')   // R5, WPN-02
  *   it('EnemyShot vs Player applies into the ship sink')                              // R6, SHIP-05
- *   it('Enemy contact vs Player uses contactDamage')                                  // R7
+ *   it('Enemy contact vs Player uses contactDamage')                                  // R7b
+ *   it('body ram snapshots both contact amounts before either applyDamage')           // R7
+ *   it('Player-Enemy ram explodes the enemy through shield then hull')                // R7
+ *   it('Enemy-Meteor ram stays mutual and does not explode the enemy')                // R7
+ *   it('EnemyShot vs Meteor applies shot.effectiveDamage')                            // R6
  *   it('emits shieldHit when absorbedByShield > 0 and not hullHit')                   // R8, SHIP-05
  *   it('emits hullHit only when dealtToHull > 0')                                     // R8
  *   it('emits shieldBroke when outcome.shieldBroke')                                  // R8

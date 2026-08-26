@@ -227,8 +227,22 @@ function makeBinds(sheet: LiveSheet): DebuggerBinds {
   const refreshRecovering = (): void => {
     sheet.status.recovering = !shooting && !sheet.status.dashing && !sheet.status.flickering
   }
+  let immortal = false
+  const combat = {
+    integrity: 100,
+    integrityMax: 100,
+    shield: 100,
+    shieldMax: 100,
+    hullLevel: 0,
+  }
   const ship: DebuggerShipBind = {
-    snapshot: () => sheet,
+    snapshot: () => {
+      sheet.stats.integrity.current = combat.integrity
+      sheet.stats.integrity.max = combat.integrityMax
+      sheet.stats.shield.current = combat.shield
+      sheet.stats.shield.max = combat.shieldMax
+      return sheet
+    },
     applyTransform: vi.fn(),
     setFlickering(value) {
       sheet.status.flickering = value
@@ -242,6 +256,18 @@ function makeBinds(sheet: LiveSheet): DebuggerBinds {
       shooting = value
       sheet.status.shooting = value
       refreshRecovering()
+    },
+    combat: () => combat,
+    immortal: () => immortal,
+    setImmortal(value) {
+      immortal = value
+    },
+    setCombat(field, value) {
+      if (field === 'shield') {
+        combat.shield = Math.max(0, Math.min(combat.shieldMax, value))
+        return
+      }
+      combat.integrity = Math.max(0, Math.min(combat.integrityMax, value))
     },
     equipWeapon(id) {
       sheet.loadout.equippedWeapon = id
@@ -327,9 +353,9 @@ function makeBinds(sheet: LiveSheet): DebuggerBinds {
       },
     },
     enemy: {
-      archetypeNames: () => ['warrior'],
+      archetypeNames: () => ['warrior', 'rogue', 'tank'],
       setArchetype() {
-        /* only warrior in G0 */
+        /* stub — no live enemies in unit host */
       },
       sheet: () => enemySheet,
       applyToActive() {
@@ -462,6 +488,12 @@ function makeBinds(sheet: LiveSheet): DebuggerBinds {
         recenterLive.visible = visible
       },
     },
+    followBox: {
+      visible: () => recenterLive.visible,
+      setVisible: (visible) => {
+        recenterLive.visible = visible
+      },
+    },
   }
 }
 
@@ -580,9 +612,9 @@ describe('ShipTab', () => {
     expect(bind(host, 'rotation.z', 'number').value).toBe(String(sheet.rotation.z))
   })
 
-  it('shows agility/deflection/integrity/shield/precision/energy 0–255', () => {
+  it('shows agility/deflection/precision/energy 0–255', () => {
     const { host } = mountTab()
-    for (const name of ['agility', 'deflection', 'integrity', 'shield', 'precision', 'energy']) {
+    for (const name of ['agility', 'deflection', 'precision', 'energy']) {
       const current = bind(host, `stats.${name}.current`)
       const max = bind(host, `stats.${name}.max`)
       expect(current.min).toBe('0')
@@ -590,6 +622,16 @@ describe('ShipTab', () => {
       expect(current.value).toBe('100')
       expect(max.value).toBe('100')
     }
+  })
+
+  it('binds integrity and shield sliders to live C03 combat pools', () => {
+    const { host } = mountTab()
+    expect(bind(host, 'stats.integrity.current').value).toBe('100')
+    expect(bind(host, 'stats.integrity.max').value).toBe('100')
+    expect(bind(host, 'stats.shield.current').value).toBe('100')
+    expect(bind(host, 'stats.shield.max').value).toBe('100')
+    expect(bind(host, 'health.shield', 'number').value).toBe('100')
+    expect(bind(host, 'health.integrity', 'number').value).toBe('100')
   })
 
   it('shows flickering, dashing, shooting, recovering flags', () => {
@@ -600,26 +642,55 @@ describe('ShipTab', () => {
     expect(bind(host, 'status.recovering', 'checkbox').checked).toBe(sheet.status.recovering)
   })
 
+  it('shows live C03 combat shield and integrity', () => {
+    const { host } = mountTab()
+    expect(bind(host, 'health.shield', 'number').value).toBe('100')
+    expect(bind(host, 'health.integrity', 'number').value).toBe('100')
+    expect(bind(host, 'health.hullLevel', 'number').value).toBe('0')
+    expect(bind(host, 'health.immortal', 'checkbox').checked).toBe(false)
+  })
+
+  it('writes the immortal checkbox into the ship bind', () => {
+    const { host, binds } = mountTab()
+    const box = bind(host, 'health.immortal', 'checkbox')
+    box.checked = true
+    box.dispatchEvent(new Event('input', { bubbles: true }))
+    expect(binds.ship.immortal()).toBe(true)
+  })
+
+  it('sync pushes live C03 combat values into the integrity/shield sliders', () => {
+    const { host, binds, tab } = mountTab()
+    binds.ship.combat().shield = 12
+    binds.ship.combat().integrity = 80
+    binds.ship.combat().hullLevel = 1
+    tab.sync()
+    expect(bind(host, 'health.shield', 'number').value).toBe('12')
+    expect(bind(host, 'health.integrity', 'number').value).toBe('80')
+    expect(bind(host, 'stats.shield.current').value).toBe('12')
+    expect(bind(host, 'stats.integrity.current').value).toBe('80')
+    expect(bind(host, 'health.hullLevel', 'number').value).toBe('1')
+  })
+
   it('does not host loadout controls (Equips tab owns them)', () => {
     const { host } = mountTab()
     expect(host.querySelector('[data-bind="loadout.equippedWeapon"]')).toBeNull()
     expect(host.querySelector('[data-bind="weapons.level"]')).toBeNull()
   })
 
-  it('writes a slider change into the bound stats pool immediately', () => {
-    const { host, sheet } = mountTab()
+  it('writes a slider change into the bound combat pool immediately', () => {
+    const { host, binds } = mountTab()
     const slider = bind(host, 'stats.integrity.current')
     slider.value = '40'
     slider.dispatchEvent(new Event('input', { bubbles: true }))
-    expect(sheet.stats.integrity.current).toBe(40)
+    expect(binds.ship.combat().integrity).toBe(40)
   })
 
   it('sync skips the focused slider', () => {
-    const { host, sheet, tab } = mountTab()
+    const { host, binds, tab } = mountTab()
     const slider = bind(host, 'stats.integrity.current')
     slider.focus()
     slider.value = '33'
-    sheet.stats.integrity.current = 10
+    binds.ship.combat().integrity = 10
     tab.sync()
     expect(slider.value).toBe('33')
     slider.blur()
@@ -628,15 +699,18 @@ describe('ShipTab', () => {
   })
 
   it('reset restores mount-time ship sheet defaults', () => {
-    const { host, sheet, tab } = mountTab()
+    const { host, sheet, tab, binds } = mountTab()
     sheet.stats.integrity.current = 12
     sheet.position.x = 9
+    binds.ship.setImmortal(true)
     const slider = bind(host, 'stats.integrity.current')
     slider.value = '12'
     tab.reset()
     expect(sheet.stats.integrity.current).toBe(100)
     expect(sheet.position.x).toBe(1)
     expect(slider.value).toBe('100')
+    expect(binds.ship.immortal()).toBe(false)
+    expect(bind(host, 'health.immortal', 'checkbox').checked).toBe(false)
   })
 
   it('does not import CamTab or invent a second number table', () => {
@@ -819,6 +893,15 @@ describe('CamTab', () => {
       visible.checked = false
       visible.dispatchEvent(new Event('input', { bubbles: true }))
       expect(binds.recenterPoint.visible()).toBe(false)
+      expect(binds.followBox.visible()).toBe(false)
+    }
+    const followVisible = host.querySelector<HTMLInputElement>('input[data-bind="followBox.visible"]')
+    expect(followVisible).not.toBeNull()
+    if (followVisible) {
+      followVisible.checked = true
+      followVisible.dispatchEvent(new Event('input', { bubbles: true }))
+      expect(binds.followBox.visible()).toBe(true)
+      expect(binds.recenterPoint.visible()).toBe(true)
     }
     dbg.dispose()
   })

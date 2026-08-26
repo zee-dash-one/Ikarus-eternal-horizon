@@ -358,7 +358,7 @@ export declare class Ship extends THREE.Group {
  *   energy      — weapon pool (D03; regen only while recovering)
  *
  * Until C03 consumes this sheet, combat hull still uses BALANCE.ship.health
- * (integrityMax 100, shieldMax 50). D03 energy is `stats.energy`. G08 shows
+ * (integrityMax 100, shieldMax 100). D03 energy is `stats.energy`. G08 shows
  * the sheet — not a third table.
  *
  * Feel:      POC-1 silhouette is the law — same brick, same cyan/indigo, same

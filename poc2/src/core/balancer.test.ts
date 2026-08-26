@@ -51,7 +51,7 @@ describe('BALANCE', () => {
     expect(BALANCE.ship.health.speedMul).toHaveLength(4)
     expect(BALANCE.ship.health.speedMul).toEqual([1, 0.85, 0.7, 0.5])
     expect(BALANCE.ship.health.integrityMax).toBe(100)
-    expect(BALANCE.ship.health.shieldMax).toBe(50)
+    expect(BALANCE.ship.health.shieldMax).toBe(100)
     expect(BALANCE.ship.health.hullThresholds).toEqual([0.75, 0.5, 0.25])
   })
 
@@ -220,10 +220,21 @@ describe('BALANCE', () => {
     expect(BALANCE.enemy.gate.entryPointsX.middle).toEqual([-8, 0, 8])
     expect(BALANCE.enemy.gate.entryPointsX.right).toEqual([16, 24, 32])
     expect(BALANCE.enemy.warrior.id).toBe('warrior')
+    expect(BALANCE.enemy.warrior.hp).toBe(80)
+    expect(BALANCE.enemy.warrior.shieldMax).toBe(40)
+    expect(BALANCE.enemy.rogue.hp).toBe(60)
+    expect(BALANCE.enemy.rogue.shieldMax).toBe(30)
+    expect(BALANCE.enemy.tank.hp).toBe(140)
+    expect(BALANCE.enemy.tank.shieldMax).toBe(70)
+    expect(BALANCE.enemy.archetypes).toHaveLength(3)
     expect(BALANCE.enemy.warrior.targets).toEqual(['enemyGate', 'player'])
     expect(BALANCE.enemy.warrior.weapon.rate).toBeGreaterThan(0)
     expect(BALANCE.enemy.shotPoolSize).toBe(64)
     expect(BALANCE.enemy.generic.hp).toBe(BALANCE.enemy.warrior.hp)
+    expect(BALANCE.enemy.generic.contactDamage).toBeCloseTo(
+      BALANCE.enemy.warrior.hp * BALANCE.collision.contactIntegrityFrac,
+      5,
+    )
     expect(BALANCE.enemy.poolSize).toBe(48)
   })
 
@@ -278,6 +289,7 @@ describe('BALANCE', () => {
     expect(BALANCE.enemy.squad).toBe(DEFAULT_SQUAD_CONFIG)
     expect(BALANCE.enemy.reachPath).toBe(DEFAULT_REACH_PATH)
     expect(BALANCE.collision.hitMatrix).toBe(HIT_MATRIX)
+    expect(BALANCE.collision.contactIntegrityFrac).toBe(0.2)
   })
 
   it('exposes BattleField ship-relative bounds (blue wall cull volume)', () => {
@@ -285,6 +297,12 @@ describe('BALANCE', () => {
     expect(BALANCE.battlefield.offsetZ).toEqual({ min: -160, max: 30 })
     expect(BALANCE.battlefield.color).toBe(0x3b82f6)
     expect(BALANCE.battlefield.visible).toBe(true)
+  })
+
+  it('exposes followBox.visible that also gates the restLine gizmo', () => {
+    expect(BALANCE.ship.followBox.visible).toBe(false)
+    expect(BALANCE.ship.followBox.restLine.visible).toBe(false)
+    expect(BALANCE.ship.followBox.restLine.position).toEqual({ x: 0, y: 0, z: 0 })
   })
 
   it('treats BALANCE as a frozen object (Object.isFrozen or as const)', () => {

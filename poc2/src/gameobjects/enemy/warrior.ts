@@ -9,7 +9,7 @@
 import { DEFAULT_STATUS_CONFIG, type WarriorStatusConfig } from '../../systems/enemy-strategy'
 
 export type EnemyTargetId = 'enemyGate' | 'player'
-export type EnemyArchetypeId = 'warrior'
+export type EnemyArchetypeId = 'warrior' | 'rogue' | 'tank'
 
 export interface EnemyWeaponSheet {
   readonly rate: number
@@ -72,7 +72,7 @@ export interface WarriorAffinityConfig {
 }
 
 export interface WarriorSheet {
-  readonly id: 'warrior'
+  readonly id: EnemyArchetypeId
   readonly name: string
   readonly hp: number
   readonly shieldMax: number
@@ -98,7 +98,7 @@ export interface WarriorSheet {
 
 /** Mutable debugger / live-spawn copy of a Warrior sheet. */
 export interface EditableWarriorSheet {
-  id: 'warrior'
+  id: EnemyArchetypeId
   name: string
   hp: number
   shieldMax: number
@@ -134,7 +134,7 @@ export interface EditableWarriorSheet {
 export function cloneWarriorSheet(src: WarriorSheet | EditableWarriorSheet): EditableWarriorSheet {
   const agility = src.agility
   return {
-    id: 'warrior',
+    id: src.id,
     name: src.name,
     hp: src.hp,
     shieldMax: src.shieldMax,
@@ -205,12 +205,13 @@ export const DEFAULT_AFFINITY_CONFIG: WarriorAffinityConfig = {
 export const WARRIOR: WarriorSheet = {
   id: 'warrior',
   name: 'Warrior',
-  hp: 1,
-  shieldMax: 3,
+  hp: 80,
+  shieldMax: 40,
   shieldRegenPerSec: 0.25,
   radius: 0.55,
   color: 0xf43f5e,
-  contactDamage: 8,
+  /** Unused by ram — live contactDamage is hp × BALANCE.collision.contactIntegrityFrac. */
+  contactDamage: 0,
   /** Derived: agility / 10 (kept on sheet for debugger / balance mirrors). */
   maxSpeed: warriorMaxSpeed(55),
   /** Derived: agility / 5. */
@@ -237,5 +238,33 @@ export const WARRIOR: WarriorSheet = {
   morale: { ...DEFAULT_MORALE_CONFIG },
   affinity: { ...DEFAULT_AFFINITY_CONFIG },
 }
+
+export const ROGUE: WarriorSheet = {
+  ...WARRIOR,
+  id: 'rogue',
+  name: 'Rogue',
+  hp: 60,
+  shieldMax: 30,
+  radius: 0.48,
+  color: 0xa78bfa,
+  agility: 70,
+  maxSpeed: warriorMaxSpeed(70),
+  maxForce: warriorMaxForce(70),
+}
+
+export const TANK: WarriorSheet = {
+  ...WARRIOR,
+  id: 'tank',
+  name: 'Tank',
+  hp: 140,
+  shieldMax: 70,
+  radius: 0.72,
+  color: 0xfbbf24,
+  agility: 40,
+  maxSpeed: warriorMaxSpeed(40),
+  maxForce: warriorMaxForce(40),
+}
+
+export const ENEMY_ARCHETYPES: readonly WarriorSheet[] = [WARRIOR, ROGUE, TANK]
 
 export type { WarriorStatusConfig }

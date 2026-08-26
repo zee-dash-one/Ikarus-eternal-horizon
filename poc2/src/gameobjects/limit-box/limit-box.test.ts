@@ -130,8 +130,31 @@ describe('LimitBox', () => {
     expect(BALANCE.ship.follow.recenter.accel).toBe(3)
   })
 
-  it('uses restLine.position {0,0,-1}', () => {
-    expect(BALANCE.ship.followBox.restLine.position).toEqual({ x: 0, y: 0, z: -1 })
+  it('uses restLine.position {0,0,0}', () => {
+    expect(BALANCE.ship.followBox.restLine.position).toEqual({ x: 0, y: 0, z: 0 })
+  })
+
+  it('starts with followBox and restLine hidden from BALANCE.visible', () => {
+    const { box } = makeBox()
+    expect(box.visible()).toBe(false)
+    expect(box.restLineVisible()).toBe(false)
+    const rest = box.group.children.find((child) => child instanceof LineSegments)
+    expect(rest?.visible).toBe(false)
+    box.dispose()
+  })
+
+  it('setVisible shows the box and the restLine together', () => {
+    const { box } = makeBox()
+    box.setVisible(true)
+    expect(box.visible()).toBe(true)
+    expect(box.restLineVisible()).toBe(true)
+    const rest = box.group.children.find((child) => child instanceof LineSegments)
+    expect(rest?.visible).toBe(true)
+    box.setVisible(false)
+    expect(box.visible()).toBe(false)
+    expect(box.restLineVisible()).toBe(false)
+    expect(rest?.visible).toBe(false)
+    box.dispose()
   })
 
   it('syncRender writes loop / center / rest without allocating', () => {

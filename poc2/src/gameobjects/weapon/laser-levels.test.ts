@@ -3,7 +3,7 @@ import { copyWeaponConfig, WEAPONS } from './catalog'
 import { applyLaserLevel, LASER_LEVELS } from './laser-levels'
 
 const ENERGY = [0.5, 0.25, 0.25, 0.25, 0.5, 0.5, 0.5, 0.5, 1, 1, 1, 1] as const
-const DAMAGE = [1.5, 1.5, 1.5, 1.5, 2, 2, 2, 2, 2.5, 2.5, 2.5, 2.5] as const
+const DAMAGE = [40, 40, 40, 40, 50, 50, 50, 50, 60, 60, 60, 60] as const
 const RATE = [10, 10, 10, 10, 11, 11, 11, 11, 12, 12, 12, 12] as const
 const LIFE = [2, 2, 2, 2, 2.5, 2.5, 2.5, 2.5, 3, 3, 3, 3] as const
 const VOLLEY = [
@@ -41,7 +41,7 @@ describe('LASER_LEVELS', () => {
     }
   })
 
-  it('damage and rate step 1.5/10 → 2/11 → 2.5/12 every four levels', () => {
+  it('damage and rate step 40/10 → 50/11 → 60/12 every four levels', () => {
     expect(LASER_LEVELS.map((row) => row.damage)).toEqual([...DAMAGE])
     expect(LASER_LEVELS.map((row) => row.rate)).toEqual([...RATE])
   })
@@ -52,10 +52,10 @@ describe('LASER_LEVELS', () => {
     )
   })
 
-  it('applyLaserLevel(cfg, 5) writes damage 2, rate 11, energy 0.5, radius 0.12', () => {
+  it('applyLaserLevel(cfg, 5) writes damage 50, rate 11, energy 0.5, radius 0.12', () => {
     const cfg = copyWeaponConfig(WEAPONS.laser)
     applyLaserLevel(cfg, 5)
-    expect(cfg.damage).toBe(2)
+    expect(cfg.damage).toBe(50)
     expect(cfg.rate).toBe(11)
     expect(cfg.energyPerShot).toBe(0.5)
     expect(cfg.projectile?.radius).toBe(0.12)
@@ -68,7 +68,7 @@ describe('LASER_LEVELS', () => {
     const cfg = copyWeaponConfig(WEAPONS.laser)
     applyLaserLevel(cfg, 12)
     expect(cfg.energyPerShot).toBe(1)
-    expect(cfg.damage).toBe(2.5)
+    expect(cfg.damage).toBe(60)
     expect(cfg.rate).toBe(12)
     expect(cfg.laser?.forwardShots).toBe(4)
     expect(cfg.laser?.diagonalShotsPerSide).toBe(4)
@@ -78,7 +78,7 @@ describe('LASER_LEVELS', () => {
   it('applyLaserLevel(cfg, 99) is a no-op', () => {
     const cfg = copyWeaponConfig(WEAPONS.laser)
     applyLaserLevel(cfg, 99)
-    expect(cfg.damage).toBe(1.5)
+    expect(cfg.damage).toBe(40)
     expect(cfg.rate).toBe(10)
   })
 })

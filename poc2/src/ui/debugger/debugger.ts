@@ -72,6 +72,17 @@ export interface DebuggerShipBind {
   setFlickering(value: boolean): void
   setDashing(value: boolean): void
   setShooting(value: boolean): void
+  /** Live C03 combat pools (not the C01 0–255 byte sheet). */
+  combat(): {
+    integrity: number
+    integrityMax: number
+    shield: number
+    shieldMax: number
+    hullLevel: number
+  }
+  immortal(): boolean
+  setImmortal(value: boolean): void
+  setCombat(field: 'integrity' | 'shield', value: number): void
   equipWeapon(id: string | null): void
   equipBomb(id: string | null): void
   equipWings(id: string | null): void
@@ -172,6 +183,12 @@ export interface DebuggerCameraBind {
   apply(): void
 }
 
+/** Follow-box gizmo (amber loop). `visible` also shows/hides the restLine cross. */
+export interface DebuggerFollowBoxBind {
+  visible(): boolean
+  setVisible(visible: boolean): void
+}
+
 /** LimitBox rest-line cross — ship auto-recenter target gizmo. */
 export interface DebuggerRecenterPointBind {
   position(): { x: number; y: number; z: number }
@@ -193,6 +210,7 @@ export interface DebuggerBinds {
   readonly squad: DebuggerSquadBind
   readonly parallax: DebuggerParallaxBind
   readonly camera: DebuggerCameraBind
+  readonly followBox: DebuggerFollowBoxBind
   readonly recenterPoint: DebuggerRecenterPointBind
 }
 

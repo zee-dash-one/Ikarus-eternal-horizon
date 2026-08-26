@@ -20,8 +20,8 @@
  *            0|1|2|3 from integrity thresholds, and the modifier triple
  *            { speedMul, accelMul, fireRateMul }. Emits DamageOutcome; never
  *            ends the run.
- * Does not own: the Ship Group (C01), the C01 byte sheet G08 displays
- *            (integrity/shield *current* migrate onto Ship.stats later),
+ * Does not own: the Ship Group (C01). G08 overlays C03 current/max onto
+ *            Ship.stats.integrity/shield so the debugger sliders move with combat.
  *            motion integration (C02 — it only reads multipliers), firing
  *            cadence (E07 — reads fireRateMul), damage detection (F01),
  *            applying hits from collisions (F04 calls us), run-end (G10
@@ -119,9 +119,14 @@ export declare class ShipHealth implements DamageSink {
   readonly shieldMax: number
   readonly hullLevel: HullLevel
   readonly modifiers: HullModifiers
+  immortal: boolean
 
   /** Routes to Force Field first; remainder to Integrity. Never writes fields from outside. */
   applyDamage(amount: number, source: Layer): DamageOutcome
+
+  /** Debugger-only. Combat still enters through applyDamage. */
+  debugSetShield(value: number): void
+  debugSetIntegrity(value: number): void
 
   /** Delayed shield regen. Integrity is never increased here. */
   update(dt: number): void
@@ -137,11 +142,13 @@ export declare class ShipHealth implements DamageSink {
  *   shield             | 0..shieldMax    | Force Field HP; absorbs first
  *   hullLevel          | 0|1|2|3        | derived, never stored independently
  *   modifiers          | HullModifiers   | indexed by hullLevel from BALANCE
+ *   immortal           | boolean         | debug god-mode; applyDamage is a no-op
  *   _regenClockMs      | number          | ms since last damage; private
  *   _destroyedEmitted  | boolean         | destroyed is true at most once
  *
  * Non-obvious:
  *   applyDamage(amount < 0) is a no-op (treat as 0).
+ *   immortal true: applyDamage returns a zero outcome and does not reset regen.
  *   Shield absorb: absorbed = min(amount, shield); shield -= absorbed.
  *   Remainder goes to integrity. shieldBroke true iff shield was >0 and is now 0.
  *   hullLevel from integrity/integrityMax vs thresholds [0.75, 0.50, 0.25]:
@@ -174,6 +181,9 @@ export declare class ShipHealth implements DamageSink {
  *   R10. All numbers come from BALANCE.ship.health (RUL-12). Q08 owns the curve.
  *        C01 BALANCE.ship.stats is the G08 sheet; this class does not read it
  *        until the combat-wire pass. Do not retune these numbers now.
+ *   R11. immortal is a debug flag (G08 checkbox). While true, applyDamage does
+ *        not mutate shield/integrity, does not reset the regen clock, and
+ *        reports a zero outcome. Default false.
  */
 
 // ─── 6. View / syncRender ────────────────────────────────────────────────────
@@ -195,7 +205,7 @@ export declare class ShipHealth implements DamageSink {
  * (0–255, spawn 100/100) is what G08 shows; wiring C03 onto those pools is
  * a listed next step, not this pass.
  *   BALANCE.ship.health.integrityMax       = 100
- *   BALANCE.ship.health.shieldMax          = 50
+ *   BALANCE.ship.health.shieldMax          = 100
  *   BALANCE.ship.health.shieldRegenPerSec  = 2      // slow; losing the shield matters
  *   BALANCE.ship.health.regenDelayMs       = 1500   // a beat of vulnerability
  *   BALANCE.ship.health.hullThresholds     = [0.75, 0.50, 0.25]
@@ -232,10 +242,10 @@ export declare class ShipHealth implements DamageSink {
  * Mocks: BALANCE.ship.health slice (no THREE)
  *
  * describe('ShipHealth')
- *   it('starts at integrity 100 and shield 50')                                    // A01 values
+ *   it('starts at integrity 100 and shield 100')                                   // A01 values
  *   it('routes damage into the Force Field before Integrity')                      // R2, SHIP-05
  *   it('spills remainder onto Integrity in the same call that breaks the shield')  // R2
- *   it('sets shieldBroke true only on the call that drives shield 50→0')           // R2
+ *   it('sets shieldBroke true only on the call that drives shield to 0')           // R2
  *   it('never increases integrity in update()')                                    // R3
  *   it('does not regen shield during the 1500ms delay after a hit')                // R4
  *   it('regens shield at 2/s after the delay, clamped to shieldMax')               // R4
@@ -247,12 +257,14 @@ export declare class ShipHealth implements DamageSink {
  *   it('emits destroyed exactly once when integrity reaches 0')                    // R8, SHIP-02
  *   it('does not call any run-end or scene API when destroyed')                    // R7
  *   it('rejects field writes — only applyDamage mutates pools')                    // R1
+ *   it('immortal ignores applyDamage and leaves pools unchanged')                  // R11
+ *   it('debugSetShield and debugSetIntegrity clamp into the combat pools')         // G08
  *   it('update/applyDamage allocate no objects on the hot path')                   // R9
  *
  * Manual:
  *   A-manual-1. [manual] shield bar drains first; hull only after it hits zero
  *   A-manual-2. [manual] crossing a hull band is perceptible in motion and cadence
  *
- * Coverage: R1–R10 + card Acceptance (shield then hull; threshold degrades
+ * Coverage: R1–R11 + card Acceptance (shield then hull; threshold degrades
  * motion and fire; integrity 0 emits destroyed once).
  */

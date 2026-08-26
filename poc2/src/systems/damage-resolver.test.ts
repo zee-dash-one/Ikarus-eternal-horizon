@@ -159,6 +159,117 @@ describe('DamageResolver', () => {
     expect(ship.shield).toBe(35)
   })
 
+  it('body contact damages both sinks', () => {
+    const resolver = new DamageResolver()
+    const ship = Object.assign(makeSink(100, { shield: 50 }), {
+      layer: Layer.Player,
+      active: true,
+      contactDamage: 8,
+      __cid: 1,
+    })
+    const enemy = Object.assign(makeSink(20), {
+      layer: Layer.Enemy,
+      active: true,
+      contactDamage: 15,
+      __cid: 2,
+    })
+    resolver.resolve([pair(enemy, ship)])
+    expect(ship.calls).toBe(1)
+    expect(enemy.calls).toBe(1)
+    expect(ship.shield).toBe(35)
+    expect(enemy.hp).toBe(0)
+  })
+
+  it('body ram snapshots both contact amounts before either applyDamage', () => {
+    const resolver = new DamageResolver()
+    const ship = Object.assign(makeSink(100, { shield: 50 }), {
+      layer: Layer.Player,
+      active: true,
+      __cid: 1,
+    })
+    const enemy = Object.assign(makeSink(20), {
+      layer: Layer.Enemy,
+      active: true,
+      __cid: 2,
+    })
+    Object.defineProperty(ship, 'contactDamage', {
+      get(): number {
+        return ship.hp * 0.2
+      },
+    })
+    Object.defineProperty(enemy, 'contactDamage', {
+      get(): number {
+        return enemy.hp * 0.2
+      },
+    })
+    resolver.resolve([pair(enemy, ship)])
+    expect(enemy.hp).toBe(0)
+    expect(ship.shield).toBe(46)
+  })
+
+  it('Player-Enemy ram explodes the enemy through shield then hull', () => {
+    const resolver = new DamageResolver()
+    const kinds: string[] = []
+    resolver.on((e) => kinds.push(e.kind))
+    const ship = Object.assign(makeSink(100, { shield: 50 }), {
+      layer: Layer.Player,
+      active: true,
+      contactDamage: 8,
+      __cid: 1,
+    })
+    const enemy = Object.assign(makeSink(80), {
+      layer: Layer.Enemy,
+      active: true,
+      contactDamage: 16,
+      __cid: 2,
+    })
+    enemy.shield = 40
+    resolver.resolve([pair(enemy, ship)])
+    expect(ship.shield).toBe(34)
+    expect(ship.hp).toBe(100)
+    expect(enemy.shield).toBe(0)
+    expect(enemy.hp).toBe(0)
+    expect(kinds).toContain('killed')
+    expect(kinds).not.toContain('destroyed')
+  })
+
+  it('Enemy-Meteor ram stays mutual and does not explode the enemy', () => {
+    const resolver = new DamageResolver()
+    const enemy = Object.assign(makeSink(80, { shield: 40 }), {
+      layer: Layer.Enemy,
+      active: true,
+      contactDamage: 16,
+      __cid: 1,
+    })
+    const meteor = Object.assign(makeSink(22), {
+      layer: Layer.Meteor,
+      active: true,
+      contactDamage: 10,
+      __cid: 2,
+    })
+    resolver.resolve([pair(enemy, meteor)])
+    expect(meteor.hp).toBe(6)
+    expect(enemy.shield).toBe(30)
+    expect(enemy.hp).toBe(80)
+  })
+
+  it('EnemyShot vs Meteor applies shot.effectiveDamage', () => {
+    const resolver = new DamageResolver()
+    const meteor = Object.assign(makeSink(16), {
+      layer: Layer.Meteor,
+      active: true,
+      __cid: 1,
+    })
+    const shot = {
+      layer: Layer.EnemyShot,
+      active: true,
+      effectiveDamage: () => 8,
+      __cid: 2,
+    }
+    resolver.resolve([pair(shot, meteor)])
+    expect(meteor.hp).toBe(8)
+  })
+
   it('emits shieldHit when absorbedByShield > 0 and not hullHit', () => {
     const resolver = new DamageResolver()
     const kinds: string[] = []

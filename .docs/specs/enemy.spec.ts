@@ -19,8 +19,9 @@
  *            Pooled. Two lives: `birth` (reachGate lerp to EnemyGate) then squad
  *            life (slot seek, BOOST, FURY/FLEE). Implements TargetHit (team 'enemy').
  * Does not own: spawn schedule / live list (E05), group centroids (EnemySquadManager),
- *            collision matrix (F01). Archetypes Tank/Rogue remain hub §7.
- * Player-facing: rose filled gunships (plus a blue wireframe hitbox cube) that form up after the gate, hold a
+ *            collision matrix (F01). Archetypes Warrior/Rogue/Tank are sheets on
+ *            warrior.ts; EnemyManager.setArchetype picks the live spawn sheet.
+ * Player-facing: filled gunships (plus a blue wireframe hitbox cube) that form up after the gate, hold a
  *            Z standoff, and peel off as capped kamikazes. Group-id label above each.
  */
 
@@ -163,7 +164,7 @@ export declare class Enemy extends THREE.Mesh implements TargetHit, DamageSink {
  *   hp / hpMax     | number   | BALANCE.enemy.generic.hp; 0 ⇒ killed
  *   x, z           | world    | play axes (hub D01 X/Y ≡ Three XZ; Y = height)
  *   radius         | world    | hit + visual half-extent
- *   contactDamage  | number   | F04 reads this on Enemy→Player
+ *   contactDamage  | number   | 20% of current hp (BALANCE.collision.contactIntegrityFrac)
  *   vehicle        | first-party | position + maxSpeed; squad / birth write it
  *
  *   activate   — pre: inactive slot. post: hp=hpMax, active, vehicle at spawn, visible.
@@ -191,8 +192,9 @@ export declare class Enemy extends THREE.Mesh implements TargetHit, DamageSink {
  *       pool teardown. Shared BoxGeometry created once by E05; per-slot material.
  *   R7. Per-frame allocation: none (scratch scalars / reused Vector3 for the label).
  *   R8. isOffField() is true outside BALANCE.enemy.despawn; Enemy does not release.
- *   R9. contactDamage is read-only from BALANCE; Enemy never damages the ship itself.
- *   R10. Archetype is generic only — no Tank/Warrior/Rogue branch in this class (§7).
+ *   R9. contactDamage is 20% of current hull hp; Enemy never damages the ship itself.
+ *   R10. Combat numbers come from the live WarriorSheet (Warrior/Rogue/Tank). This class
+ *        has no archetype if-branch — E05 selects the sheet.
  *   R11. Retires poc/src/gameobjects/testTarget.ts as the hit dummy; TargetHit lives here.
  */
 
@@ -214,10 +216,10 @@ export declare class Enemy extends THREE.Mesh implements TargetHit, DamageSink {
 /**
  * New section (declare on SDD-A01). Starting values — tune at first playtest, not before.
  *
- *   BALANCE.enemy.generic.hp             = 8      // L1 laser dmg 1.5 ⇒ ~6 bolts / ~0.6s at rate 10
- *   BALANCE.enemy.generic.radius         = 0.7    // larger than ship half-width; readable box
- *   BALANCE.enemy.generic.speed          = 4      // < ship maxSpeed 12 — kiteable
- *   BALANCE.enemy.generic.contactDamage  = 15     // 50 shield ⇒ ~4 contacts to break Force Field
+ *   BALANCE.enemy.warrior.hp / shieldMax = 80 / 40
+ *   BALANCE.enemy.rogue.hp / shieldMax   = 60 / 30
+ *   BALANCE.enemy.tank.hp / shieldMax    = 140 / 70
+ *   BALANCE.collision.contactIntegrityFrac = 0.2  // ram = 20% current hull
  *   BALANCE.enemy.generic.color          = 0xf43f5e // neon rose — MUST ≠ ship cyan 0x22d3ee
  *   BALANCE.enemy.generic.y              = 0      // play-plane height
  *   BALANCE.enemy.spawn.zFar             = -20    // deep field (ahead)
@@ -249,8 +251,8 @@ export declare class Enemy extends THREE.Mesh implements TargetHit, DamageSink {
  * Feel:      Closes in as a formation, not a turret. Pressure is the 10-unit
  *            standoff plus capped FURY peels, not a wall stacked on the nose.
  *            TTK is one committed volley at L1.
- * Leveling:  E05 scales spawn rate via F03, not this class's hp. Archetypes Tank
- *            / Rogue remain hub §7 — G0 uses the Warrior sheet.
+ * Leveling:  E05 scales spawn rate via F03, not this class's hp. Warrior / Rogue /
+ *            Tank are sheets (80/40, 60/30, 140/70); ram scales with current hull.
  * Graphics:  Filled rose gunship inside a blue wireframe hitbox cube. White group-id billboard
  *            ("0"–"5", "F", "L", "-"). Opacity tracks hp (readable damage, pillar 2).
  * Pillars:   4 legibility · 5 one-more-kill pressure · 1 visible risk (it is coming).
@@ -270,6 +272,7 @@ export declare class Enemy extends THREE.Mesh implements TargetHit, DamageSink {
  *
  * describe('Warrior sheet')
  *   it('carries squad knobs: formation, morale and affinity')                         // R4
+ *   it('starts Warrior 80/40, Rogue 60/30, Tank 140/70')                               // R10
  *
  * describe('Enemy Warrior — birth')
  *   it('activate loads the Warrior sheet and starts the birth animation')             // R4
@@ -294,7 +297,7 @@ export declare class Enemy extends THREE.Mesh implements TargetHit, DamageSink {
  *   it('activate then deactivate recycles the slot without dispose')                  // R6, ENM-02
  *   it('update allocates no objects (Object.keys / no `new` in hot path spy)')        // R7
  *   it('isOffField is true past despawn.zNear / despawn.halfX')                       // R8, ENM-01
- *   it('exposes contactDamage from BALANCE and never calls into ShipHealth')          // R9
+ *   it('contactDamage is 20% of current hull hp')                                     // R9
  *   it('draws a solid gunship body and a blue wireframe cube as the hitbox')          // visual
  *
  * Manual:

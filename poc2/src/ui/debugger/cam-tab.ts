@@ -27,6 +27,7 @@ interface CamClone {
   far: number
   moveSpeed: number
   rotSpeed: number
+  followBox: { visible: boolean }
   recenter: {
     position: { x: number; y: number; z: number }
     width: number
@@ -87,9 +88,16 @@ export class CamTab implements DebuggerTab {
       cam.setRotSpeed(value)
     })
 
+    this._group(form, 'Follow Box')
+    this._flag(form, 'followBox.visible', 'visible', () => this._binds.followBox.visible(), (value) => {
+      this._binds.followBox.setVisible(value)
+      recenter.setVisible(value)
+    })
+
     this._group(form, 'Recenter Point (gizmo)')
     this._flag(form, 'recenter.visible', 'visible', () => recenter.visible(), (value) => {
       recenter.setVisible(value)
+      this._binds.followBox.setVisible(value)
     })
     this._axis(form, 'recenter.position', -60, 60, 0.1, () => recenter.position(), (x, y, z) => {
       recenter.setPosition(x, y, z)
@@ -145,6 +153,7 @@ export class CamTab implements DebuggerTab {
     recenter.setWidth(defaults.recenter.width)
     recenter.setHeight(defaults.recenter.height)
     recenter.setVisible(defaults.recenter.visible)
+    this._binds.followBox.setVisible(defaults.followBox.visible)
     this.sync()
   }
 
@@ -269,6 +278,7 @@ function cloneCam(binds: DebuggerBinds): CamClone {
     far: binds.camera.far(),
     moveSpeed: binds.camera.moveSpeed(),
     rotSpeed: binds.camera.rotSpeed(),
+    followBox: { visible: binds.followBox.visible() },
     recenter: {
       position: { x: rPos.x, y: rPos.y, z: rPos.z },
       width: binds.recenterPoint.width(),

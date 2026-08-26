@@ -143,11 +143,12 @@ export interface DamageOutcome {
 // ─── 5. Rules and invariants ─────────────────────────────────────────────────
 /**
  *   R1. Meteor extends THREE.Mesh.
- *   R2. Size S/M/L is the only combat fork; hp, radius, contactDamage come from
+ *   R2. Size S/M/L is the only combat fork; hp and radius come from
  *       BALANCE.meteor.sizes[size] at activate — never literals.
+ *       contactDamage is current hp × BALANCE.collision.contactIntegrityFrac.
  *   R3. Motion is inert drift on the play axes (Three XZ). No seek, no Yuka.
  *   R4. applyDamage kills once at hp<=0 and sets wantsFragments; never constructs Drop.
- *   R5. Contact damage scales with size (S < M < L) and is read-only after activate.
+ *   R5. Contact damage is contactIntegrityFrac of current hp (S < M < L only while at full hp).
  *   R6. Memory: pooled. deactivate keeps GPU. dispose() on pool teardown only.
  *   R7. Per-frame allocation: none.
  *   R8. isOffField uses BALANCE.meteor.despawn; Meteor does not release itself.

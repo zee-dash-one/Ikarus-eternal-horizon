@@ -18,12 +18,13 @@
  * Owns:      The frozen 6-layer set (D13) and the who-hits-whom **data** matrix.
  *            `CollisionManager` registers colliders, hit-tests per mask, and
  *            reports `HitPair`s. Detects only — F04 applies damage. AoE (D04) and
- *            beam/cone (D05/D06) query hooks live here. Friendly fire is impossible
- *            by construction (a layer never hits itself).
+ *            beam/cone (D05/D06) query hooks live here. Bodies (Player / Enemy /
+ *            Meteor) ram each other. Shots hit those bodies. Shots never hit shots.
+ *            A layer never hits itself.
  * Does not own: damage (F04), shield vs hull (C03 — D13 forbids a hull/shield
  *            layer split), despawn (E04/E05/E06), magnet pull (F02).
- * Player-facing: shots kill hostiles; contact hurts the ship; own bullets never
- *            hurt the ship. A friendly-fire death is this card failing.
+ * Player-facing: your fire and theirs both chew rocks and hulls; bolts pass through
+ *            other bolts. Ramming an enemy or asteroid hurts both sides.
  */
 
 // ─── 8. Requires ─────────────────────────────────────────────────────────────
@@ -83,9 +84,9 @@ export enum Layer {
 export const HIT_MATRIX: Readonly<Record<Layer, readonly Layer[]>> = {
   [Layer.Player]: [Layer.Enemy, Layer.Meteor, Layer.Drop],
   [Layer.PlayerShot]: [Layer.Enemy, Layer.Meteor],
-  [Layer.Enemy]: [Layer.Player],
-  [Layer.EnemyShot]: [Layer.Player],
-  [Layer.Meteor]: [Layer.Player, Layer.PlayerShot],
+  [Layer.Enemy]: [Layer.Player, Layer.Meteor],
+  [Layer.EnemyShot]: [Layer.Player, Layer.Meteor],
+  [Layer.Meteor]: [Layer.Player, Layer.Enemy, Layer.PlayerShot, Layer.EnemyShot],
   [Layer.Drop]: [],
 }
 
@@ -151,7 +152,8 @@ export declare function layersHit(from: Layer, to: Layer, matrix?: Readonly<Reco
  *   field      | type      | meaning / unit / range
  *   -----------|-----------|-----------------------
  *   HIT_MATRIX | data      | PlayerShot→Enemy,Meteor; Player→Enemy,Meteor,Drop;
- *              |           | EnemyShot→Player; Enemy→Player; Meteor→Player,PlayerShot
+ *              |           | EnemyShot→Player,Meteor; Enemy→Player,Meteor;
+ *              |           | Meteor→Player,Enemy,PlayerShot,EnemyShot
  *   targets    | colliders | registered bodies (ship, enemies, meteors, drops)
  *   pairs      | HitPair[] | scratch, reused; unique unordered pair per frame
  *
@@ -169,13 +171,13 @@ export declare function layersHit(from: Layer, to: Layer, matrix?: Readonly<Reco
  *   R1. Layer has exactly the six D13 members: Player, PlayerShot, Enemy,
  *       EnemyShot, Meteor, Drop. No Hull, no Shield, no Wall.
  *   R2. HIT_MATRIX is data. layersHit is a table lookup, not a type switch.
- *   R3. PlayerShot hits Enemy and Meteor only.
+ *   R3. PlayerShot hits Enemy and Meteor only (not Player, not any shot).
  *   R4. Player hits Enemy, Meteor, Drop only.
- *   R5. EnemyShot hits Player only.
- *   R6. Enemy hits Player only.
- *   R7. Meteor hits Player and PlayerShot only.
- *   R8. No layer hits itself (friendly fire impossible).
- *   R9. PlayerShot does not hit Player; EnemyShot does not hit Enemy or Meteor.
+ *   R5. EnemyShot hits Player and Meteor only (not Enemy, not any shot).
+ *   R6. Enemy hits Player and Meteor only.
+ *   R7. Meteor hits Player, Enemy, PlayerShot and EnemyShot.
+ *   R8. No layer hits itself.
+ *   R9. PlayerShot does not hit Player; shots never hit shots.
  *   R10. update never calls applyDamage / takeDamage / score / VFX.
  *   R11. Inactive colliders are ignored. Unregistered off-field bodies do not hit (RUL-02).
  *   R12. One unordered pair per (a,b) per frame — no PlayerShot↔Meteor double row.
@@ -201,15 +203,19 @@ export declare function layersHit(from: Layer, to: Layer, matrix?: Readonly<Reco
  * No combat numbers here — radii live on the colliders (D01/E01/E02/C01/F02).
  * The matrix *is* the design:
  *
- *   PlayerShot → Enemy, Meteor     // your fire kills threats and rocks
- *   Player     → Enemy, Meteor, Drop // body-check + collect
- *   EnemyShot  → Player            // incoming fire; C03 absorbs (not a layer)
- *   Enemy      → Player            // contact
- *   Meteor     → Player, PlayerShot // rock blocks shots and the hull
+ *   PlayerShot → Enemy, Meteor          // your fire kills threats and rocks
+ *   Player     → Enemy, Meteor, Drop    // ram (both take damage in F04) + collect
+ *   EnemyShot  → Player, Meteor         // incoming fire also chips rocks
+ *   Enemy      → Player, Meteor         // contact ram
+ *   Meteor     → Player, Enemy, shots   // rock is dumb mass against hulls and bolts
+ *
+ * Shots never collide with shots. Own bolts never chip the Force Field.
+ * Body ram deals BALANCE.collision.contactIntegrityFrac (0.2) of current hull.
+ * Player ↔ Enemy ram also detonates the enemy (F04).
  *
  * D13: Force Field vs Integrity is C03's rule, not a seventh/eighth layer.
- * Feel:      The field is readable: cyan bolts only hurt rose/ice, rose bolts only
- *            hurt the ship, rocks are dumb mass. Friendly fire would break trust.
+ * Feel:      Cyan bolts chew rose and ice; rose bolts chew the ship and ice;
+ *            rocks smash whoever they touch. Bolts pass through bolts.
  * Leveling:  N/A — mask does not change with hull or kills.
  * Graphics:  N/A
  * Pillars:   1 visible risk (what can hurt you is the other colour) · 4 legibility.
@@ -234,8 +240,11 @@ export declare function layersHit(from: Layer, to: Layer, matrix?: Readonly<Reco
  *   it('PlayerShot overlaps Meteor ⇒ one HitPair')                                    // R3
  *   it('Player overlaps Enemy, Meteor, Drop')                                         // R4
  *   it('EnemyShot overlaps Player ⇒ HitPair, overlaps Enemy ⇒ none')                  // R5, R9
+ *   it('Enemy overlaps Meteor ⇒ HitPair')                                             // R6
+ *   it('EnemyShot overlaps Meteor ⇒ HitPair')                                         // R5
+ *   it('PlayerShot vs EnemyShot yields no pair')                                      // R9
  *   it('Enemy overlaps Player ⇒ HitPair')                                             // R6
- *   it('Meteor overlaps Player and PlayerShot')                                       // R7
+ *   it('Meteor overlaps Player, PlayerShot, Enemy and EnemyShot')                      // R7
  *   it('Enemy vs Enemy and PlayerShot vs PlayerShot yield no pairs')                  // R8
  *   it('PlayerShot vs Player yields no pair (friendly fire)')                         // R9
  *   it('update does not call applyDamage or takeDamage')                              // R10

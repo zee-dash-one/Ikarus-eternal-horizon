@@ -34,6 +34,7 @@ export interface FollowBoxVisualConfig {
   readonly color: number
   readonly opacity: number
   readonly position: Vec3Params
+  readonly visible: boolean
   readonly centerLine: { readonly color: number; readonly opacity: number }
   readonly restLine: {
     readonly color: number
@@ -41,6 +42,7 @@ export interface FollowBoxVisualConfig {
     readonly position: Vec3Params
     readonly width: number
     readonly height: number
+    readonly visible: boolean
   }
 }
 
@@ -58,6 +60,7 @@ export interface ShipPosition {
 export interface LimitBoxPort {
   update(ship: ShipPosition, dt: number): void
   syncRender(): void
+  visible(): boolean
   setVisible(visible: boolean): void
   restLineVisible(): boolean
   setRestLineVisible(visible: boolean): void
@@ -198,6 +201,8 @@ export class LimitBox implements LimitBoxPort {
   private readonly _loopAttr: BufferAttribute
   private readonly _centerAttr: BufferAttribute
   private readonly _restAttr: BufferAttribute
+  private _visible: boolean
+  private _restLineVisible: boolean
   private _disposed = false
 
   constructor(options: LimitBoxOptions) {
@@ -254,6 +259,9 @@ export class LimitBox implements LimitBoxPort {
     this._restLine.frustumCulled = false
 
     this.group.add(this._loop, this._centerLine, this._restLine)
+    this._visible = options.visual.visible
+    this._restLineVisible = options.visual.restLine.visible
+    this._applyVisible()
   }
 
   update(ship: ShipPosition, dt: number): void {
@@ -334,18 +342,22 @@ export class LimitBox implements LimitBoxPort {
   }
 
   setVisible(visible: boolean): void {
-    this.group.visible = visible
-    this._loop.visible = visible
-    this._centerLine.visible = visible
-    this._restLine.visible = visible
+    this._visible = visible
+    this._restLineVisible = visible
+    this._applyVisible()
+  }
+
+  visible(): boolean {
+    return this._visible
   }
 
   restLineVisible(): boolean {
-    return this._restLine.visible
+    return this._visible && this._restLineVisible
   }
 
   setRestLineVisible(visible: boolean): void {
-    this._restLine.visible = visible
+    this._restLineVisible = visible
+    this._applyVisible()
   }
 
   dispose(): void {
@@ -360,5 +372,12 @@ export class LimitBox implements LimitBoxPort {
     this._restLine.geometry.dispose()
     disposeMaterial(this._restLine.material)
     this.group.clear()
+  }
+
+  private _applyVisible(): void {
+    this.group.visible = this._visible
+    this._loop.visible = this._visible
+    this._centerLine.visible = this._visible
+    this._restLine.visible = this._visible && this._restLineVisible
   }
 }

@@ -46,6 +46,7 @@ export class ShipTab implements DebuggerTab {
   private readonly _binds: DebuggerBinds
   private readonly _handles: Handle[] = []
   private _defaults: SheetClone | null = null
+  private _immortalDefault = false
   private _form: HTMLFormElement | null = null
 
   constructor(binds: DebuggerBinds) {
@@ -60,38 +61,101 @@ export class ShipTab implements DebuggerTab {
       event.preventDefault()
     })
 
+    this._group(form, 'Combat (C03)')
+    this._flag(
+      form,
+      'immortal',
+      'health.immortal',
+      () => this._binds.ship.immortal(),
+      (value) => {
+        this._binds.ship.setImmortal(value)
+      },
+    )
+    this._scalar(
+      form,
+      'shield',
+      'health.shield',
+      0,
+      BALANCE.ship.health.shieldMax,
+      0.01,
+      () => this._binds.ship.combat().shield,
+      (value) => {
+        this._binds.ship.setCombat('shield', value)
+      },
+    )
+    this._scalar(
+      form,
+      'integrity',
+      'health.integrity',
+      0,
+      BALANCE.ship.health.integrityMax,
+      0.01,
+      () => this._binds.ship.combat().integrity,
+      (value) => {
+        this._binds.ship.setCombat('integrity', value)
+      },
+    )
+    this._readout(form, 'hullLevel', 'health.hullLevel', 0, 3, 1, () =>
+      this._binds.ship.combat().hullLevel,
+    )
+
     this._group(form, 'Pose')
     this._pose(form, 'position', -32, 32, 0.01)
     this._pose(form, 'rotation', -180, 180, 0.1)
 
-    this._group(form, 'Byte pools (0–255)')
+    this._group(form, 'Byte pools (integrity/shield = combat HP)')
     for (const name of POOLS) {
       this._pool(form, name)
     }
 
     this._group(form, 'Status')
-    this._flag(form, 'status_flickering', 'status.flickering', (value) => {
-      this._binds.ship.setFlickering(value)
-    })
-    this._flag(form, 'status_dashing', 'status.dashing', (value) => {
-      this._binds.ship.setDashing(value)
-    })
-    this._flag(form, 'status_shooting', 'status.shooting', (value) => {
-      this._binds.ship.setShooting(value)
-    })
-    this._flag(form, 'status_recovering', 'status.recovering', (value) => {
-      if (value) {
-        this._binds.ship.setShooting(false)
-        this._binds.ship.setDashing(false)
-        this._binds.ship.setFlickering(false)
-        return
-      }
-      this._binds.ship.setShooting(true)
-    })
+    this._flag(
+      form,
+      'status_flickering',
+      'status.flickering',
+      () => this._binds.ship.snapshot().status.flickering,
+      (value) => {
+        this._binds.ship.setFlickering(value)
+      },
+    )
+    this._flag(
+      form,
+      'status_dashing',
+      'status.dashing',
+      () => this._binds.ship.snapshot().status.dashing,
+      (value) => {
+        this._binds.ship.setDashing(value)
+      },
+    )
+    this._flag(
+      form,
+      'status_shooting',
+      'status.shooting',
+      () => this._binds.ship.snapshot().status.shooting,
+      (value) => {
+        this._binds.ship.setShooting(value)
+      },
+    )
+    this._flag(
+      form,
+      'status_recovering',
+      'status.recovering',
+      () => this._binds.ship.snapshot().status.recovering,
+      (value) => {
+        if (value) {
+          this._binds.ship.setShooting(false)
+          this._binds.ship.setDashing(false)
+          this._binds.ship.setFlickering(false)
+          return
+        }
+        this._binds.ship.setShooting(true)
+      },
+    )
 
     panel.append(form)
     this._form = form
     this._defaults = cloneSheet(this._binds.ship.snapshot())
+    this._immortalDefault = this._binds.ship.immortal()
     this.sync()
   }
 
@@ -126,6 +190,9 @@ export class ShipTab implements DebuggerTab {
     this._binds.ship.setDashing(defaults.status.dashing)
     this._binds.ship.setFlickering(defaults.status.flickering)
     this._binds.ship.setShooting(defaults.status.shooting)
+    this._binds.ship.setImmortal(this._immortalDefault)
+    this._binds.ship.setCombat('integrity', defaults.stats.integrity.current)
+    this._binds.ship.setCombat('shield', defaults.stats.shield.current)
     this.sync()
   }
 
@@ -163,6 +230,38 @@ export class ShipTab implements DebuggerTab {
   }
 
   private _pool(host: HTMLElement, name: PoolName): void {
+    if (name === 'integrity' || name === 'shield') {
+      const cap =
+        name === 'integrity' ? BALANCE.ship.health.integrityMax : BALANCE.ship.health.shieldMax
+      this._scalar(
+        host,
+        `${name} cur`,
+        `stats.${name}.current`,
+        0,
+        cap,
+        0.01,
+        () => this._binds.ship.combat()[name],
+        (value) => {
+          this._binds.ship.setCombat(name, value)
+        },
+      )
+      this._scalar(
+        host,
+        `${name} max`,
+        `stats.${name}.max`,
+        0,
+        cap,
+        0.01,
+        () =>
+          name === 'integrity'
+            ? this._binds.ship.combat().integrityMax
+            : this._binds.ship.combat().shieldMax,
+        (_value) => {
+          void _value
+        },
+      )
+      return
+    }
     const cap = BALANCE.ship.stats.byteCap
     this._scalar(
       host,
@@ -244,10 +343,52 @@ export class ShipTab implements DebuggerTab {
     )
   }
 
+  private _readout(
+    host: HTMLElement,
+    label: string,
+    path: string,
+    min: number,
+    max: number,
+    step: number,
+    read: () => number,
+  ): void {
+    const write = (_value: number): void => {
+      void _value
+    }
+    const row = document.createElement('label')
+    row.className = 'debug-row'
+    const name = document.createElement('span')
+    name.className = 'debug-label'
+    name.textContent = label
+    const slider = document.createElement('input')
+    slider.type = 'range'
+    slider.min = String(min)
+    slider.max = String(max)
+    slider.step = String(step)
+    slider.disabled = true
+    slider.dataset.bind = path
+    const spin = document.createElement('input')
+    spin.type = 'number'
+    spin.min = String(min)
+    spin.max = String(max)
+    spin.step = String(step)
+    spin.disabled = true
+    spin.dataset.bind = path
+    const value = document.createElement('span')
+    value.className = 'debug-value'
+    row.append(name, slider, spin, value)
+    host.append(row)
+    this._handles.push(
+      { kind: 'number', el: slider, valueEl: value, read, write },
+      { kind: 'number', el: spin, valueEl: value, read, write },
+    )
+  }
+
   private _flag(
     host: HTMLElement,
     label: string,
     path: string,
+    read: () => boolean,
     write: (value: boolean) => void,
   ): void {
     const row = document.createElement('label')
@@ -266,19 +407,7 @@ export class ShipTab implements DebuggerTab {
     this._handles.push({
       kind: 'bool',
       el: box,
-      read: () => {
-        const status = this._binds.ship.snapshot().status
-        if (path === 'status.flickering') {
-          return status.flickering
-        }
-        if (path === 'status.dashing') {
-          return status.dashing
-        }
-        if (path === 'status.shooting') {
-          return status.shooting
-        }
-        return status.recovering
-      },
+      read,
       write,
     })
   }

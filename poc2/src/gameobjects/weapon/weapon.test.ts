@@ -243,7 +243,7 @@ describe('LaserBehaviour', () => {
       color: 0x22d3ee,
       radius: 0.12,
       lifetime: 2,
-      damage: 1.5,
+      damage: 40,
     })
     laser.dispose()
   })

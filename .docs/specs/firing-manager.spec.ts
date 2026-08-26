@@ -215,7 +215,7 @@ export declare class FiringManager {
  *   BALANCE.weapons.loadout             = ['laser', 'plasma']   // WPN-03 this pass
  *   BALANCE.gameplay.energy             = { start: 100, max: 100, regenPerSec: 8 }
  *   BALANCE.ship.health.fireRateMul     = [1, 0.9, 0.75, 0.55]  // hull 0/1/2/3
- *   Laser catalog (D02): rate 10, energyPerShot 0.5, damage 1.5
+ *   Laser catalog (D02): rate 10, energyPerShot 0.5, damage 40
  *
  * Feel:      POC-1 firing is the law. Space **or RT** is continuous hold-to-fire, not tap.
  *            F **or LB** is a clean swap — the next weapon speaks immediately at its own

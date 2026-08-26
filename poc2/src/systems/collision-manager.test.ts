@@ -3,6 +3,7 @@ import {
   CollisionManager,
   HIT_MATRIX,
   Layer,
+  contactDamageFromIntegrity,
   layersHit,
   type ColliderPort,
 } from './collision-manager'
@@ -40,7 +41,15 @@ describe('Layer / HIT_MATRIX', () => {
   it('layersHit is a matrix lookup (PlayerShot vs Enemy true, vs Player false)', () => {
     expect(layersHit(Layer.PlayerShot, Layer.Enemy)).toBe(true)
     expect(layersHit(Layer.PlayerShot, Layer.Player)).toBe(false)
+    expect(layersHit(Layer.PlayerShot, Layer.EnemyShot)).toBe(false)
+    expect(layersHit(Layer.EnemyShot, Layer.PlayerShot)).toBe(false)
     expect(HIT_MATRIX[Layer.Drop]).toEqual([])
+  })
+
+  it('contactDamageFromIntegrity is current hull times the frac', () => {
+    expect(contactDamageFromIntegrity(100, 0.2)).toBe(20)
+    expect(contactDamageFromIntegrity(0, 0.2)).toBe(0)
+    expect(contactDamageFromIntegrity(50, 0)).toBe(0)
   })
 })
 
@@ -89,6 +98,28 @@ describe('CollisionManager', () => {
     expect(pairs[0]?.bLayer).toBe(Layer.Player)
   })
 
+  it('Enemy overlaps Meteor ⇒ HitPair', () => {
+    const cm = new CollisionManager()
+    cm.registerTarget(collider(Layer.Enemy, 0, 0))
+    cm.registerTarget(collider(Layer.Meteor, 0.2, 0))
+    expect(cm.update(0, [])).toHaveLength(1)
+  })
+
+  it('EnemyShot overlaps Meteor ⇒ HitPair', () => {
+    const cm = new CollisionManager()
+    cm.registerTarget(collider(Layer.Meteor, 0, 0))
+    const pairs = cm.update(0, [poolOf(collider(Layer.EnemyShot, 0, 0))])
+    expect(pairs).toHaveLength(1)
+    expect(pairs[0]?.consumeProjectile).toBe(true)
+  })
+
+  it('PlayerShot vs EnemyShot yields no pair', () => {
+    const cm = new CollisionManager()
+    const playerBolt = collider(Layer.PlayerShot, 0, 0)
+    const enemyBolt = collider(Layer.EnemyShot, 0.2, 0)
+    expect(cm.update(0, [poolOf(playerBolt, enemyBolt)])).toHaveLength(0)
+  })
+
   it('Enemy overlaps Player ⇒ HitPair', () => {
     const cm = new CollisionManager()
     cm.registerTarget(collider(Layer.Player, 0, 0))
@@ -96,13 +127,19 @@ describe('CollisionManager', () => {
     expect(cm.update(0, [])).toHaveLength(1)
   })
 
-  it('Meteor overlaps Player and PlayerShot', () => {
+  it('Meteor overlaps Player, PlayerShot, Enemy and EnemyShot', () => {
     const cm = new CollisionManager()
     cm.registerTarget(collider(Layer.Player, 0, 0))
     cm.registerTarget(collider(Layer.Meteor, 0.2, 0))
-    const shot = collider(Layer.PlayerShot, 0.2, 0)
-    const pairs = cm.update(0, [poolOf(shot)])
-    expect(pairs.length).toBeGreaterThanOrEqual(2)
+    cm.registerTarget(collider(Layer.Enemy, 0.2, 0.2))
+    const pairs = cm.update(0, [
+      poolOf(collider(Layer.PlayerShot, 0.2, 0), collider(Layer.EnemyShot, 0.2, 0)),
+    ])
+    const layers = pairs.map((p) => [p.aLayer, p.bLayer].sort((a, b) => a - b).join('-'))
+    expect(layers).toContain(`${Layer.Player}-${Layer.Meteor}`)
+    expect(layers).toContain(`${Layer.PlayerShot}-${Layer.Meteor}`)
+    expect(layers).toContain(`${Layer.Enemy}-${Layer.Meteor}`)
+    expect(layers).toContain(`${Layer.EnemyShot}-${Layer.Meteor}`)
   })
 
   it('Enemy vs Enemy and PlayerShot vs PlayerShot yield no pairs', () => {

@@ -3,9 +3,9 @@
  * Never calls applyDamage / takeDamage (F04 owns that).
  */
 
-import { Layer, HIT_MATRIX, layersHit } from './layers'
+import { Layer, HIT_MATRIX, layersHit, isShotLayer } from './layers'
 
-export { Layer, HIT_MATRIX, layersHit }
+export { Layer, HIT_MATRIX, layersHit, isShotLayer, isBodyLayer, contactDamageFromIntegrity } from './layers'
 
 export interface ColliderPort {
   readonly layer: Layer
@@ -49,8 +49,6 @@ export interface CollisionManagerOptions {
   readonly matrix?: Readonly<Record<Layer, readonly Layer[]>>
 }
 
-const PROJECTILE_LAYERS: ReadonlySet<Layer> = new Set([Layer.PlayerShot, Layer.EnemyShot])
-
 function overlaps(a: ColliderPort, b: ColliderPort): boolean {
   const dx = a.x - b.x
   const dz = a.z - b.z
@@ -62,10 +60,6 @@ function pairKey(a: ColliderPort, b: ColliderPort): string {
   const ia = (a as { __cid?: number }).__cid ?? 0
   const ib = (b as { __cid?: number }).__cid ?? 0
   return ia < ib ? `${ia}|${ib}` : `${ib}|${ia}`
-}
-
-function isProjectile(layer: Layer): boolean {
-  return PROJECTILE_LAYERS.has(layer)
 }
 
 function maskAllows(hits: readonly Layer[], layer: Layer): boolean {
@@ -264,7 +258,7 @@ export class CollisionManager {
       b: right,
       aLayer: left.layer,
       bLayer: right.layer,
-      consumeProjectile: isProjectile(left.layer) || isProjectile(right.layer),
+      consumeProjectile: isShotLayer(left.layer) || isShotLayer(right.layer),
     }
     if (this._pairLen < this._pairs.length) {
       const slot = this._pairs[this._pairLen] as {

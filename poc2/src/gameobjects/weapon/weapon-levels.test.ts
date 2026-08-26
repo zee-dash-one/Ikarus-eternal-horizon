@@ -46,7 +46,7 @@ describe('applyWeaponLevel', () => {
   it('applyWeaponLevel laser cfg 5 writes volley and energy', () => {
     const cfg = copyWeaponConfig(WEAPONS.laser)
     applyWeaponLevel(cfg, 5)
-    expect(cfg.damage).toBe(2)
+    expect(cfg.damage).toBe(50)
     expect(cfg.rate).toBe(11)
     expect(cfg.energyPerShot).toBe(0.5)
     expect(cfg.laser?.totalShots).toBe(5)
@@ -76,7 +76,7 @@ describe('applyWeaponLevel', () => {
   it('applyWeaponLevel(cfg, 99) is a no-op', () => {
     const cfg = copyWeaponConfig(WEAPONS.laser)
     applyWeaponLevel(cfg, 99)
-    expect(cfg.damage).toBe(1.5)
+    expect(cfg.damage).toBe(40)
     expect(cfg.rate).toBe(10)
   })
 })

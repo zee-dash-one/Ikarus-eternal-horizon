@@ -484,6 +484,10 @@ export function createRunWorld(options: RunWorldOptions): RunWorldFactory {
       return wrap(
         (dt) => {
           world.health.update(dt)
+          world.ship.stats.integrity.current = world.health.integrity
+          world.ship.stats.integrity.max = world.health.integrityMax
+          world.ship.stats.shield.current = world.health.shield
+          world.ship.stats.shield.max = world.health.shieldMax
           world.ship.update(dt)
         },
         () => {
@@ -731,11 +735,22 @@ export function createRunWorld(options: RunWorldOptions): RunWorldFactory {
           formation: 'vWing',
           healthPct: 0,
         }))
+      const combatSnap = {
+        integrity: 0,
+        integrityMax: 0,
+        shield: 0,
+        shieldMax: 0,
+        hullLevel: 0,
+      }
       const binds: DebuggerBinds = {
         ship: {
           snapshot: () => {
             const port = ship.debugSnapshot()
             port.loadout.equippedWeapon = world.firing.activeId()
+            port.stats.integrity.current = world.health.integrity
+            port.stats.integrity.max = world.health.integrityMax
+            port.stats.shield.current = world.health.shield
+            port.stats.shield.max = world.health.shieldMax
             return port
           },
           applyTransform: () => {
@@ -749,6 +764,25 @@ export function createRunWorld(options: RunWorldOptions): RunWorldFactory {
           },
           setShooting: (value) => {
             ship.setShooting(value)
+          },
+          combat: () => {
+            combatSnap.integrity = world.health.integrity
+            combatSnap.integrityMax = world.health.integrityMax
+            combatSnap.shield = world.health.shield
+            combatSnap.shieldMax = world.health.shieldMax
+            combatSnap.hullLevel = world.health.hullLevel
+            return combatSnap
+          },
+          immortal: () => world.health.immortal,
+          setImmortal: (value) => {
+            world.health.immortal = value
+          },
+          setCombat: (field, value) => {
+            if (field === 'shield') {
+              world.health.debugSetShield(value)
+              return
+            }
+            world.health.debugSetIntegrity(value)
           },
           equipWeapon: (id) => {
             if (id === null) {
@@ -843,9 +877,9 @@ export function createRunWorld(options: RunWorldOptions): RunWorldFactory {
           },
         },
         enemy: {
-          archetypeNames: () => ['warrior'],
-          setArchetype: (_index) => {
-            void _index
+          archetypeNames: () => world.enemies.archetypeNames(),
+          setArchetype: (index) => {
+            world.enemies.setArchetype(index)
           },
           sheet: () => world.enemies.liveSheet(),
           applyToActive: () => {
@@ -941,6 +975,12 @@ export function createRunWorld(options: RunWorldOptions): RunWorldFactory {
             gameCamera.applyConfig(cameraConfig)
           },
         },
+        followBox: {
+          visible: () => world.limitBox.visible(),
+          setVisible: (visible) => {
+            world.limitBox.setVisible(visible)
+          },
+        },
         recenterPoint: {
           position: () => world.followBoxVisual.restLine.position,
           setPosition: (x, y, z) => {
@@ -956,9 +996,9 @@ export function createRunWorld(options: RunWorldOptions): RunWorldFactory {
           setHeight: (value) => {
             world.followBoxVisual.restLine.height = value
           },
-          visible: () => world.limitBox.restLineVisible(),
+          visible: () => world.limitBox.visible(),
           setVisible: (visible) => {
-            world.limitBox.setRestLineVisible(visible)
+            world.limitBox.setVisible(visible)
           },
         },
       }

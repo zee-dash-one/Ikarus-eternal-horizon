@@ -6,7 +6,7 @@ import catalogSource from './catalog.ts?raw'
 
 describe('WEAPONS catalog', () => {
   it('has laser projectile 30/2/0.12 and plasma orb 14/2.4/0.22/2.2', () => {
-    expect(WEAPONS.laser.damage).toBe(1.5)
+    expect(WEAPONS.laser.damage).toBe(LASER_LEVELS[0]?.damage)
     expect(WEAPONS.laser.rate).toBe(10)
     expect(WEAPONS.laser.energyPerShot).toBe(0.5)
     expect(WEAPONS.laser.projectile).toEqual({

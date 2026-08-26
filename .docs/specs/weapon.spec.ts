@@ -330,14 +330,15 @@ export declare class LaserBehaviour implements WeaponBehaviour {
  *       for every LASER_LEVELS row.
  *   R7. L1 = 1 forward; L4 = 4 forward; L5 = 3 forward + 1/side; L10 = 4
  *       forward + 3/side; L12 = 4 forward + 4/side.
- *   R8. Laser bolts: speed 30, lifetime 1, aoeRadius 0. Catalog poolSize 768
- *       is consumed by E04, not by this class.
+ *   R8. Laser bolts: speed 30, aoeRadius 0, radius 0.12. Lifetime is 2 / 2.5 / 3
+ *       by four-level band. Catalog poolSize 768 is consumed by E04, not by this class.
  *   R9. Per-frame allocation: none. Shots come from E04. A volley is
  *       all-or-nothing: if acquire cannot cover every bolt, reserved slots
  *       are released and nothing fires (no lopsided fan).
  *   R10. dispose() disposes the behaviour. It does not dispose the pool.
  *   R11. applyLaserLevel is a no-op for an unknown level (does not throw).
- *   R12. catalog.ts does not import BALANCE (import cycle).
+ *   R12. catalog.ts does not import balancer (import cycle). L1 stats come from
+ *       LASER_LEVELS[0] / PLASMA_LEVELS[0] / … in weapon-levels.ts.
  *   R13. This pass registers 'laser' (and D04 registers 'plasma'). 'beam'
  *       and 'mjolnir' stay in WEAPONS but WEAPON_REGISTRY has no factory.
  */
@@ -356,45 +357,55 @@ export declare class LaserBehaviour implements WeaponBehaviour {
 
 // ─── 4. BALANCE, feel, leveling, graphics ────────────────────────────────────
 /**
- * Catalog source of truth is catalog.ts. A01 re-exports:
+ * Catalog source of truth is BALANCE.weapons (A01). Tables are defined in
+ * catalog.ts + weapon-levels.ts and re-exported:
  *   BALANCE.weapons.catalog === WEAPONS
- *   BALANCE.weapons.loadout = ['laser', 'plasma']   // WPN-03 this pass
+ *   BALANCE.weapons.levels.laser === LASER_LEVELS
+ *   BALANCE.weapons.loadout = ['laser', 'plasma', 'beam', 'mjolnir']
+ * Laser L1 catalog stats are copied from LASER_LEVELS[0] (no second literal).
  *
- * Laser catalog (L1 defaults; applyLaserLevel overwrites per level):
+ * Laser catalog (L1 defaults; applyWeaponLevel overwrites per level):
  *   id / displayName / color     = 'laser' / 'Laser' / 0x22d3ee
- *   rate / energyPerShot / damage = 8 / 1 / 1
+ *   rate / energyPerShot / damage = 10 / 0.5 / 1.5
  *   profile / poolSize           = 'projectile' / 768
  *   muzzleOffset                 = { x: 0, y: 0, z: -1.4 }
- *   projectile.speed / lifetime / radius / damageDecayPerUnit = 30 / 1 / 0.12 / 0
+ *   projectile.speed / lifetime / radius / damageDecayPerUnit = 30 / 2 / 0.12 / 0
  *   laser.forwardShots / diagonalShotsPerSide / totalShots    = 1 / 0 / 1
- *   laser.diagonalAngleDeg / forwardSpread / diagonalSpreadDeg = 22 / 0.55 / 10
+ *   laser.diagonalAngleDeg / forwardSpread / diagonalSpreadDeg = 15 / 0.55 / 10
  *   laser.burstShots / overheatSec                             = 15 / 0.5
  *
- * LASER_LEVELS (POC2 retune — energyPerShot is one spend per volley, not per bolt):
+ * LASER_LEVELS — four-level bands (volley shape still fwd + 2*diag = level):
+ *
+ *   Band   L      dmg   rate  energy (L1 / rest)  life  volley
+ *   A      1–4    1.5   10    0.5 then 0.25       2     1–4 forward, no diagonals
+ *   B      5–8    2     11    0.5                 2.5   3+1, 4+1, 3+2, 4+2
+ *   C      9–12   2.5   12    1                   3     3+3, 4+3, 3+4, 4+4
  *
  *   L  dmg  rate  energy  speed  radius  life  fwd  diag/side  angle  spread
- *   1  1    8     1.0     30     0.12    1     1    0          22     0.55
- *   2  1.1  8.5   1.2     30     0.125   1     2    0          22     0.55
- *   3  1.3  9     1.3     30     0.13    1     3    0          22     0.55
- *   4  1.5  9.5   1.4     30     0.135   1     4    0          22     0.55
- *   5  1.8  10    1.5     30     0.14    1     3    1          22     0.55
- *   6  2.1  10.5  1.6     30     0.145   1     4    1          22     0.55
- *   7  2.5  11    1.7     30     0.15    1     3    2          22     0.55
- *   8  3    11.5  1.8     30     0.155   1     4    2          22     0.55
- *   9  3.6  12    1.9     30     0.16    1     3    3          22     0.55
- *  10  4.3  12.5  2.0     30     0.165   1     4    3          22     0.55
- *  11  5.1  13    2.1     30     0.17    1     3    4          22     0.55
- *  12  6    13.5  2.2     30     0.175   1     4    4          22     0.55
+ *   1  1.5  10    0.5     30     0.12    2     1    0          15     0.55
+ *   2  1.5  10    0.25    30     0.12    2     2    0          15     0.55
+ *   3  1.5  10    0.25    30     0.12    2     3    0          15     0.55
+ *   4  1.5  10    0.25    30     0.12    2     4    0          15     0.55
+ *   5  2    11    0.5     30     0.12    2.5   3    1          15     0.55
+ *   6  2    11    0.5     30     0.12    2.5   4    1          15     0.55
+ *   7  2    11    0.5     30     0.12    2.5   3    2          15     0.55
+ *   8  2    11    0.5     30     0.12    2.5   4    2          15     0.55
+ *   9  2.5  12    1       30     0.12    3     3    3          15     0.55
+ *  10  2.5  12    1       30     0.12    3     4    3          15     0.55
+ *  11  2.5  12    1       30     0.12    3     3    4          15     0.55
+ *  12  2.5  12    1       30     0.12    3     4    4          15     0.55
  *
- * Invariant: fwd + 2*diag/side = level for every row. Speed 30 · lifetime 1
- * on every row. Play starts at L1; no in-run level UI this pass (G08 later).
+ * Invariant: fwd + 2*diag/side = level for every row. Speed 30 · radius 0.12
+ * on every row. Lifetime and cadence step per band, not per level. Play starts
+ * at L1 (catalog === band A). G08 Equips slider applies the row live.
  *
  * Plasma / Beam / Mjolnir rows: see D04 / D05 / D06. Nested orb/beam/cone
  * live in catalog.ts now so A01 is not a second table.
  *
- * Feel:      L1 is a single cyan needle. Cadence 8, cost 1 vs regen 8 is
- *            break-even full-auto. Higher levels dump the pool. Thickness
- *            from D01 (2×radius).
+ * Feel:      L1 is a single cyan needle at 10 Hz. Cost 0.5 vs regen 8 leaves
+ *            headroom (~5/s drain). Higher bands add bolts and a tick of
+ *            cadence; L2–4 spend less per volley so the extra needles are
+ *            cheap. Thickness from D01 (2×radius).
  * Leveling:  this table IS the laser leveling. Hull fireRateMul (C03) scales
  *            cooldown on top via mods.rateMul.
  * Graphics:  cyan 0x22d3ee. Pillar 4.
@@ -416,7 +427,7 @@ export declare class LaserBehaviour implements WeaponBehaviour {
  *        Real WEAPONS / LASER_LEVELS. No Scene. No ObjectPool.
  *
  * describe('WEAPONS catalog')
- *   it('has laser projectile 30/1/0.12 and plasma orb 14/2.4/0.22/2.2')           // RUL-12
+ *   it('has laser projectile 30/2/0.12 and plasma orb 14/2.4/0.22/2.2')           // RUL-12
  *   it('is the same object as BALANCE.weapons.catalog')                            // R12
  *   it('does not import balancer (source-text)')                                   // R12
  *
@@ -432,7 +443,7 @@ export declare class LaserBehaviour implements WeaponBehaviour {
  * describe('LaserBehaviour')
  *   it('spawns no shots when energy.canAfford is false')                           // R4, WPN-05
  *   it('spends energyPerShot * energyMul on a successful volley')                  // R4
- *   it('spaces volleys by 1 / (rate * rateMul); L1 rate 8 ⇒ 0.125s')               // R5
+ *   it('spaces volleys by 1 / (rate * rateMul); L1 rate 10 ⇒ 0.1s')                // R5
  *   it('overheats after 15 uninterrupted volleys and cools for overheatSec')       // R5
  *   it('playOverheatCue dispatches the laser-overheat sfx cue')                    // R5
  *   it('releasing fire resets the burst count so a pause never overheats')         // R5
@@ -447,10 +458,11 @@ export declare class LaserBehaviour implements WeaponBehaviour {
  * describe('LASER_LEVELS')
  *   it('has 12 rows, levels 1..12')                                                // table
  *   it('every row satisfies forward + 2*diagPerSide === level')                    // R6
- *   it('every row has speed 30 and lifetime 1')                                    // R8
+ *   it('every row has speed 30, radius 0.12, and lifetime by four-level band')     // R8
+ *   it('damage and rate step 1.5/10 → 2/11 → 2.5/12 every four levels')            // table
  *   it('volley is front + equal diagonals per the L1–L12 table')                   // R7
- *   it('applyLaserLevel(cfg, 5) writes damage 1.8, rate 10, energy 1.5, radius 0.14')
- *   it('applyLaserLevel(cfg, 12) writes 4 forward + 4 per side and energy 2.2')
+ *   it('applyLaserLevel(cfg, 5) writes damage 2, rate 11, energy 0.5, radius 0.12')
+ *   it('applyLaserLevel(cfg, 12) writes 4 forward + 4 per side and energy 1')
  *   it('applyLaserLevel(cfg, 99) is a no-op')                                      // R11
  *
  * Manual:

@@ -161,16 +161,16 @@ describe('LaserBehaviour', () => {
     const mods = defaultModifiers()
     mods.energyMul = 2
     laser.update(ctx({ mods }, energy))
-    expect(energy.spent).toEqual([2])
+    expect(energy.spent).toEqual([WEAPONS.laser.energyPerShot * 2])
     laser.dispose()
   })
 
-  it('spaces volleys by 1 / (rate * rateMul); L1 rate 8 ⇒ 0.125s', () => {
+  it('spaces volleys by 1 / (rate * rateMul); L1 rate 10 ⇒ 0.1s', () => {
     const { port, spawns } = recordingPort()
     const laser = new LaserBehaviour(copyWeaponConfig(WEAPONS.laser), port)
     laser.update(ctx({ dt: 0 }))
     expect(spawns).toHaveLength(1)
-    laser.update(ctx({ dt: 0.124 }))
+    laser.update(ctx({ dt: 0.099 }))
     expect(spawns).toHaveLength(1)
     laser.update(ctx({ dt: 0.002 }))
     expect(spawns).toHaveLength(2)
@@ -242,7 +242,8 @@ describe('LaserBehaviour', () => {
       aoeRadius: 0,
       color: 0x22d3ee,
       radius: 0.12,
-      lifetime: 1,
+      lifetime: 2,
+      damage: 1.5,
     })
     laser.dispose()
   })

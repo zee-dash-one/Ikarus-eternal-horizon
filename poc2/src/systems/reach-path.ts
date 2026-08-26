@@ -1,7 +1,7 @@
 /**
  * Reach-path curve (A spawn → B gate) — shared by movement + debug polyline.
- * Temporary tuning surface: tweak live via Path debugger tab.
- * Axis modes are per spawn side (left / right / front).
+ * DEFAULT_REACH_PATH is the initial config (BALANCE.enemy.reachPath).
+ * LIVE_REACH_PATH is the mutable debugger copy.
  */
 
 import { clamp, easeInOutCubic, lerp, lerpGeometric } from '../core/math'

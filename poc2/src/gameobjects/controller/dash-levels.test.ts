@@ -14,6 +14,7 @@ describe('DASH_LEVELS', () => {
   it('has 12 rows, levels 1..12', () => {
     expect(DASH_LEVELS).toHaveLength(12)
     expect(DASH_LEVELS.map((row) => row.level)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])
+    expect(BALANCE.controls.dash.levels).toBe(DASH_LEVELS)
   })
 
   it('L1 speedMul matches BALANCE.controls.dash', () => {

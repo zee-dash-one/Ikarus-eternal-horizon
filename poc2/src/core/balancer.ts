@@ -1,19 +1,42 @@
 /**
  * SDD-A01 Balancer — single source of gameplay numbers (RUL-12).
- * Port of POC-1 `poc/src/core/balancer.ts` plus health / difficulty / score / drops / vfx / audio.
- * Weapon *behaviour* is D02; catalog data lives in catalog.ts and is re-exported here.
+ * Domain files may *define* tables (catalog, weapon-levels, dash-levels, warrior,
+ * squad-config, reach-path, layers); this module is the only place they are wired
+ * into the initial game config. Production code reads BALANCE.
  */
 
 import { DASH_LEVELS } from '../gameobjects/controller/dash-levels'
+import type { DashLevel } from '../gameobjects/controller/dash-levels'
 import { WEAPONS } from '../gameobjects/weapon/catalog'
 import type { WeaponConfig, WeaponId, WeaponProfile } from '../gameobjects/weapon/catalog'
+import {
+  BEAM_LEVELS,
+  LASER_LEVELS,
+  MJOLNIR_LEVELS,
+  PLASMA_LEVELS,
+  WEAPON_LEVEL_COUNT,
+} from '../gameobjects/weapon/weapon-levels'
+import type { WeaponLevelRow } from '../gameobjects/weapon/weapon-levels'
 import { WARRIOR } from '../gameobjects/enemy/warrior'
 import type { WarriorSheet } from '../gameobjects/enemy/warrior'
 import { DEFAULT_SQUAD_CONFIG } from '../systems/squad-config'
 import type { SquadConfig } from '../systems/squad-config'
+import { DEFAULT_REACH_PATH } from '../systems/reach-path'
+import type { ReachPathConfig } from '../systems/reach-path'
+import { HIT_MATRIX, type Layer } from '../systems/layers'
 
 export type { WeaponConfig, WeaponId, WeaponProfile }
+export type { WeaponLevelRow }
+export type { DashLevel }
+export type { ReachPathConfig }
 export type WeaponCatalogEntry = WeaponConfig
+
+export interface WeaponLevelTables {
+  readonly laser: readonly WeaponLevelRow[]
+  readonly plasma: readonly WeaponLevelRow[]
+  readonly beam: readonly WeaponLevelRow[]
+  readonly mjolnir: readonly WeaponLevelRow[]
+}
 
 export interface Vec3Params {
   readonly x: number
@@ -113,6 +136,7 @@ export interface TouchControlConfig {
 export interface DashConfig {
   readonly speedMul: number
   readonly durationMs: number
+  readonly levels: readonly DashLevel[]
 }
 
 export interface HapticPreset {
@@ -242,6 +266,8 @@ export interface EnemyConfig {
   readonly warrior: WarriorSheet
   /** Macro AI: groups, formations, staggered ticks (post-gate). */
   readonly squad: SquadConfig
+  /** A→B birth curve defaults (live copy is LIVE_REACH_PATH). */
+  readonly reachPath: ReachPathConfig
   readonly despawn: EnemyDespawnConfig
   readonly poolSize: number
   /** EnemyShot pool capacity (E03/E04). */
@@ -453,6 +479,10 @@ export interface AudioConfig {
   readonly muted: boolean
 }
 
+export interface CollisionConfig {
+  readonly hitMatrix: Readonly<Record<Layer, readonly Layer[]>>
+}
+
 export interface ShotDespawnConfig {
   readonly zNear: number
   readonly zFar: number
@@ -469,6 +499,8 @@ export interface Balance {
   readonly weapons: {
     readonly loadout: readonly WeaponId[]
     readonly catalog: Record<WeaponId, WeaponCatalogEntry>
+    readonly levelCount: number
+    readonly levels: WeaponLevelTables
   }
   readonly gameplay: {
     readonly fireKey: string
@@ -513,6 +545,7 @@ export interface Balance {
   readonly shot: { readonly despawn: ShotDespawnConfig }
   readonly enemy: EnemyConfig
   readonly battlefield: BattleFieldConfig
+  readonly collision: CollisionConfig
   readonly vfx: VfxConfig
   readonly audio: AudioConfig
   readonly haptics: HapticsConfig
@@ -585,6 +618,13 @@ const BALANCE_DATA: Balance = {
   weapons: {
     loadout: ['laser', 'plasma', 'beam', 'mjolnir'],
     catalog: WEAPONS,
+    levelCount: WEAPON_LEVEL_COUNT,
+    levels: {
+      laser: LASER_LEVELS,
+      plasma: PLASMA_LEVELS,
+      beam: BEAM_LEVELS,
+      mjolnir: MJOLNIR_LEVELS,
+    },
   },
   gameplay: {
     fireKey: 'KeyF',
@@ -613,8 +653,9 @@ const BALANCE_DATA: Balance = {
       brake: 120,
     },
     dash: {
-      speedMul: DASH_LEVELS[0]?.speedMul ?? 2.05,
+      speedMul: DASH_LEVELS[0]?.speedMul ?? 1.55,
       durationMs: SHIP_COOLDOWNS.dashingMs,
+      levels: DASH_LEVELS,
     },
     tilt: {
       axis: 'z',
@@ -754,7 +795,7 @@ const BALANCE_DATA: Balance = {
         size: 1,
         color: 0xa5e8ff,
         alpha: 0.5,
-        position: { x: 0, y: -400, z: 100 },
+        position: { x: 0, y: -500, z: 100 },
         rotation: { x: 0, y: 0, z: 0 },
         gridSize: 2000,
         gridColor: 0x555555,
@@ -771,7 +812,7 @@ const BALANCE_DATA: Balance = {
         size: 1,
         color: 0xd97706,
         alpha: 0.5,
-        position: { x: 0, y: -300, z: 100 },
+        position: { x: 0, y: -350, z: 100 },
         rotation: { x: 0, y: 0, z: 0 },
         gridSize: 2000,
         gridColor: 0x555555,
@@ -820,7 +861,7 @@ const BALANCE_DATA: Balance = {
     noDamageStreakMul: 1.5,
   },
   drops: {
-    magnetRadius: 2.5,
+    magnetRadius: 3,
     magnetSpeed: 8,
     metalScrapChance: 0.4,
     fragmentRadius: 0.22,
@@ -887,30 +928,30 @@ const BALANCE_DATA: Balance = {
     spawnLeft: {
       offset: { x: -160, y: 50, z: -140 },
       size: { x: 10, y: 2, z: 10 },
-      visible: true,
+      visible: false,
       color: 0xff2222,
-      opacity: 0.55,
-      intervalSec: 1.2,
+      opacity: 0.02,
+      intervalSec: 1.8,
       lanesX: [-4, -2, 0, 2, 4],
       maxActive: 8,
     },
     spawnRight: {
       offset: { x: 160, y: 50, z: -140 },
       size: { x: 10, y: 2, z: 10 },
-      visible: true,
+      visible: false,
       color: 0xff2222,
-      opacity: 0.55,
-      intervalSec: 1.2,
+      opacity: 0.02,
+      intervalSec: 1.8,
       lanesX: [-4, -2, 0, 2, 4],
       maxActive: 8,
     },
     spawnFront: {
       offset: { x: 0, y: 100, z: -140 },
       size: { x: 10, y: 2, z: 10 },
-      visible: true,
+      visible: false,
       color: 0xff2222,
-      opacity: 0.55,
-      intervalSec: 1.5,
+      opacity: 0.02,
+      intervalSec: 2,
       lanesX: [-4, -2, 0, 2, 4],
       maxActive: 8,
     },
@@ -919,7 +960,7 @@ const BALANCE_DATA: Balance = {
       size: { x: 80, y: 2, z: 8 },
       visible: true,
       color: 0xf59e0b,
-      opacity: 0.005,
+      opacity: 0,
       markerRadius: 1,
       arriveRadius: 1,
       reachSpeedMul: 8,
@@ -939,6 +980,7 @@ const BALANCE_DATA: Balance = {
     },
     warrior: WARRIOR,
     squad: DEFAULT_SQUAD_CONFIG,
+    reachPath: DEFAULT_REACH_PATH,
     despawn: { zNear: 30, zFar: -160, halfX: 240 },
     poolSize: 48,
     shotPoolSize: 64,
@@ -948,8 +990,11 @@ const BALANCE_DATA: Balance = {
     offsetZ: { min: -160, max: 30 },
     wallHeight: 6,
     color: 0x3b82f6,
-    opacity: 0.9,
+    opacity: 0,
     visible: true,
+  },
+  collision: {
+    hitMatrix: HIT_MATRIX,
   },
   vfx: {
     shake: { maxAmplitude: 0.18, decayPerSec: 6 },
@@ -984,7 +1029,7 @@ const BALANCE_DATA: Balance = {
     worldAxisSize: 4,
     cameraAxisSize: 2.2,
     axis: { x: 0xff4455, y: 0x55ff77, z: 0x55aaff },
-    lineOpacity: 0.1,
+    lineOpacity: 0,
   },
   debug: {
     syncHz: 15,

@@ -1,5 +1,6 @@
 /**
  * SDD-C02 dash L1–L12. Cost and travel grow in bands of 4 (step doubles each band).
+ * Table lives here to avoid an import cycle; BALANCE.controls.dash.levels points at it (RUL-12).
  */
 
 export interface DashLevel {

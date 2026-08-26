@@ -11,7 +11,7 @@ export enum Layer {
   Drop = 5,
 }
 
-/** Who-hits-whom DATA. Empty array = hits nothing. */
+/** Who-hits-whom DATA. Empty array = hits nothing. BALANCE.collision.hitMatrix points here. */
 export const HIT_MATRIX: Readonly<Record<Layer, readonly Layer[]>> = {
   [Layer.Player]: [Layer.Enemy, Layer.Meteor, Layer.Drop],
   [Layer.PlayerShot]: [Layer.Enemy, Layer.Meteor],

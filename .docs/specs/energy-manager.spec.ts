@@ -46,7 +46,7 @@
 /**
  * Orchestrator : hub-v4.3 / 2026-08-18  unchanged port; D02/D04 consume EnergyPort
  * Programming  : hub-v4.3 / 2026-08-18  no THREE; HUD reads current/max on the class
- * Game Design  : hub-v4.3 / 2026-08-19  100/100/8; laser L1 cost 1 vs regen 8 is even
+ * Game Design  : hub-v4.3 / 2026-08-19  100/100/8; laser L1 cost 0.5 × 10/s vs regen 8
  * TDD          : hub-v4.3 / 2026-08-19  pool bind + recovering gate green
  *
  * DoD (§6.1): spec · tests red · shape · lifecycle · BALANCE · memory ·
@@ -159,15 +159,15 @@ export declare class EnergyManager implements EnergyPort {
  *   BALANCE.gameplay.energy.regenPerSec = 8
  *
  * Starting loadout drain (for feel, not this class's table):
- *   Laser L1: 1 per volley × 8/s  = 8/s  — regen 8 is break-even
+ *   Laser L1: 0.5 per volley × 10/s = 5/s — regen 8 leaves headroom
  *   Plasma : 1.5 per orb  × 1.6/s ≈ 2.4/s — still comfortable
  *   Beam   : 3/s                       — noticeable; dump-and-pause
  *   Mjolnir: 2.2/s                     — between laser L1 and beam
  *
- * Feel:      Energy is a pacing resource, not a hard magazine. Laser L1 is
- *            break-even vs regen 8; higher laser levels dump the pool.
+ * Feel:      Energy is a pacing resource, not a hard magazine. Laser L1 drains
+ *            slower than regen 8; higher laser bands dump the pool.
  *            Beam/Mjolnir force bursts. Hitting 0 is a silence, not a crash —
- *            regen of 8 brings an L1 volley back in 0.125 s.
+ *            regen of 8 brings an L1 volley back in 0.0625 s.
  * Leveling:  N/A here. Weapon energyPerShot/PerSec live in D02 catalog;
  *            hull fireRateMul (C03) changes cadence, not this pool.
  * Graphics:  N/A. G07 draws the bar.

@@ -18,10 +18,14 @@
  * Owns:      The typed, read-only `BALANCE` namespace — the single source of every
  *            gameplay, camera, layout, weapon, health, difficulty, score, drop,
  *            vfx, **audio**, **gamepad** and **haptics** number. One interface per section.
+ *            Domain modules may define tables; this file is the only hub that
+ *            *references* them as initial config (RUL-12).
  *            Debugger-driven tuning slices may mutate at runtime; production code
  *            only reads.
  * Does not own: behaviour, THREE objects, input wiring, weapon factories (those
- *            consume BALANCE). Weapon *data* lives here via the catalog import (D02).
+ *            consume BALANCE). Weapon *data* lives here via catalog + level-table
+ *            imports (D02). Dash levels, warrior sheet, squad config, reach-path
+ *            defaults and the hit matrix are the same pattern.
  * Player-facing: none directly. Wrong numbers feel like a different game.
  */
 
@@ -240,10 +244,14 @@ export declare const BALANCE: Balance
 // ─── 3. Key fields and methods ───────────────────────────────────────────────
 /**
  *   BALANCE            | Balance | the singleton namespace
- *   BALANCE.weapons    | catalog + loadout | imported from D02 catalog.ts
+ *   BALANCE.weapons    | catalog + loadout + levels | catalog.ts + weapon-levels.ts
+ *   BALANCE.controls.dash.levels | DASH_LEVELS | dash-levels.ts
+ *   BALANCE.enemy.squad / warrior / reachPath | domain tables
+ *   BALANCE.collision.hitMatrix | HIT_MATRIX | layers.ts
  *
  * No methods. Data only. Debugger writes go through typed setters later (G08),
  * never by reaching into nested objects from gameplay code.
+ * Domain files may hold the table literals; BALANCE is the only initial-config hub.
  */
 
 // ─── 5. Rules and invariants ─────────────────────────────────────────────────
@@ -251,8 +259,8 @@ export declare const BALANCE: Balance
  *   R1. Every gameplay number in poc2/src is reachable from BALANCE (RUL-12).
  *   R2. Production code treats BALANCE as read-only (except G08 tuning slices).
  *   R3. New sections required by later cards (health, difficulty, score, drops, vfx,
- *       audio, gamepad, haptics) exist in the type even if their first consumer is not yet
- *       implemented.
+ *       audio, gamepad, haptics, weapon levels, dash levels, reach-path, hit matrix)
+ *       exist in the type even if their first consumer is not yet implemented.
  *   R4. Memory: N/A — no GPU, no pool. Module-level const, created once.
  *   R5. Per-frame allocation: none.
  */
@@ -301,8 +309,14 @@ export declare const BALANCE: Balance
  *   ship.modules.collector      = passive {energyGain: 1} / wide {2}
  *   ship.modules.converter      = scrap {labFusion: 1} / crystal {2}
  *   debug.syncHz                = 15  // G08 sidecar; same as loop.sidecarHz
- *   weapons.loadout             = ['laser', 'plasma']  // WPN-03; catalog holds all four
- *   weapons.catalog             = WEAPONS from catalog.ts (D02 extract; A01 re-exports)
+ *   weapons.loadout             = ['laser', 'plasma', 'beam', 'mjolnir']
+ *   weapons.catalog             = WEAPONS from catalog.ts (D02; L1 stats from LASER_LEVELS[0])
+ *                                 Laser L1: damage 1.5, rate 10, energyPerShot 0.5
+ *   weapons.levels              = LASER_LEVELS / PLASMA_LEVELS / BEAM_LEVELS / MJOLNIR_LEVELS
+ *   weapons.levelCount          = 12
+ *   controls.dash.levels        = DASH_LEVELS
+ *   enemy.reachPath             = DEFAULT_REACH_PATH
+ *   collision.hitMatrix         = HIT_MATRIX
  *   shot.despawn                = { zNear: 16, zFar: -32, halfX: 16 }  // E04
  *   enemy.spawnLeft/Right/Front = { intervalSec: 1.2, maxActive: 8, … }
  *   enemy.generic / warrior     = Warrior sheet (hp 3, shield, agility 55, …)
@@ -345,7 +359,7 @@ export declare const BALANCE: Balance
  *
  * Feel:      POC-1 motion and camera are the law. New sections must not leak into
  *            Stage A behaviour — they exist so later cards do not invent literals.
- * Leveling:  weapon levels live in D02 `LASER_LEVELS`; hull levels live in C03.
+ * Leveling:  weapon levels live on BALANCE.weapons.levels (D02 tables); hull levels live in C03.
  * Graphics:  playfield 540×960; ship cyan/indigo; laser 0x22d3ee. Pillar 4 (legibility).
  * Pillars:   all six — this file is the numeric spine.
  */
@@ -377,11 +391,14 @@ export declare const BALANCE: Balance
  *   it('exposes ship.stats byteCap 255 and spawn pools 100/100')           // C01 sheet, G08
  *   it('exposes enemy.squad maxGroups 6, maxPerGroup 8, tickHz 5, maxFury 4, patrolStandoffZ 10') // E01 squad
  *   it('exposes enemy.poolSize 48 and spawn maxActive 8 per side')           // E05
+ *   it('re-exports weapon / dash / squad / reach / collision tables as the initial config hub') // R1
  *   it('treats BALANCE as a frozen object (Object.isFrozen or as const)')  // R2
  *
  * Manual:
  *   A-manual-1. [manual] grep poc2/src for numeric literals with gameplay meaning
- *               outside balancer.ts / catalog.ts / laser-levels.ts — must be empty.
+ *               outside BALANCE-referenced tables (balancer.ts, catalog.ts,
+ *               weapon-levels.ts, dash-levels.ts, warrior.ts, squad-config.ts,
+ *               reach-path.ts, layers.ts) — must be empty.
  *
  * Coverage: R1–R5 + card Acceptance ("every tuned number is reachable from BALANCE").
  */

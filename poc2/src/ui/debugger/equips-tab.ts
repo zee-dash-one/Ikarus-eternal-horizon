@@ -2,10 +2,10 @@
  * SDD-G08 Equips tab — ship loadout + equipped weapon level, bound to the live sim.
  */
 
-import { DASH_LEVELS } from '../../gameobjects/controller/dash-levels'
+import { BALANCE } from '../../core/balancer'
 import type { WeaponId } from '../../gameobjects/weapon/catalog'
 import type { WeaponLevelSnapshotField } from '../../gameobjects/weapon/weapon-levels'
-import { statFieldsForWeapon, WEAPON_LEVEL_COUNT } from '../../gameobjects/weapon/weapon-levels'
+import { statFieldsForWeapon } from '../../gameobjects/weapon/weapon-levels'
 import type { DebuggerBinds, DebuggerTab } from './debugger'
 
 type ListKey =
@@ -104,7 +104,7 @@ export class EquipsTab implements DebuggerTab {
       'weapon level',
       'weapons.level',
       1,
-      WEAPON_LEVEL_COUNT,
+      BALANCE.weapons.levelCount,
       1,
       () => this._binds.weapons.level(),
       (value) => {
@@ -124,7 +124,7 @@ export class EquipsTab implements DebuggerTab {
       'dash level',
       'dash.level',
       1,
-      DASH_LEVELS.length,
+      BALANCE.controls.dash.levels.length,
       1,
       () => this._binds.dash.level(),
       (value) => {

@@ -213,7 +213,7 @@ export declare class Enemy extends THREE.Mesh implements TargetHit, DamageSink {
 /**
  * New section (declare on SDD-A01). Starting values — tune at first playtest, not before.
  *
- *   BALANCE.enemy.generic.hp             = 8      // L1 laser dmg 1 ⇒ ~8 bolts / ~1s at rate 8
+ *   BALANCE.enemy.generic.hp             = 8      // L1 laser dmg 1.5 ⇒ ~6 bolts / ~0.6s at rate 10
  *   BALANCE.enemy.generic.radius         = 0.7    // larger than ship half-width; readable box
  *   BALANCE.enemy.generic.speed          = 4      // < ship maxSpeed 12 — kiteable
  *   BALANCE.enemy.generic.contactDamage  = 15     // 50 shield ⇒ ~4 contacts to break Force Field

@@ -1,5 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import { DASH_LEVELS } from '../gameobjects/controller/dash-levels'
+import { WEAPONS } from '../gameobjects/weapon/catalog'
+import {
+  BEAM_LEVELS,
+  LASER_LEVELS,
+  MJOLNIR_LEVELS,
+  PLASMA_LEVELS,
+} from '../gameobjects/weapon/weapon-levels'
+import { HIT_MATRIX } from '../systems/layers'
+import { DEFAULT_REACH_PATH } from '../systems/reach-path'
+import { DEFAULT_SQUAD_CONFIG } from '../systems/squad-config'
 import { BALANCE } from './balancer'
 
 describe('BALANCE', () => {
@@ -29,12 +39,12 @@ describe('BALANCE', () => {
     expect(BALANCE.controls.motion.brake).toBe(120)
   })
 
-  it('exposes dynamic camera fov=85 at {3,14,6} / {-55,24,-14}', () => {
+  it('exposes dynamic camera fov=110 at {5,12,7} / {-40,24,-14}', () => {
     expect(BALANCE.camera.fov).toBe(110)
-    expect(BALANCE.camera.position).toEqual({ x: 3, y: 14, z: 6 })
-    expect(BALANCE.camera.rotation).toEqual({ x: -55, y: 24, z: -14 })
+    expect(BALANCE.camera.position).toEqual({ x: 5, y: 12, z: 7 })
+    expect(BALANCE.camera.rotation).toEqual({ x: -40, y: 24, z: -14 })
     expect(BALANCE.camera.near).toBe(5)
-    expect(BALANCE.camera.far).toBe(10000)
+    expect(BALANCE.camera.far).toBe(5000)
   })
 
   it('exposes ship.health with four speedMul slots', () => {
@@ -57,7 +67,7 @@ describe('BALANCE', () => {
   it('exposes score and drops and vfx.shake.maxAmplitude', () => {
     expect(BALANCE.score.enemy).toBe(100)
     expect(BALANCE.score.meteor).toBe(25)
-    expect(BALANCE.drops.magnetRadius).toBe(2.5)
+    expect(BALANCE.drops.magnetRadius).toBe(3)
     expect(BALANCE.drops.magnetSpeed).toBe(8)
     expect(BALANCE.drops.metalScrapChance).toBe(0.4)
     expect(BALANCE.drops.fragmentRadius).toBe(0.22)
@@ -120,6 +130,7 @@ describe('BALANCE', () => {
     expect(BALANCE.controls.dash).toEqual({
       speedMul: DASH_LEVELS[0]?.speedMul,
       durationMs: BALANCE.ship.cooldowns.dashingMs,
+      levels: DASH_LEVELS,
     })
     expect(BALANCE.controls.mouse).toEqual({
       fireButton: 0,
@@ -191,22 +202,22 @@ describe('BALANCE', () => {
     expect(BALANCE.enemy.spawnLeft.size.x).toBe(10)
     expect(BALANCE.enemy.spawnRight.size.x).toBe(10)
     expect(BALANCE.enemy.spawnFront.size.x).toBe(10)
-    expect(BALANCE.enemy.spawnLeft.visible).toBe(true)
-    expect(BALANCE.enemy.spawnRight.visible).toBe(true)
-    expect(BALANCE.enemy.spawnFront.visible).toBe(true)
+    expect(BALANCE.enemy.spawnLeft.visible).toBe(false)
+    expect(BALANCE.enemy.spawnRight.visible).toBe(false)
+    expect(BALANCE.enemy.spawnFront.visible).toBe(false)
     expect(BALANCE.enemy.spawnLeft.color).toBe(0xff2222)
-    expect(BALANCE.enemy.spawnLeft.intervalSec).toBe(1.2)
-    expect(BALANCE.enemy.spawnRight.intervalSec).toBe(1.2)
-    expect(BALANCE.enemy.spawnFront.intervalSec).toBe(1.2)
+    expect(BALANCE.enemy.spawnLeft.intervalSec).toBe(1.8)
+    expect(BALANCE.enemy.spawnRight.intervalSec).toBe(1.8)
+    expect(BALANCE.enemy.spawnFront.intervalSec).toBe(2)
     expect(BALANCE.enemy.spawnLeft.maxActive).toBe(8)
     expect(BALANCE.enemy.spawnRight.maxActive).toBe(8)
     expect(BALANCE.enemy.spawnFront.maxActive).toBe(8)
     expect(BALANCE.enemy.spawnLeft.lanesX).toEqual([-4, -2, 0, 2, 4])
-    expect(BALANCE.enemy.gate.offset.z).toBe(-90)
-    expect(BALANCE.enemy.gate.reachSpeedMul).toBe(3)
-    expect(BALANCE.enemy.gate.entryPointsX.left).toEqual([-24, -18, -12])
-    expect(BALANCE.enemy.gate.entryPointsX.middle).toEqual([-6, 0, 6])
-    expect(BALANCE.enemy.gate.entryPointsX.right).toEqual([12, 18, 24])
+    expect(BALANCE.enemy.gate.offset.z).toBe(-100)
+    expect(BALANCE.enemy.gate.reachSpeedMul).toBe(8)
+    expect(BALANCE.enemy.gate.entryPointsX.left).toEqual([-32, -24, -16])
+    expect(BALANCE.enemy.gate.entryPointsX.middle).toEqual([-8, 0, 8])
+    expect(BALANCE.enemy.gate.entryPointsX.right).toEqual([16, 24, 32])
     expect(BALANCE.enemy.warrior.id).toBe('warrior')
     expect(BALANCE.enemy.warrior.targets).toEqual(['enemyGate', 'player'])
     expect(BALANCE.enemy.warrior.weapon.rate).toBeGreaterThan(0)
@@ -249,6 +260,23 @@ describe('BALANCE', () => {
     expect(BALANCE.weapons.loadout).toEqual(['laser', 'plasma', 'beam', 'mjolnir'])
     expect(BALANCE.weapons.catalog.laser.poolSize).toBe(768)
     expect(BALANCE.weapons.catalog.plasma.poolSize).toBe(32)
+  })
+
+  it('re-exports weapon / dash / squad / reach / collision tables as the initial config hub', () => {
+    expect(BALANCE.weapons.catalog).toBe(WEAPONS)
+    expect(BALANCE.weapons.levelCount).toBe(12)
+    expect(BALANCE.weapons.levels.laser).toBe(LASER_LEVELS)
+    expect(BALANCE.weapons.levels.plasma).toBe(PLASMA_LEVELS)
+    expect(BALANCE.weapons.levels.beam).toBe(BEAM_LEVELS)
+    expect(BALANCE.weapons.levels.mjolnir).toBe(MJOLNIR_LEVELS)
+    expect(BALANCE.weapons.catalog.laser.damage).toBe(LASER_LEVELS[0]?.damage)
+    expect(BALANCE.weapons.catalog.laser.rate).toBe(LASER_LEVELS[0]?.rate)
+    expect(BALANCE.weapons.catalog.laser.energyPerShot).toBe(LASER_LEVELS[0]?.energyPerShot)
+    expect(BALANCE.controls.dash.levels).toBe(DASH_LEVELS)
+    expect(BALANCE.controls.dash.speedMul).toBe(DASH_LEVELS[0]?.speedMul)
+    expect(BALANCE.enemy.squad).toBe(DEFAULT_SQUAD_CONFIG)
+    expect(BALANCE.enemy.reachPath).toBe(DEFAULT_REACH_PATH)
+    expect(BALANCE.collision.hitMatrix).toBe(HIT_MATRIX)
   })
 
   it('exposes BattleField ship-relative bounds (blue wall cull volume)', () => {

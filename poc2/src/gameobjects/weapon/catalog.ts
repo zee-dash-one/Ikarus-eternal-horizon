@@ -1,7 +1,15 @@
 /**
- * SDD-D02 weapon catalog — gameplay numbers for all four guns.
- * Do not import BALANCE (cycle). A01 re-exports WEAPONS.
+ * SDD-D02 weapon catalog — L1 play-start rows plus identity (color, pool, burst).
+ * Level curves live in weapon-levels.ts. Do not import BALANCE (cycle); A01 re-exports both.
  */
+
+import {
+  BEAM_LEVELS,
+  LASER_LEVELS,
+  MJOLNIR_LEVELS,
+  PLASMA_LEVELS,
+  type WeaponLevelRow,
+} from './weapon-levels'
 
 export type WeaponId = 'laser' | 'plasma' | 'beam' | 'mjolnir'
 
@@ -69,31 +77,44 @@ export interface WeaponConfig {
   laser?: LaserSpec
 }
 
+function levelOne(rows: readonly WeaponLevelRow[]): WeaponLevelRow {
+  const row = rows[0]
+  if (!row) {
+    throw new Error('weapon level table missing L1')
+  }
+  return row
+}
+
+const LASER_L1 = levelOne(LASER_LEVELS)
+const PLASMA_L1 = levelOne(PLASMA_LEVELS)
+const BEAM_L1 = levelOne(BEAM_LEVELS)
+const MJOLNIR_L1 = levelOne(MJOLNIR_LEVELS)
+
 export const WEAPONS: Record<WeaponId, WeaponConfig> = {
   laser: {
     id: 'laser',
     displayName: 'Laser',
     color: 0x22d3ee,
-    rate: 8,
-    energyPerShot: 1,
-    damage: 1,
+    rate: LASER_L1.rate,
+    energyPerShot: LASER_L1.energyPerShot,
+    damage: LASER_L1.damage,
     profile: 'projectile',
     /** L12 volley 12 × burst 15 = 180; ~3s life overlaps ~4 cycles. */
     poolSize: 768,
     muzzleOffset: { x: 0, y: 0, z: -1.4 },
     level: 1,
     projectile: {
-      speed: 30,
-      radius: 0.12,
-      lifetime: 1,
-      damageDecayPerUnit: 0,
+      speed: LASER_L1.speed,
+      radius: LASER_L1.radius,
+      lifetime: LASER_L1.lifetime,
+      damageDecayPerUnit: LASER_L1.damageDecayPerUnit,
     },
     laser: {
-      forwardShots: 1,
-      diagonalShotsPerSide: 0,
-      totalShots: 1,
-      diagonalAngleDeg: 22,
-      forwardSpread: 0.55,
+      forwardShots: LASER_L1.forwardShots,
+      diagonalShotsPerSide: LASER_L1.diagonalShotsPerSide,
+      totalShots: LASER_L1.forwardShots + 2 * LASER_L1.diagonalShotsPerSide,
+      diagonalAngleDeg: LASER_L1.diagonalAngleDeg,
+      forwardSpread: LASER_L1.forwardSpread,
       diagonalSpreadDeg: 10,
       burstShots: 15,
       overheatSec: 0.5,
@@ -103,18 +124,18 @@ export const WEAPONS: Record<WeaponId, WeaponConfig> = {
     id: 'plasma',
     displayName: 'Plasma',
     color: 0xfb923c,
-    rate: 1.6,
-    energyPerShot: 1.5,
-    damage: 2.5,
+    rate: PLASMA_L1.rate,
+    energyPerShot: PLASMA_L1.energyPerShot,
+    damage: PLASMA_L1.damage,
     profile: 'orb',
     poolSize: 32,
     muzzleOffset: { x: 0, y: 0, z: -1.4 },
     orb: {
-      speed: 14,
-      radius: 0.22,
-      lifetime: 2.4,
-      aoeRadius: 2.2,
-      damageDecayPerUnit: 0.01,
+      speed: PLASMA_L1.speed,
+      radius: PLASMA_L1.radius,
+      lifetime: PLASMA_L1.lifetime,
+      aoeRadius: PLASMA_L1.aoeRadius,
+      damageDecayPerUnit: PLASMA_L1.damageDecayPerUnit,
     },
   },
   beam: {
@@ -128,11 +149,11 @@ export const WEAPONS: Record<WeaponId, WeaponConfig> = {
     poolSize: 4,
     muzzleOffset: { x: 0, y: 0, z: -1.4 },
     beam: {
-      width: 0.35,
-      length: 26,
-      ticksPerSec: 60,
-      dps: 6,
-      energyPerSec: 3,
+      width: BEAM_L1.width,
+      length: BEAM_L1.length,
+      ticksPerSec: BEAM_L1.ticksPerSec,
+      dps: BEAM_L1.dps,
+      energyPerSec: BEAM_L1.energyPerSec,
     },
   },
   mjolnir: {
@@ -146,11 +167,11 @@ export const WEAPONS: Record<WeaponId, WeaponConfig> = {
     poolSize: 4,
     muzzleOffset: { x: 0, y: 0, z: -1.4 },
     cone: {
-      angleDeg: 50,
-      length: 18,
-      ticksPerSec: 30,
-      dps: 5,
-      energyPerSec: 2.2,
+      angleDeg: MJOLNIR_L1.angleDeg,
+      length: MJOLNIR_L1.length,
+      ticksPerSec: MJOLNIR_L1.ticksPerSec,
+      dps: MJOLNIR_L1.dps,
+      energyPerSec: MJOLNIR_L1.energyPerSec,
     },
   },
 }

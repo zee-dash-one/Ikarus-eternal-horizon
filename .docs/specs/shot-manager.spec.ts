@@ -162,6 +162,8 @@ export declare class ShotManager {
  *   R2. acquire/release never cross origins — a WeaponShot cannot enter the enemy pool.
  *   R3. clear(origin) / weapon-pool exhaustion does not deactivate other origins.
  *   R4. update releases weapon shots with lifetime<=0 or dist-from-spawn >= range.
+ *       Enemy/bomb use lifetime or playfield/AABB. Optional onWeaponExpire runs
+ *       for weapon origin only, while the shot is still active, then release.
  *       World AABB (BALANCE.shot.despawn) is enemy/bomb only — never a laser wall
  *       in world space (RUL-02 still holds via lifetime/range).
  *   R5. update does not hit-test, apply damage, or spawn VFX.
@@ -223,6 +225,8 @@ export declare class ShotManager {
  *   it('acquire(weapon) never returns a shot that lives in the enemy pool')           // R2
  *   it('clear(weapon) leaves enemy actives alive (no cross-cleanup)')                 // R3
  *   it('update releases a shot whose lifetime elapsed')                               // R4, WPN-01
+ *   it('calls onWeaponExpire while the weapon shot is still active, then releases')   // R4
+ *   it('does not call onWeaponExpire for an enemy shot that leaves the field')        // R4
  *   it('does not kill a weapon shot at the world zFar plane (range is from spawn)')   // R4
  *   it('releases a weapon shot that has travelled its range from the fire point')     // R4
  *   it('lets a weapon shot fired further forward travel the same range')              // R4

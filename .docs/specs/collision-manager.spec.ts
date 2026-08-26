@@ -186,9 +186,8 @@ export declare function layersHit(from: Layer, to: Layer, matrix?: Readonly<Reco
  *   R13. queryRadius / queryCone / querySegment use the same matrix filter (`hits`).
  *   R14. Per-frame allocation: none in update (scratch HitPair buffer, rewind length).
  *   R15. registerTarget is idempotent; unregister of a missing target is a no-op.
- *   R16. PlayerShot with aoeRadius > 0 that already formed a primary pair also
- *        reports splash pairs against other Enemy/Meteor inside aoeRadius.
- *        Splash pairs do not consume the projectile (the primary pair does).
+ *   R16. PlayerShot aoeRadius does not expand extra F01 pairs. D04 plasma blast
+ *        grows over aoeDuration and queries Enemy/Meteor via queryRadius.
  */
 
 // ─── 6. View / syncRender ────────────────────────────────────────────────────
@@ -256,7 +255,7 @@ export declare function layersHit(from: Layer, to: Layer, matrix?: Readonly<Reco
  *   it('inactive or unregistered colliders do not generate pairs')                    // R11, RUL-02
  *   it('Meteor↔PlayerShot overlapping reports one pair not two')                      // R12
  *   it('queryRadius returns Enemy+Meteor inside radius and skips Player')             // R13, D04 hook
- *   it('PlayerShot with aoeRadius splashes nearby Enemy without consuming extra pairs') // R16
+ *   it('PlayerShot with aoeRadius still reports only the direct overlap (blast is D04)') // R16
  *   it('PlayerShot without aoeRadius does not splash a nearby Enemy')                 // R16
  *   it('queryCone and querySegment honour the hits mask')                             // R13, D05/D06
  *   it('update reuses the HitPair buffer (length rewind, same array ref)')            // R14

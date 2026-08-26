@@ -157,6 +157,42 @@ describe('ShotManager', () => {
     manager.dispose()
   })
 
+  it('calls onWeaponExpire while the weapon shot is still active, then releases', () => {
+    const seen: { active: boolean; count: number }[] = []
+    const { manager } = makeManager({ weaponCapacity: 1, enemyCapacity: 0 })
+    manager.setOnWeaponExpire((shot) => {
+      seen.push({ active: shot.active, count: manager.pool('weapon').activeCount })
+    })
+    const shot = manager.acquire('weapon')
+    expect(shot).toBeTruthy()
+    if (!shot) {
+      return
+    }
+    shot.activate({})
+    shot.lifetime = 0
+    manager.update(0)
+    expect(seen).toEqual([{ active: true, count: 1 }])
+    expect(manager.pool('weapon').activeCount).toBe(0)
+    manager.dispose()
+  })
+
+  it('does not call onWeaponExpire for an enemy shot that leaves the field', () => {
+    const hook = vi.fn()
+    const { manager } = makeManager({ weaponCapacity: 0, enemyCapacity: 1 })
+    manager.setOnWeaponExpire(hook)
+    const shot = manager.acquire('enemy')
+    expect(shot).toBeTruthy()
+    if (!shot) {
+      return
+    }
+    shot.lifetime = 10
+    shot.z = BALANCE.shot.despawn.zFar - 1
+    manager.update(0)
+    expect(hook).not.toHaveBeenCalled()
+    expect(manager.pool('enemy').activeCount).toBe(0)
+    manager.dispose()
+  })
+
   it('does not kill a weapon shot at the world zFar plane (range is from spawn)', () => {
     const { manager } = makeManager({ weaponCapacity: 1, enemyCapacity: 0 })
     const shot = manager.acquire('weapon')

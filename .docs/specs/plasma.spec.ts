@@ -168,7 +168,12 @@ export declare function registerPlasma(): void
  *   aoeRadius = orb.aoeRadius * aoeMul; aoeDuration = orb.aoeDuration;
  *   decayPerUnit = 0; range = speed * lifetime; color = 0xfb923c.
  *   THIS CLASS DOES NOT call takeDamage and does not iterate targets.
- *   F01 splash + PlasmaBurst happen on consume (impact), not on expiry.
+ *   On consume (impact) the orb deals its own damage, then a PlasmaBurst
+ *   grows for aoeDuration. Explosion damage equals the orb's damage and
+ *   uses A03 decayFactor(age/duration): 100 / 75 / 50 / 25 each quarter.
+ *   Each hostile is hit once, the first time they enter the current radius.
+ *   Path-end expiry spawns the same burst (no orb-hit damage if nothing was
+ *   touched). E04 releases the orb; F04 resolves blast pairs.
  *   dispose: no GPU of its own (shots belong to E04; bursts to vfxManager).
  *   registerPlasma() calls registerWeapon('plasma', factory) once.
  */
@@ -182,7 +187,8 @@ export declare function registerPlasma(): void
  *   R5. Cadence: cooldown = 1 / (2 * rateMul) after a successful volley.
  *   R6. vz = -speed (12); vx = 0. No homing. Play plane y = 0 (D01).
  *   R7. AoE damage is NOT applied here. No takeDamage, no target loop.
- *       F01 detonates once per impact (never per-frame while flying).
+ *       Direct hit is F01+F04 (orb). Explosion is PlasmaBurst.pulse (F04).
+ *       Path-end expiry spawns the same burst. Never per-frame while flying.
  *   R8. registerWeapon('plasma', factory) + catalog row — Weapon class
  *       unchanged (D12).
  *   R9. Per-frame allocation: none. dispose() is a no-op for GPU.
@@ -232,7 +238,9 @@ export declare function registerPlasma(): void
  * BALANCE.vfx.plasmaBurst = { poolSize: 24, color: 0xfbbf24 }
  *
  * Feel vs laser L1 (dmg 40, rate 10, energy 0.5, speed 30): slower, costlier,
- * twice the hit, no fade with distance, splash on impact.
+ * twice the hit, no fade with distance. Direct hit deals orb damage, then the
+ * expanding blast deals the same amount on A03 rungs (100/75/50/25 of duration).
+ * Hostiles that walk into the sphere later take the current rung once.
  * Equips tab edits aoeRadius / aoeDuration / explosionFoci / damage.
  * Pillars: 4 legibility; WPN-03 second weapon; WPN-05 cost.
  */
@@ -247,6 +255,7 @@ export declare function registerPlasma(): void
  *   poc2/src/gameobjects/weapon/behaviours/plasma.test.ts
  *   poc2/src/gameobjects/weapon/plasma-levels.test.ts
  *   poc2/src/gameobjects/weapon/plasma-burst.test.ts
+ *   poc2/src/gameobjects/weapon/plasma-detonate.test.ts
  * Runner: vitest
  * Mocks: EnergyPort, ShotAcquirePort recording activate() payloads, WeaponConfig
  *        plasma slice, BehaviourCtx. Burst tests use a Scene.
@@ -274,8 +283,10 @@ export declare function registerPlasma(): void
  *
  * Manual:
  *   A-manual-1. [manual] an orb detonating damages every hostile inside aoeRadius
+ *               (impact and end-of-path)
  *   A-manual-2. [manual] orange orb is distinct from the cyan laser at a glance
  *   A-manual-3. [manual] impact sphere grows and fades; L5 fires three orbs
+ *   A-manual-4. [manual] a miss still explodes at the end of the flight
  *
  * Coverage: R1–R13 + card Acceptance.
  */

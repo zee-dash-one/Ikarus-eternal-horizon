@@ -57,7 +57,11 @@ export interface ShotManagerOptions {
   readonly enemyCapacity?: number
   readonly bombFactory?: () => ShotLike
   readonly bombCapacity?: number
+  /** Fired while the weapon shot is still active, immediately before pool release. */
+  readonly onWeaponExpire?: (shot: ShotLike) => void
 }
+
+export type WeaponExpireHook = (shot: ShotLike) => void
 
 function neverFactory(): ShotLike {
   throw new Error('empty origin factory must not run')
@@ -94,11 +98,13 @@ export class ShotManager {
   private readonly _bomb: ObjectPool<ShotLike>
   private readonly _pools: readonly ObjectPool<ShotLike>[]
   private readonly _acquirePort: ShotAcquirePort
+  private _onWeaponExpire: WeaponExpireHook | undefined
 
   constructor(options: ShotManagerOptions) {
     this._scene = options.scene
     this._despawn = options.despawn
     this._playfield = options.playfield ?? null
+    this._onWeaponExpire = options.onWeaponExpire
 
     this._weapon = this.makePool(
       options.weaponCapacity,
@@ -118,6 +124,10 @@ export class ShotManager {
   /** Bind / replace the live BattleField used to cull enemy/bomb bolts. */
   setPlayfield(playfield: ShotPlayfield | null): void {
     this._playfield = playfield
+  }
+
+  setOnWeaponExpire(hook: WeaponExpireHook | undefined): void {
+    this._onWeaponExpire = hook
   }
 
   asAcquirePort(): ShotAcquirePort {
@@ -216,6 +226,9 @@ export class ShotManager {
           ? shot.lifetime <= 0 || isPastRange(shot)
           : shot.lifetime <= 0 || isOutsidePlay(shot, this._despawn, this._playfield)
       if (expired) {
+        if (origin === 'weapon') {
+          this._onWeaponExpire?.(shot)
+        }
         this.release(origin, shot)
       }
     })

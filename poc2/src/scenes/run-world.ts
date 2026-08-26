@@ -38,6 +38,7 @@ import {
 } from '../gameobjects/weapon/weapon-levels'
 import { Weapon } from '../gameobjects/weapon/weapon'
 import { PlasmaBurstManager } from '../gameobjects/weapon/plasma-burst'
+import { isPlasmaOrb } from '../gameobjects/weapon/plasma-detonate'
 import '../gameobjects/weapon/behaviours/laser'
 import '../gameobjects/weapon/behaviours/plasma'
 import '../gameobjects/weapon/behaviours/beam'
@@ -49,7 +50,7 @@ import type { EnemyGroup } from '../systems/enemy-group'
 import { FiringManager } from '../systems/firing-manager'
 import { ShotManager } from '../systems/shot-manager'
 import { CollisionManager, type ColliderPort, type HitPair } from '../systems/collision-manager'
-import { DamageResolver } from '../systems/damage-resolver'
+import { DamageResolver, type DamageEvent } from '../systems/damage-resolver'
 import { DeathTrigger, SilentExplosionVfx } from '../systems/death-trigger'
 import { DropManager, Drop } from '../systems/drop-manager'
 import { DifficultyManager } from '../systems/difficulty-manager'
@@ -130,6 +131,21 @@ function noopStep(): Steppable & Disposable & RenderSyncable {
     dispose() {
       /* pending card */
     },
+  }
+}
+
+function flushCombatKills(
+  death: DeathTrigger,
+  drops: DropManager,
+  events: readonly DamageEvent[],
+): void {
+  for (const ev of events) {
+    death.handle(ev)
+    if (ev.kind !== 'killed') {
+      continue
+    }
+    const sink = ev.sink as { x?: number; z?: number }
+    drops.onSourceKilled('enemy', sink.x ?? 0, sink.z ?? 0)
   }
 }
 
@@ -364,6 +380,14 @@ export function createRunWorld(options: RunWorldOptions): RunWorldFactory {
         void dt
       },
     }
+
+    shots.setOnWeaponExpire((shot) => {
+      const orb = shot as WeaponShot
+      if (!isPlasmaOrb(orb)) {
+        return
+      }
+      plasmaBursts.spawn(orb.x, orb.z, orb.aoeRadius, orb.aoeDuration, orb.effectiveDamage())
+    })
 
     return {
       parallax,
@@ -712,20 +736,24 @@ export function createRunWorld(options: RunWorldOptions): RunWorldFactory {
               (shot as ColliderPort).layer === Layer.EnemyShot ? 'enemy' : 'weapon'
             if (origin === 'weapon') {
               const orb = shot as WeaponShot
-              if (orb.aoeRadius > 0) {
-                world.plasmaBursts.spawn(orb.x, orb.z, orb.aoeRadius, orb.aoeDuration)
+              if (isPlasmaOrb(orb)) {
+                world.plasmaBursts.spawn(
+                  orb.x,
+                  orb.z,
+                  orb.aoeRadius,
+                  orb.aoeDuration,
+                  orb.effectiveDamage(),
+                )
               }
             }
             world.shots.release(origin, shot as never)
           }
-          for (const ev of events) {
-            world.death.handle(ev)
-            if (ev.kind !== 'killed') {
-              continue
-            }
-            const sink = ev.sink as { x?: number; z?: number }
-            world.drops.onSourceKilled('enemy', sink.x ?? 0, sink.z ?? 0)
-          }
+          flushCombatKills(world.death, world.drops, events)
+          world.plasmaBursts.pulse(dt, world.collision, (pairs) => {
+            const blast = world.damage.resolve(pairs)
+            flushCombatKills(world.death, world.drops, blast)
+            return blast
+          })
           world.death.update(dt)
         },
         syncRender() {
@@ -741,7 +769,7 @@ export function createRunWorld(options: RunWorldOptions): RunWorldFactory {
       const world = current()
       return {
         update(dt: number) {
-          world.plasmaBursts.update(dt)
+          void dt
         },
         syncRender() {
           world.plasmaBursts.syncRender()

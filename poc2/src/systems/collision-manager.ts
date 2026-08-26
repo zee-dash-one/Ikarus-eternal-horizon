@@ -49,13 +49,6 @@ export interface CollisionManagerOptions {
   readonly matrix?: Readonly<Record<Layer, readonly Layer[]>>
 }
 
-const AOE_LAYERS: readonly Layer[] = [Layer.Enemy, Layer.Meteor]
-
-function aoeRadiusOf(obj: ColliderPort): number {
-  const extra = obj as ColliderPort & { aoeRadius?: number }
-  return typeof extra.aoeRadius === 'number' && extra.aoeRadius > 0 ? extra.aoeRadius : 0
-}
-
 function overlaps(a: ColliderPort, b: ColliderPort): boolean {
   const dx = a.x - b.x
   const dz = a.z - b.z
@@ -151,8 +144,6 @@ export class CollisionManager {
       }
     }
 
-    this._expandAoe()
-
     this._pairs.length = this._pairLen
     return this._pairs
   }
@@ -241,42 +232,6 @@ export class CollisionManager {
     this._pairLen = 0
     this._pairs.length = 0
     this._seen.clear()
-  }
-
-  private _expandAoe(): void {
-    const primaryLen = this._pairLen
-    for (let i = 0; i < primaryLen; i++) {
-      const pair = this._pairs[i]
-      if (!pair) {
-        continue
-      }
-      const shot =
-        pair.aLayer === Layer.PlayerShot
-          ? pair.a
-          : pair.bLayer === Layer.PlayerShot
-            ? pair.b
-            : null
-      if (!shot) {
-        continue
-      }
-      const aoe = aoeRadiusOf(shot)
-      if (aoe <= 0) {
-        continue
-      }
-      const found = this.queryRadius({
-        x: shot.x,
-        z: shot.z,
-        radius: aoe,
-        hits: AOE_LAYERS,
-      })
-      for (let k = 0; k < found.length; k++) {
-        const target = found[k]
-        if (!target) {
-          continue
-        }
-        this._pushPair(shot, target, false)
-      }
-    }
   }
 
   private _tryPair(a: ColliderPort, b: ColliderPort): void {

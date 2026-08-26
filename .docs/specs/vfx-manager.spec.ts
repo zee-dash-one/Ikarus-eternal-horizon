@@ -176,6 +176,7 @@ export declare class VfxManager {
  *   BALANCE.vfx.shake.maxAmplitude = 0.18   // hard readability cap (GDD §15)
  *   BALANCE.vfx.shake.decayPerSec  = 4      // settles in ~few tenths of a second
  *   BALANCE.vfx.hitStopFrames      = 3      // "a few frames" — not a freeze-frame
+ *   BALANCE.vfx.corpseMs           = 800    // DeathTrigger wreck linger
  *   BALANCE.vfx.burstPoolSize      = 24
  *   BALANCE.vfx.burstLifetimeSec   = 0.35
  *   BALANCE.vfx.flashOpacity       = 0.55

@@ -15,6 +15,13 @@ describe('SoundManager', () => {
     sound.dispose()
   })
 
+  it('playExplosionCue records lastCue explosion', () => {
+    const sound = new SoundManager()
+    sound.playExplosionCue()
+    expect(sound.lastCue).toBe('explosion')
+    sound.dispose()
+  })
+
   it('play(id) records lastCue even when muted', () => {
     const sound = new SoundManager({
       config: { masterVolume: 1, sfxVolume: 1, musicVolume: 0.65, muted: true },

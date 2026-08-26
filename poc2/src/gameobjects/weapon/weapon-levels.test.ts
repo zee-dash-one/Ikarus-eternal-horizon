@@ -27,9 +27,12 @@ describe('weapon level tables', () => {
     }
   })
 
-  it('plasma L12 scales damage and aoe above L1', () => {
-    expect(PLASMA_LEVELS[11]?.damage).toBeGreaterThan(PLASMA_LEVELS[0]?.damage ?? 0)
-    expect(PLASMA_LEVELS[11]?.aoeRadius).toBeGreaterThan(PLASMA_LEVELS[0]?.aoeRadius ?? 0)
+  it('plasma L12 has 5 foci and higher damage/aoe than L1', () => {
+    expect(PLASMA_LEVELS[11]?.damage).toBe(120)
+    expect(PLASMA_LEVELS[0]?.damage).toBe(80)
+    expect(PLASMA_LEVELS[11]?.aoeRadius).toBe(3.2)
+    expect(PLASMA_LEVELS[11]?.explosionFoci).toBe(5)
+    expect(PLASMA_LEVELS[0]?.explosionFoci).toBe(1)
   })
 
   it('beam L12 scales width and dps above L1', () => {
@@ -52,11 +55,13 @@ describe('applyWeaponLevel', () => {
     expect(cfg.laser?.totalShots).toBe(5)
   })
 
-  it('applyWeaponLevel plasma cfg 12 writes scaled orb stats', () => {
+  it('applyWeaponLevel plasma cfg 12 writes band-3 orb stats', () => {
     const cfg = copyWeaponConfig(WEAPONS.plasma)
     applyWeaponLevel(cfg, 12)
-    expect(cfg.damage).toBe(5)
-    expect(cfg.orb?.aoeRadius).toBe(3.3)
+    expect(cfg.damage).toBe(120)
+    expect(cfg.orb?.aoeRadius).toBe(3.2)
+    expect(cfg.orb?.explosionFoci).toBe(5)
+    expect(cfg.orb?.aoeDuration).toBe(0.5)
   })
 
   it('applyWeaponLevel beam cfg 1 writes beam spec', () => {
@@ -87,6 +92,8 @@ describe('weaponLevelSnapshot', () => {
     expect(statFieldsForWeapon('laser')).toContain('burstShots')
     expect(statFieldsForWeapon('laser')).toContain('overheatSec')
     expect(statFieldsForWeapon('plasma')).toContain('aoeRadius')
+    expect(statFieldsForWeapon('plasma')).toContain('aoeDuration')
+    expect(statFieldsForWeapon('plasma')).toContain('explosionFoci')
     expect(statFieldsForWeapon('beam')).toContain('width')
     expect(statFieldsForWeapon('mjolnir')).toContain('angleDeg')
   })

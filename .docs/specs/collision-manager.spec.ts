@@ -161,7 +161,9 @@ export declare function layersHit(from: Layer, to: Layer, matrix?: Readonly<Reco
  *                        is two directed entries, not a special case in code.
  *   update — circle vs circle on XZ; skip !active; skip friendly (not in matrix).
  *            Player→Drop pairs are reported (F02 collect); F04 must ignore Drop.
- *   queryRadius — D04 Plasma AoE hook (hits Enemy+Meteor).
+ *   queryRadius — D04 Plasma AoE hook (hits Enemy+Meteor). CollisionManager.update
+ *                 expands PlayerShot pairs with aoeRadius > 0 into extra HitPairs
+ *                 (consumeProjectile false on splash).
  *   queryCone   — D06 Mjolnir hook.
  *   querySegment — D05 Beam hook.
  */
@@ -184,6 +186,9 @@ export declare function layersHit(from: Layer, to: Layer, matrix?: Readonly<Reco
  *   R13. queryRadius / queryCone / querySegment use the same matrix filter (`hits`).
  *   R14. Per-frame allocation: none in update (scratch HitPair buffer, rewind length).
  *   R15. registerTarget is idempotent; unregister of a missing target is a no-op.
+ *   R16. PlayerShot with aoeRadius > 0 that already formed a primary pair also
+ *        reports splash pairs against other Enemy/Meteor inside aoeRadius.
+ *        Splash pairs do not consume the projectile (the primary pair does).
  */
 
 // ─── 6. View / syncRender ────────────────────────────────────────────────────
@@ -251,6 +256,8 @@ export declare function layersHit(from: Layer, to: Layer, matrix?: Readonly<Reco
  *   it('inactive or unregistered colliders do not generate pairs')                    // R11, RUL-02
  *   it('Meteor↔PlayerShot overlapping reports one pair not two')                      // R12
  *   it('queryRadius returns Enemy+Meteor inside radius and skips Player')             // R13, D04 hook
+ *   it('PlayerShot with aoeRadius splashes nearby Enemy without consuming extra pairs') // R16
+ *   it('PlayerShot without aoeRadius does not splash a nearby Enemy')                 // R16
  *   it('queryCone and querySegment honour the hits mask')                             // R13, D05/D06
  *   it('update reuses the HitPair buffer (length rewind, same array ref)')            // R14
  *   it('registerTarget twice does not duplicate; unregister missing is safe')         // R15

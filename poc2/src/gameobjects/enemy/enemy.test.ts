@@ -581,6 +581,8 @@ describe('Enemy Warrior — combat', () => {
     enemy.activate({ x: 0, y: 0, z: -5 })
     expect(enemy.applyDamage(WARRIOR.hp + WARRIOR.shieldMax, 0).killed).toBe(true)
     expect(enemy.active).toBe(false)
+    expect(enemy.dying).toBe(true)
+    expect(enemy.visible).toBe(true)
     expect(enemy.applyDamage(2, 0).killed).toBe(false)
     enemy.dispose()
     geo.dispose()

@@ -149,6 +149,22 @@ describe('EnemyManager', () => {
     disposeAll(parts)
   })
 
+  it('keeps a dying enemy in the pool until release', () => {
+    const parts = makeManager(2)
+    const enemy = parts.manager.spawnOne('front')
+    expect(enemy).not.toBeNull()
+    enemy?.applyDamage(9999, 0)
+    expect(enemy?.dying).toBe(true)
+    expect(enemy?.visible).toBe(true)
+    parts.manager.update(0)
+    expect(parts.manager.activeCount()).toBe(1)
+    if (enemy) {
+      parts.manager.release(enemy)
+    }
+    expect(parts.manager.activeCount()).toBe(0)
+    disposeAll(parts)
+  })
+
   it('setArchetype switches live sheet so new spawns match Rogue or Tank', () => {
     const parts = makeManager(4)
     expect(parts.manager.archetypeNames()).toEqual(['warrior', 'rogue', 'tank'])

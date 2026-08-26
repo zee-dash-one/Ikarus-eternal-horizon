@@ -62,11 +62,12 @@
  *            WeaponDeps.sound. Behaviours never import Howler.
  */
 
-export type SfxCueId = 'laser-overheat'
+export type SfxCueId = 'laser-overheat' | 'explosion'
 
 export interface SoundPort {
   play(id: SfxCueId): void
   playOverheatCue(): void
+  playExplosionCue(): void
 }
 
 export interface AudioConfig {
@@ -108,6 +109,7 @@ export declare class SoundManager implements SoundPort {
  *
  *   play(id)           — records lastCue; no-op emit while muted or disposed
  *   playOverheatCue()  — play('laser-overheat'); LaserBehaviour calls this
+ *   playExplosionCue() — play('explosion'); DeathTrigger calls this
  *   setMuted(muted)    — runtime mute (pause / settings later)
  *   update(dt)         — reserved for fades; no-op today
  *   dispose()          — drops lastCue; further play() is ignored
@@ -116,6 +118,7 @@ export declare class SoundManager implements SoundPort {
 // ─── 5. Rules and invariants ─────────────────────────────────────────────────
 /**
  *   R1. playOverheatCue() is exactly play('laser-overheat').
+ *   R1b. playExplosionCue() is exactly play('explosion').
  *   R2. play(id) stores lastCue = id even when muted (event was received).
  *   R3. muted or disposed: emit is skipped (no Howler / no Audio).
  *   R4. Volumes default to BALANCE.audio; constructor options override.
@@ -165,6 +168,7 @@ export declare class SoundManager implements SoundPort {
  *
  * describe('SoundManager')
  *   it('playOverheatCue records lastCue laser-overheat')              // R1
+ *   it('playExplosionCue records lastCue explosion')                  // R1b
  *   it('play(id) records lastCue even when muted')                    // R2
  *   it('muted skips emit but still records lastCue')                  // R3
  *   it('disposed play is ignored and lastCue stays null')             // R3, R5

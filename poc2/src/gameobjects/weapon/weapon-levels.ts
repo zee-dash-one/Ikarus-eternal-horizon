@@ -17,6 +17,8 @@ export interface WeaponLevelRow {
   readonly lifetime: number
   readonly damageDecayPerUnit: number
   readonly aoeRadius: number
+  readonly aoeDuration: number
+  readonly explosionFoci: number
   readonly forwardShots: number
   readonly diagonalShotsPerSide: number
   readonly diagonalAngleDeg: number
@@ -55,6 +57,8 @@ function scaleRow(
     lifetime: 0,
     damageDecayPerUnit: 0,
     aoeRadius: 0,
+    aoeDuration: 0,
+    explosionFoci: 0,
     forwardShots: 0,
     diagonalShotsPerSide: 0,
     diagonalAngleDeg: 0,
@@ -73,65 +77,38 @@ function scaleRow(
 }
 
 export const LASER_LEVELS: readonly WeaponLevelRow[] = [
-  { level: 1, damage: 40, rate: 10, energyPerShot: 0.5, speed: 30, radius: 0.12, lifetime: 2, damageDecayPerUnit: 0, aoeRadius: 0, forwardShots: 1, diagonalShotsPerSide: 0, diagonalAngleDeg: 15, forwardSpread: 0.55, width: 0, length: 0, angleDeg: 0, ticksPerSec: 0, dps: 0, energyPerSec: 0 },
-  { level: 2, damage: 40, rate: 10, energyPerShot: 0.25, speed: 30, radius: 0.12, lifetime: 2, damageDecayPerUnit: 0, aoeRadius: 0, forwardShots: 2, diagonalShotsPerSide: 0, diagonalAngleDeg: 15, forwardSpread: 0.55, width: 0, length: 0, angleDeg: 0, ticksPerSec: 0, dps: 0, energyPerSec: 0 },
-  { level: 3, damage: 40, rate: 10, energyPerShot: 0.25, speed: 30, radius: 0.12, lifetime: 2, damageDecayPerUnit: 0, aoeRadius: 0, forwardShots: 3, diagonalShotsPerSide: 0, diagonalAngleDeg: 15, forwardSpread: 0.55, width: 0, length: 0, angleDeg: 0, ticksPerSec: 0, dps: 0, energyPerSec: 0 },
-  { level: 4, damage: 40, rate: 10, energyPerShot: 0.25, speed: 30, radius: 0.12, lifetime: 2, damageDecayPerUnit: 0, aoeRadius: 0, forwardShots: 4, diagonalShotsPerSide: 0, diagonalAngleDeg: 15, forwardSpread: 0.55, width: 0, length: 0, angleDeg: 0, ticksPerSec: 0, dps: 0, energyPerSec: 0 },
-  { level: 5, damage: 50, rate: 11, energyPerShot: 0.5, speed: 30, radius: 0.12, lifetime: 2.5, damageDecayPerUnit: 0, aoeRadius: 0, forwardShots: 3, diagonalShotsPerSide: 1, diagonalAngleDeg: 15, forwardSpread: 0.55, width: 0, length: 0, angleDeg: 0, ticksPerSec: 0, dps: 0, energyPerSec: 0 },
-  { level: 6, damage: 50, rate: 11, energyPerShot: 0.5, speed: 30, radius: 0.12, lifetime: 2.5, damageDecayPerUnit: 0, aoeRadius: 0, forwardShots: 4, diagonalShotsPerSide: 1, diagonalAngleDeg: 15, forwardSpread: 0.55, width: 0, length: 0, angleDeg: 0, ticksPerSec: 0, dps: 0, energyPerSec: 0 },
-  { level: 7, damage: 50, rate: 11, energyPerShot: 0.5, speed: 30, radius: 0.12, lifetime: 2.5, damageDecayPerUnit: 0, aoeRadius: 0, forwardShots: 3, diagonalShotsPerSide: 2, diagonalAngleDeg: 15, forwardSpread: 0.55, width: 0, length: 0, angleDeg: 0, ticksPerSec: 0, dps: 0, energyPerSec: 0 },
-  { level: 8, damage: 50, rate: 11, energyPerShot: 0.5, speed: 30, radius: 0.12, lifetime: 2.5, damageDecayPerUnit: 0, aoeRadius: 0, forwardShots: 4, diagonalShotsPerSide: 2, diagonalAngleDeg: 15, forwardSpread: 0.55, width: 0, length: 0, angleDeg: 0, ticksPerSec: 0, dps: 0, energyPerSec: 0 },
-  { level: 9, damage: 60, rate: 12, energyPerShot: 1, speed: 30, radius: 0.12, lifetime: 3, damageDecayPerUnit: 0, aoeRadius: 0, forwardShots: 3, diagonalShotsPerSide: 3, diagonalAngleDeg: 15, forwardSpread: 0.55, width: 0, length: 0, angleDeg: 0, ticksPerSec: 0, dps: 0, energyPerSec: 0 },
-  { level: 10, damage: 60, rate: 12, energyPerShot: 1, speed: 30, radius: 0.12, lifetime: 3, damageDecayPerUnit: 0, aoeRadius: 0, forwardShots: 4, diagonalShotsPerSide: 3, diagonalAngleDeg: 15, forwardSpread: 0.55, width: 0, length: 0, angleDeg: 0, ticksPerSec: 0, dps: 0, energyPerSec: 0 },
-  { level: 11, damage: 60, rate: 12, energyPerShot: 1, speed: 30, radius: 0.12, lifetime: 3, damageDecayPerUnit: 0, aoeRadius: 0, forwardShots: 3, diagonalShotsPerSide: 4, diagonalAngleDeg: 15, forwardSpread: 0.55, width: 0, length: 0, angleDeg: 0, ticksPerSec: 0, dps: 0, energyPerSec: 0 },
-  { level: 12, damage: 60, rate: 12, energyPerShot: 1, speed: 30, radius: 0.12, lifetime: 3, damageDecayPerUnit: 0, aoeRadius: 0, forwardShots: 4, diagonalShotsPerSide: 4, diagonalAngleDeg: 15, forwardSpread: 0.55, width: 0, length: 0, angleDeg: 0, ticksPerSec: 0, dps: 0, energyPerSec: 0 },
+  { level: 1, damage: 40, rate: 10, energyPerShot: 0.25, speed: 30, radius: 0.12, lifetime: 2, damageDecayPerUnit: 0, aoeRadius: 0, aoeDuration: 0, explosionFoci: 0, forwardShots: 1, diagonalShotsPerSide: 0, diagonalAngleDeg: 15, forwardSpread: 0.55, width: 0, length: 0, angleDeg: 0, ticksPerSec: 0, dps: 0, energyPerSec: 0 },
+  { level: 2, damage: 40, rate: 10, energyPerShot: 0.25, speed: 30, radius: 0.12, lifetime: 2, damageDecayPerUnit: 0, aoeRadius: 0, aoeDuration: 0, explosionFoci: 0, forwardShots: 2, diagonalShotsPerSide: 0, diagonalAngleDeg: 15, forwardSpread: 0.55, width: 0, length: 0, angleDeg: 0, ticksPerSec: 0, dps: 0, energyPerSec: 0 },
+  { level: 3, damage: 40, rate: 10, energyPerShot: 0.25, speed: 30, radius: 0.12, lifetime: 2, damageDecayPerUnit: 0, aoeRadius: 0, aoeDuration: 0, explosionFoci: 0, forwardShots: 3, diagonalShotsPerSide: 0, diagonalAngleDeg: 15, forwardSpread: 0.55, width: 0, length: 0, angleDeg: 0, ticksPerSec: 0, dps: 0, energyPerSec: 0 },
+  { level: 4, damage: 40, rate: 10, energyPerShot: 0.25, speed: 30, radius: 0.12, lifetime: 2, damageDecayPerUnit: 0, aoeRadius: 0, aoeDuration: 0, explosionFoci: 0, forwardShots: 4, diagonalShotsPerSide: 0, diagonalAngleDeg: 15, forwardSpread: 0.55, width: 0, length: 0, angleDeg: 0, ticksPerSec: 0, dps: 0, energyPerSec: 0 },
+  { level: 5, damage: 50, rate: 11, energyPerShot: 0.5, speed: 30, radius: 0.12, lifetime: 2.5, damageDecayPerUnit: 0, aoeRadius: 0, aoeDuration: 0, explosionFoci: 0, forwardShots: 3, diagonalShotsPerSide: 1, diagonalAngleDeg: 15, forwardSpread: 0.55, width: 0, length: 0, angleDeg: 0, ticksPerSec: 0, dps: 0, energyPerSec: 0 },
+  { level: 6, damage: 50, rate: 11, energyPerShot: 0.5, speed: 30, radius: 0.12, lifetime: 2.5, damageDecayPerUnit: 0, aoeRadius: 0, aoeDuration: 0, explosionFoci: 0, forwardShots: 4, diagonalShotsPerSide: 1, diagonalAngleDeg: 15, forwardSpread: 0.55, width: 0, length: 0, angleDeg: 0, ticksPerSec: 0, dps: 0, energyPerSec: 0 },
+  { level: 7, damage: 50, rate: 11, energyPerShot: 0.5, speed: 30, radius: 0.12, lifetime: 2.5, damageDecayPerUnit: 0, aoeRadius: 0, aoeDuration: 0, explosionFoci: 0, forwardShots: 3, diagonalShotsPerSide: 2, diagonalAngleDeg: 15, forwardSpread: 0.55, width: 0, length: 0, angleDeg: 0, ticksPerSec: 0, dps: 0, energyPerSec: 0 },
+  { level: 8, damage: 50, rate: 11, energyPerShot: 0.5, speed: 30, radius: 0.12, lifetime: 2.5, damageDecayPerUnit: 0, aoeRadius: 0, aoeDuration: 0, explosionFoci: 0, forwardShots: 4, diagonalShotsPerSide: 2, diagonalAngleDeg: 15, forwardSpread: 0.55, width: 0, length: 0, angleDeg: 0, ticksPerSec: 0, dps: 0, energyPerSec: 0 },
+  { level: 9, damage: 60, rate: 12, energyPerShot: 1, speed: 30, radius: 0.12, lifetime: 3, damageDecayPerUnit: 0, aoeRadius: 0, aoeDuration: 0, explosionFoci: 0, forwardShots: 3, diagonalShotsPerSide: 3, diagonalAngleDeg: 15, forwardSpread: 0.55, width: 0, length: 0, angleDeg: 0, ticksPerSec: 0, dps: 0, energyPerSec: 0 },
+  { level: 10, damage: 60, rate: 12, energyPerShot: 1, speed: 30, radius: 0.12, lifetime: 3, damageDecayPerUnit: 0, aoeRadius: 0, aoeDuration: 0, explosionFoci: 0, forwardShots: 4, diagonalShotsPerSide: 3, diagonalAngleDeg: 15, forwardSpread: 0.55, width: 0, length: 0, angleDeg: 0, ticksPerSec: 0, dps: 0, energyPerSec: 0 },
+  { level: 11, damage: 60, rate: 12, energyPerShot: 1, speed: 30, radius: 0.12, lifetime: 3, damageDecayPerUnit: 0, aoeRadius: 0, aoeDuration: 0, explosionFoci: 0, forwardShots: 3, diagonalShotsPerSide: 4, diagonalAngleDeg: 15, forwardSpread: 0.55, width: 0, length: 0, angleDeg: 0, ticksPerSec: 0, dps: 0, energyPerSec: 0 },
+  { level: 12, damage: 60, rate: 12, energyPerShot: 1, speed: 30, radius: 0.12, lifetime: 3, damageDecayPerUnit: 0, aoeRadius: 0, aoeDuration: 0, explosionFoci: 0, forwardShots: 4, diagonalShotsPerSide: 4, diagonalAngleDeg: 15, forwardSpread: 0.55, width: 0, length: 0, angleDeg: 0, ticksPerSec: 0, dps: 0, energyPerSec: 0 },
 ]
 
-const PLASMA_L1: Omit<WeaponLevelRow, 'level'> = {
-  damage: 2.5,
-  rate: 1.6,
-  energyPerShot: 1.5,
-  speed: 14,
-  radius: 0.22,
-  lifetime: 2.4,
-  damageDecayPerUnit: 0.01,
-  aoeRadius: 2.2,
-  forwardShots: 0,
-  diagonalShotsPerSide: 0,
-  diagonalAngleDeg: 0,
-  forwardSpread: 0,
-  width: 0,
-  length: 0,
-  angleDeg: 0,
-  ticksPerSec: 0,
-  dps: 0,
-  energyPerSec: 0,
-}
-
-const PLASMA_L12: Omit<WeaponLevelRow, 'level'> = {
-  damage: 5,
-  rate: 2.4,
-  energyPerShot: 2.5,
-  speed: 18,
-  radius: 0.28,
-  lifetime: 2.4,
-  damageDecayPerUnit: 0.01,
-  aoeRadius: 3.3,
-  forwardShots: 0,
-  diagonalShotsPerSide: 0,
-  diagonalAngleDeg: 0,
-  forwardSpread: 0,
-  width: 0,
-  length: 0,
-  angleDeg: 0,
-  ticksPerSec: 0,
-  dps: 0,
-  energyPerSec: 0,
-}
-
-export const PLASMA_LEVELS: readonly WeaponLevelRow[] = Array.from({ length: WEAPON_LEVEL_COUNT }, (_, i) =>
-  scaleRow(i + 1, PLASMA_L1, PLASMA_L12),
-)
+/**
+ * Plasma L1–L12. Slower, costlier, harder hit than laser. No distance decay.
+ * Explosion foci: 1 (L1–4) / 3 (L5–8) / 5 (L9–12). Each orb detonates on impact.
+ */
+export const PLASMA_LEVELS: readonly WeaponLevelRow[] = [
+  { level: 1, damage: 80, rate: 2, energyPerShot: 6, speed: 12, radius: 0.28, lifetime: 3, damageDecayPerUnit: 0, aoeRadius: 2, aoeDuration: 0.3, explosionFoci: 1, forwardShots: 0, diagonalShotsPerSide: 0, diagonalAngleDeg: 0, forwardSpread: 0.9, width: 0, length: 0, angleDeg: 0, ticksPerSec: 0, dps: 0, energyPerSec: 0 },
+  { level: 2, damage: 80, rate: 2, energyPerShot: 6, speed: 12, radius: 0.28, lifetime: 3, damageDecayPerUnit: 0, aoeRadius: 2, aoeDuration: 0.3, explosionFoci: 1, forwardShots: 0, diagonalShotsPerSide: 0, diagonalAngleDeg: 0, forwardSpread: 0.9, width: 0, length: 0, angleDeg: 0, ticksPerSec: 0, dps: 0, energyPerSec: 0 },
+  { level: 3, damage: 80, rate: 2, energyPerShot: 6, speed: 12, radius: 0.28, lifetime: 3, damageDecayPerUnit: 0, aoeRadius: 2, aoeDuration: 0.3, explosionFoci: 1, forwardShots: 0, diagonalShotsPerSide: 0, diagonalAngleDeg: 0, forwardSpread: 0.9, width: 0, length: 0, angleDeg: 0, ticksPerSec: 0, dps: 0, energyPerSec: 0 },
+  { level: 4, damage: 80, rate: 2, energyPerShot: 6, speed: 12, radius: 0.28, lifetime: 3, damageDecayPerUnit: 0, aoeRadius: 2, aoeDuration: 0.3, explosionFoci: 1, forwardShots: 0, diagonalShotsPerSide: 0, diagonalAngleDeg: 0, forwardSpread: 0.9, width: 0, length: 0, angleDeg: 0, ticksPerSec: 0, dps: 0, energyPerSec: 0 },
+  { level: 5, damage: 120, rate: 2, energyPerShot: 8, speed: 12, radius: 0.28, lifetime: 3, damageDecayPerUnit: 0, aoeRadius: 3, aoeDuration: 0.5, explosionFoci: 3, forwardShots: 0, diagonalShotsPerSide: 0, diagonalAngleDeg: 0, forwardSpread: 0.9, width: 0, length: 0, angleDeg: 0, ticksPerSec: 0, dps: 0, energyPerSec: 0 },
+  { level: 6, damage: 120, rate: 2, energyPerShot: 8, speed: 12, radius: 0.28, lifetime: 3, damageDecayPerUnit: 0, aoeRadius: 3, aoeDuration: 0.5, explosionFoci: 3, forwardShots: 0, diagonalShotsPerSide: 0, diagonalAngleDeg: 0, forwardSpread: 0.9, width: 0, length: 0, angleDeg: 0, ticksPerSec: 0, dps: 0, energyPerSec: 0 },
+  { level: 7, damage: 120, rate: 2, energyPerShot: 8, speed: 12, radius: 0.28, lifetime: 3, damageDecayPerUnit: 0, aoeRadius: 3, aoeDuration: 0.5, explosionFoci: 3, forwardShots: 0, diagonalShotsPerSide: 0, diagonalAngleDeg: 0, forwardSpread: 0.9, width: 0, length: 0, angleDeg: 0, ticksPerSec: 0, dps: 0, energyPerSec: 0 },
+  { level: 8, damage: 120, rate: 2, energyPerShot: 8, speed: 12, radius: 0.28, lifetime: 3, damageDecayPerUnit: 0, aoeRadius: 3, aoeDuration: 0.5, explosionFoci: 3, forwardShots: 0, diagonalShotsPerSide: 0, diagonalAngleDeg: 0, forwardSpread: 0.9, width: 0, length: 0, angleDeg: 0, ticksPerSec: 0, dps: 0, energyPerSec: 0 },
+  { level: 9, damage: 180, rate: 2, energyPerShot: 10, speed: 12, radius: 0.28, lifetime: 3, damageDecayPerUnit: 0, aoeRadius: 4, aoeDuration: 0.8, explosionFoci: 5, forwardShots: 0, diagonalShotsPerSide: 0, diagonalAngleDeg: 0, forwardSpread: 0.9, width: 0, length: 0, angleDeg: 0, ticksPerSec: 0, dps: 0, energyPerSec: 0 },
+  { level: 10, damage: 180, rate: 2, energyPerShot: 10, speed: 12, radius: 0.28, lifetime: 3, damageDecayPerUnit: 0, aoeRadius: 4, aoeDuration: 0.8, explosionFoci: 5, forwardShots: 0, diagonalShotsPerSide: 0, diagonalAngleDeg: 0, forwardSpread: 0.9, width: 0, length: 0, angleDeg: 0, ticksPerSec: 0, dps: 0, energyPerSec: 0 },
+  { level: 11, damage: 180, rate: 2, energyPerShot: 10, speed: 12, radius: 0.28, lifetime: 3, damageDecayPerUnit: 0, aoeRadius: 4, aoeDuration: 0.8, explosionFoci: 5, forwardShots: 0, diagonalShotsPerSide: 0, diagonalAngleDeg: 0, forwardSpread: 0.9, width: 0, length: 0, angleDeg: 0, ticksPerSec: 0, dps: 0, energyPerSec: 0 },
+  { level: 12, damage: 180, rate: 2, energyPerShot: 10, speed: 12, radius: 0.28, lifetime: 3, damageDecayPerUnit: 0, aoeRadius: 4, aoeDuration: 0.8, explosionFoci: 5, forwardShots: 0, diagonalShotsPerSide: 0, diagonalAngleDeg: 0, forwardSpread: 0.9, width: 0, length: 0, angleDeg: 0, ticksPerSec: 0, dps: 0, energyPerSec: 0 },
+]
 
 const BEAM_L1: Omit<WeaponLevelRow, 'level'> = {
   damage: 0,
@@ -142,6 +119,8 @@ const BEAM_L1: Omit<WeaponLevelRow, 'level'> = {
   lifetime: 0,
   damageDecayPerUnit: 0,
   aoeRadius: 0,
+  aoeDuration: 0,
+  explosionFoci: 0,
   forwardShots: 0,
   diagonalShotsPerSide: 0,
   diagonalAngleDeg: 0,
@@ -163,6 +142,8 @@ const BEAM_L12: Omit<WeaponLevelRow, 'level'> = {
   lifetime: 0,
   damageDecayPerUnit: 0,
   aoeRadius: 0,
+  aoeDuration: 0,
+  explosionFoci: 0,
   forwardShots: 0,
   diagonalShotsPerSide: 0,
   diagonalAngleDeg: 0,
@@ -188,6 +169,8 @@ const MJOLNIR_L1: Omit<WeaponLevelRow, 'level'> = {
   lifetime: 0,
   damageDecayPerUnit: 0,
   aoeRadius: 0,
+  aoeDuration: 0,
+  explosionFoci: 0,
   forwardShots: 0,
   diagonalShotsPerSide: 0,
   diagonalAngleDeg: 0,
@@ -209,6 +192,8 @@ const MJOLNIR_L12: Omit<WeaponLevelRow, 'level'> = {
   lifetime: 0,
   damageDecayPerUnit: 0,
   aoeRadius: 0,
+  aoeDuration: 0,
+  explosionFoci: 0,
   forwardShots: 0,
   diagonalShotsPerSide: 0,
   diagonalAngleDeg: 0,
@@ -264,6 +249,9 @@ const PROFILE_FIELDS: Record<WeaponProfile, readonly WeaponLevelSnapshotField[]>
     'lifetime',
     'damageDecayPerUnit',
     'aoeRadius',
+    'aoeDuration',
+    'explosionFoci',
+    'forwardSpread',
   ],
   beam: ['width', 'length', 'ticksPerSec', 'dps', 'energyPerSec'],
   cone: ['angleDeg', 'length', 'ticksPerSec', 'dps', 'energyPerSec'],
@@ -293,10 +281,12 @@ export function weaponLevelSnapshot(cfg: WeaponConfig): WeaponLevelSnapshot {
     lifetime: projectile?.lifetime ?? orb?.lifetime ?? 0,
     damageDecayPerUnit: projectile?.damageDecayPerUnit ?? orb?.damageDecayPerUnit ?? 0,
     aoeRadius: orb?.aoeRadius ?? 0,
+    aoeDuration: orb?.aoeDuration ?? 0,
+    explosionFoci: orb?.explosionFoci ?? 0,
     forwardShots: laser?.forwardShots ?? 0,
     diagonalShotsPerSide: laser?.diagonalShotsPerSide ?? 0,
     diagonalAngleDeg: laser?.diagonalAngleDeg ?? 0,
-    forwardSpread: laser?.forwardSpread ?? 0,
+    forwardSpread: laser?.forwardSpread ?? orb?.forwardSpread ?? 0,
     burstShots: laser?.burstShots ?? 0,
     overheatSec: laser?.overheatSec ?? 0,
     width: beam?.width ?? 0,
@@ -356,10 +346,27 @@ export function patchWeaponStat(cfg: WeaponConfig, field: WeaponLevelSnapshotFie
         cfg.orb.aoeRadius = value
       }
       return
+    case 'aoeDuration':
+      if (cfg.orb) {
+        cfg.orb.aoeDuration = value
+      }
+      return
+    case 'explosionFoci':
+      if (cfg.orb) {
+        cfg.orb.explosionFoci = value
+      }
+      return
+    case 'forwardSpread':
+      if (cfg.laser) {
+        cfg.laser.forwardSpread = value
+      }
+      if (cfg.orb) {
+        cfg.orb.forwardSpread = value
+      }
+      return
     case 'forwardShots':
     case 'diagonalShotsPerSide':
     case 'diagonalAngleDeg':
-    case 'forwardSpread':
     case 'burstShots':
     case 'overheatSec':
       if (cfg.laser) {
@@ -445,6 +452,9 @@ function applyPlasmaRow(cfg: WeaponConfig, row: WeaponLevelRow): void {
   cfg.orb.lifetime = row.lifetime
   cfg.orb.damageDecayPerUnit = row.damageDecayPerUnit
   cfg.orb.aoeRadius = row.aoeRadius
+  cfg.orb.aoeDuration = row.aoeDuration
+  cfg.orb.explosionFoci = row.explosionFoci
+  cfg.orb.forwardSpread = row.forwardSpread
 }
 
 function applyBeamRow(cfg: WeaponConfig, row: WeaponLevelRow): void {
@@ -495,5 +505,9 @@ export function applyWeaponLevel(cfg: WeaponConfig, level: number): void {
 
 /** @deprecated use applyWeaponLevel */
 export function applyLaserLevel(cfg: WeaponConfig, level: number): void {
+  applyWeaponLevel(cfg, level)
+}
+
+export function applyPlasmaLevel(cfg: WeaponConfig, level: number): void {
   applyWeaponLevel(cfg, level)
 }

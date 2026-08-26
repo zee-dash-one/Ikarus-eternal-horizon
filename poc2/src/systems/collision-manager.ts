@@ -49,6 +49,13 @@ export interface CollisionManagerOptions {
   readonly matrix?: Readonly<Record<Layer, readonly Layer[]>>
 }
 
+const AOE_LAYERS: readonly Layer[] = [Layer.Enemy, Layer.Meteor]
+
+function aoeRadiusOf(obj: ColliderPort): number {
+  const extra = obj as ColliderPort & { aoeRadius?: number }
+  return typeof extra.aoeRadius === 'number' && extra.aoeRadius > 0 ? extra.aoeRadius : 0
+}
+
 function overlaps(a: ColliderPort, b: ColliderPort): boolean {
   const dx = a.x - b.x
   const dz = a.z - b.z
@@ -144,6 +151,8 @@ export class CollisionManager {
       }
     }
 
+    this._expandAoe()
+
     this._pairs.length = this._pairLen
     return this._pairs
   }
@@ -234,12 +243,52 @@ export class CollisionManager {
     this._seen.clear()
   }
 
+  private _expandAoe(): void {
+    const primaryLen = this._pairLen
+    for (let i = 0; i < primaryLen; i++) {
+      const pair = this._pairs[i]
+      if (!pair) {
+        continue
+      }
+      const shot =
+        pair.aLayer === Layer.PlayerShot
+          ? pair.a
+          : pair.bLayer === Layer.PlayerShot
+            ? pair.b
+            : null
+      if (!shot) {
+        continue
+      }
+      const aoe = aoeRadiusOf(shot)
+      if (aoe <= 0) {
+        continue
+      }
+      const found = this.queryRadius({
+        x: shot.x,
+        z: shot.z,
+        radius: aoe,
+        hits: AOE_LAYERS,
+      })
+      for (let k = 0; k < found.length; k++) {
+        const target = found[k]
+        if (!target) {
+          continue
+        }
+        this._pushPair(shot, target, false)
+      }
+    }
+  }
+
   private _tryPair(a: ColliderPort, b: ColliderPort): void {
     const directed =
       layersHit(a.layer, b.layer, this._matrix) || layersHit(b.layer, a.layer, this._matrix)
     if (!directed || !overlaps(a, b)) {
       return
     }
+    this._pushPair(a, b, true)
+  }
+
+  private _pushPair(a: ColliderPort, b: ColliderPort, consumeIfShot: boolean): void {
     const key = pairKey(a, b)
     if (this._seen.has(key)) {
       return
@@ -253,12 +302,15 @@ export class CollisionManager {
       right = a
     }
 
+    const consumeProjectile =
+      consumeIfShot && (isShotLayer(left.layer) || isShotLayer(right.layer))
+
     const pair: HitPair = {
       a: left,
       b: right,
       aLayer: left.layer,
       bLayer: right.layer,
-      consumeProjectile: isShotLayer(left.layer) || isShotLayer(right.layer),
+      consumeProjectile,
     }
     if (this._pairLen < this._pairs.length) {
       const slot = this._pairs[this._pairLen] as {

@@ -185,6 +185,7 @@ export class Enemy extends Mesh {
   private readonly _slotWorld = { x: 0, z: 0 }
   private readonly _gateAim = { x: 0, y: 0, z: 0 }
   private _killed = false
+  private _dying = false
   private _aiState: ShipAiState = 'birth'
   private _cruiseSpeed = 0
   private _currentSpeed = 0
@@ -395,6 +396,10 @@ export class Enemy extends Mesh {
     return this._sheet.id
   }
 
+  get dying(): boolean {
+    return this._dying
+  }
+
   activate(spawn: EnemySpawn): void {
     const sheet = cloneWarriorSheet(spawn.sheet ?? BALANCE.enemy.warrior)
     this._sheet = sheet
@@ -442,6 +447,7 @@ export class Enemy extends Mesh {
     this.vehicle.position.z = spawn.z
     this.active = true
     this._killed = false
+    this._dying = false
     this.visible = true
     this._bodyMat.opacity = 1
     this._bodyMat.color.setHex(sheet.color)
@@ -470,6 +476,8 @@ export class Enemy extends Mesh {
     this.visible = false
     this.hp = 0
     this.shield = 0
+    this._killed = false
+    this._dying = false
     this._aiState = 'birth'
     this._currentSpeed = 0
     this._fireAcc = 0
@@ -508,6 +516,9 @@ export class Enemy extends Mesh {
   }
 
   update(dt: number): void {
+    if (this._dying) {
+      return
+    }
     if (!this.active) {
       return
     }
@@ -528,6 +539,13 @@ export class Enemy extends Mesh {
   }
 
   syncRender(): void {
+    if (this._dying) {
+      this.position.set(this.x, this.y, this.z)
+      this._rangeMesh.visible = false
+      this._groupLabel.visible = false
+      this.visible = true
+      return
+    }
     if (!this.active) {
       this.visible = false
       return
@@ -589,8 +607,9 @@ export class Enemy extends Mesh {
     if (this.hp <= 0) {
       this.hp = 0
       this._killed = true
+      this._dying = true
       this.active = false
-      this.visible = false
+      this.visible = true
       this._squad?.unregister(this)
       return {
         absorbedByShield: absorbed,

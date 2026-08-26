@@ -168,6 +168,11 @@ export class EnemyManager {
     return snap
   }
 
+  /** Pool-release a slot (corpse erase). Safe if already free. */
+  release(enemy: Enemy): void {
+    this._pool.release(enemy)
+  }
+
   spawnOne(side: SpawnSide = this._pickSide()): Enemy | null {
     if (this._disposed) {
       return null
@@ -225,6 +230,10 @@ export class EnemyManager {
     this._squad.update(dt, this._seek.x, this._seek.z, bounds.minX, bounds.maxX)
 
     this._pool.forEachActive((enemy) => {
+      if (enemy.dying) {
+        enemy.update(dt)
+        return
+      }
       if (!this._battleField.contains(enemy.x, enemy.z)) {
         this._pool.release(enemy)
         return

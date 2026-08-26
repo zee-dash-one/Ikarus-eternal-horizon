@@ -177,7 +177,8 @@ export declare class Enemy extends THREE.Mesh implements TargetHit, DamageSink {
 /**
  *   R1. Enemy extends THREE.Mesh (the mesh *is* the enemy).
  *   R2. Implements TargetHit with team === 'enemy' and radius from BALANCE.
- *   R3. takeDamage / applyDamage reduce hp; hp<=0 ⇒ active=false, killed=true, once.
+ *   R3. takeDamage / applyDamage reduce hp; hp<=0 ⇒ killed=true, dying=true,
+ *       active=false (no collision), visible until DeathTrigger erases at corpseMs.
  *   R4. Movement is two-phase:
  *       birth → spawn→EnemyGate at rush speed, easing down to cruise (never 0).
  *       Gate handoff keeps cruise velocity and switches to formation seek.

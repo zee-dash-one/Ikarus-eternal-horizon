@@ -4,6 +4,7 @@ import { copyWeaponConfig, WEAPONS } from '../catalog'
 import { defaultModifiers, WEAPON_REGISTRY } from '../registry'
 import type { BehaviourCtx, EnergyPort } from '../registry'
 import { Weapon } from '../weapon'
+import { applyWeaponLevel } from '../weapon-levels'
 import './plasma'
 import { PlasmaBehaviour } from './plasma'
 
@@ -11,13 +12,16 @@ interface RecordedShot {
   activate(spawn: ShotSpawn): void
 }
 
-function recordingPort(nullAcquire = false) {
+function recordingPort(nullAcquire = false, limit = Infinity) {
   const spawns: ShotSpawn[] = []
+  let remaining = limit
+  let released = 0
   const port = {
     acquire(): RecordedShot | null {
-      if (nullAcquire) {
+      if (nullAcquire || remaining <= 0) {
         return null
       }
+      remaining -= 1
       return {
         activate(spawn: ShotSpawn) {
           spawns.push(spawn)
@@ -25,10 +29,10 @@ function recordingPort(nullAcquire = false) {
       }
     },
     release() {
-      /* recording stub */
+      released += 1
     },
   }
-  return { port, spawns }
+  return { port, spawns, released: () => released }
 }
 
 function energyStub(afford = true): EnergyPort & { spent: number[] } {
@@ -72,26 +76,28 @@ describe('PlasmaBehaviour', () => {
     plasma.dispose()
   })
 
-  it('writes aoeRadius 2.2 * aoeMul onto the spawn', () => {
+  it('writes aoeRadius 2.4 * aoeMul onto the spawn', () => {
     const { port, spawns } = recordingPort()
     const plasma = new PlasmaBehaviour(copyWeaponConfig(WEAPONS.plasma), port)
     const mods = defaultModifiers()
     mods.aoeMul = 2
     plasma.update(ctx({ mods }))
-    expect(spawns[0]?.aoeRadius).toBe(4.4)
+    expect(spawns[0]?.aoeRadius).toBe(4.8)
     plasma.dispose()
   })
 
-  it('writes vz=-14, radius 0.22, lifetime 2.4, damage 2.5, color 0xfb923c', () => {
+  it('writes vz=-12, radius 0.28, lifetime 3, damage 80, color 0xfb923c', () => {
     const { port, spawns } = recordingPort()
     const plasma = new PlasmaBehaviour(copyWeaponConfig(WEAPONS.plasma), port)
     plasma.update(ctx())
     expect(spawns[0]).toMatchObject({
       vx: 0,
-      vz: -14,
-      radius: 0.22,
-      lifetime: 2.4,
-      damage: 2.5,
+      vz: -12,
+      radius: 0.28,
+      lifetime: 3,
+      damage: 80,
+      aoeDuration: 0.4,
+      decayPerUnit: 0,
       color: 0xfb923c,
     })
     plasma.dispose()
@@ -105,7 +111,7 @@ describe('PlasmaBehaviour', () => {
     plasma.dispose()
   })
 
-  it('spends 1.5 energy and skips the shot when canAfford is false', () => {
+  it('spends 4 energy and skips the shot when canAfford is false', () => {
     const { port, spawns } = recordingPort()
     const energy = energyStub(false)
     const plasma = new PlasmaBehaviour(copyWeaponConfig(WEAPONS.plasma), port)
@@ -115,14 +121,14 @@ describe('PlasmaBehaviour', () => {
     plasma.dispose()
   })
 
-  it('sets cooldown to 1/1.6 after a successful spawn', () => {
+  it('sets cooldown to 1/2 after a successful spawn', () => {
     const { port, spawns } = recordingPort()
     const plasma = new PlasmaBehaviour(copyWeaponConfig(WEAPONS.plasma), port)
     plasma.update(ctx({ dt: 0 }))
     expect(spawns).toHaveLength(1)
-    plasma.update(ctx({ dt: 0.6 }))
+    plasma.update(ctx({ dt: 0.49 }))
     expect(spawns).toHaveLength(1)
-    plasma.update(ctx({ dt: 0.03 }))
+    plasma.update(ctx({ dt: 0.02 }))
     expect(spawns).toHaveLength(2)
     plasma.dispose()
   })
@@ -139,7 +145,33 @@ describe('PlasmaBehaviour', () => {
     const { port, spawns } = recordingPort()
     const plasma = new PlasmaBehaviour(copyWeaponConfig(WEAPONS.plasma), port)
     plasma.update(ctx())
-    expect(spawns[0]?.aoeRadius).toBe(2.2)
+    expect(spawns[0]?.aoeRadius).toBe(2.4)
+    plasma.dispose()
+  })
+
+  it('L5 volley activates 3 orbs and spends energy once', () => {
+    const { port, spawns } = recordingPort()
+    const energy = energyStub()
+    const cfg = copyWeaponConfig(WEAPONS.plasma)
+    applyWeaponLevel(cfg, 5)
+    const plasma = new PlasmaBehaviour(cfg, port)
+    plasma.update(ctx({}, energy))
+    expect(spawns).toHaveLength(3)
+    expect(energy.spent).toEqual([5])
+    expect(new Set(spawns.map((s) => s.x)).size).toBe(3)
+    plasma.dispose()
+  })
+
+  it('skips the volley and does not spend when the pool cannot cover every focus', () => {
+    const { port, spawns, released } = recordingPort(false, 2)
+    const energy = energyStub()
+    const cfg = copyWeaponConfig(WEAPONS.plasma)
+    applyWeaponLevel(cfg, 5)
+    const plasma = new PlasmaBehaviour(cfg, port)
+    plasma.update(ctx({}, energy))
+    expect(spawns).toHaveLength(0)
+    expect(energy.spent).toHaveLength(0)
+    expect(released()).toBe(2)
     plasma.dispose()
   })
 
@@ -161,15 +193,17 @@ describe('PlasmaBehaviour', () => {
     setSpy.mockRestore()
     plasma.dispose()
   })
-  it('applyLevel 12 increases damage and aoeRadius vs L1', () => {
+  it('applyLevel 12 writes 5 foci and higher damage/aoe vs L1', () => {
     const { port } = recordingPort()
     const weapon = new Weapon({ id: 'plasma', shots: port })
     weapon.applyLevel(1)
     const l1Damage = weapon.config.damage
     const l1Aoe = weapon.config.orb?.aoeRadius
+    expect(weapon.config.orb?.explosionFoci).toBe(1)
     weapon.applyLevel(12)
     expect(weapon.config.damage).toBeGreaterThan(l1Damage)
     expect(weapon.config.orb?.aoeRadius).toBeGreaterThan(l1Aoe ?? 0)
+    expect(weapon.config.orb?.explosionFoci).toBe(5)
     weapon.dispose()
   })
 })

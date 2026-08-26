@@ -37,17 +37,20 @@ import {
   type WeaponLevelSnapshotField,
 } from '../gameobjects/weapon/weapon-levels'
 import { Weapon } from '../gameobjects/weapon/weapon'
+import { PlasmaBurstManager } from '../gameobjects/weapon/plasma-burst'
 import '../gameobjects/weapon/behaviours/laser'
 import '../gameobjects/weapon/behaviours/plasma'
 import '../gameobjects/weapon/behaviours/beam'
 import '../gameobjects/weapon/behaviours/mjolnir'
 import { EnergyManager } from '../systems/energy-manager'
 import { EnemyManager } from '../systems/enemy-manager'
+import { Enemy } from '../gameobjects/enemy/enemy'
 import type { EnemyGroup } from '../systems/enemy-group'
 import { FiringManager } from '../systems/firing-manager'
 import { ShotManager } from '../systems/shot-manager'
 import { CollisionManager, type ColliderPort, type HitPair } from '../systems/collision-manager'
 import { DamageResolver } from '../systems/damage-resolver'
+import { DeathTrigger, SilentExplosionVfx } from '../systems/death-trigger'
 import { DropManager, Drop } from '../systems/drop-manager'
 import { DifficultyManager } from '../systems/difficulty-manager'
 import { ShipCombatProxy } from '../systems/ship-combat-proxy'
@@ -244,9 +247,6 @@ export function createRunWorld(options: RunWorldOptions): RunWorldFactory {
     const shipCombat = new ShipCombatProxy(ship, health, BALANCE.ship.visual.hitRadius)
     collision.registerTarget(shipCombat)
 
-    const killCounter = { kills: 0 }
-    const difficulty = new DifficultyManager({ kills: killCounter })
-
     const dropPool = new ObjectPool<Drop>({
       capacity: BALANCE.drops.poolSize,
       factory: () => {
@@ -320,6 +320,34 @@ export function createRunWorld(options: RunWorldOptions): RunWorldFactory {
       colliders: collision,
     })
 
+    const plasmaBursts = new PlasmaBurstManager({
+      scene,
+      capacity: BALANCE.vfx.plasmaBurst.poolSize,
+      color: BALANCE.vfx.plasmaBurst.color,
+    })
+    const explosionVfx = new SilentExplosionVfx()
+    const death = new DeathTrigger({
+      sound,
+      vfx: explosionVfx,
+      corpses: {
+        begin(sink) {
+          const layer = (sink as { layer?: Layer }).layer
+          if (layer === Layer.Enemy) {
+            collision.unregisterTarget(sink as unknown as ColliderPort)
+          }
+        },
+        erase(sink) {
+          const layer = (sink as { layer?: Layer }).layer
+          if (layer === Layer.Enemy) {
+            enemies.release(sink as Enemy)
+            return
+          }
+          ship.visible = false
+        },
+      },
+    })
+    const difficulty = new DifficultyManager({ kills: death })
+
     const hitPairs: { current: readonly HitPair[] } = { current: [] }
 
     const idleHud: HudPort = {
@@ -352,7 +380,9 @@ export function createRunWorld(options: RunWorldOptions): RunWorldFactory {
       drops,
       dropPool,
       difficulty,
-      killCounter,
+      death,
+      explosionVfx,
+      plasmaBursts,
       hitPairs,
       limitBox,
       followBoxVisual,
@@ -648,8 +678,7 @@ export function createRunWorld(options: RunWorldOptions): RunWorldFactory {
     damageResolver() {
       const world = current()
       return {
-        update(_dt: number) {
-          void _dt
+        update(dt: number) {
           const events = world.damage.resolve(world.hitPairs.current)
           for (const pair of world.hitPairs.current) {
             // Enemy body contact with player ⇒ hitting status on the Warrior.
@@ -681,26 +710,47 @@ export function createRunWorld(options: RunWorldOptions): RunWorldFactory {
             }
             const origin =
               (shot as ColliderPort).layer === Layer.EnemyShot ? 'enemy' : 'weapon'
+            if (origin === 'weapon') {
+              const orb = shot as WeaponShot
+              if (orb.aoeRadius > 0) {
+                world.plasmaBursts.spawn(orb.x, orb.z, orb.aoeRadius, orb.aoeDuration)
+              }
+            }
             world.shots.release(origin, shot as never)
           }
           for (const ev of events) {
+            world.death.handle(ev)
             if (ev.kind !== 'killed') {
               continue
             }
-            world.killCounter.kills += 1
             const sink = ev.sink as { x?: number; z?: number }
             world.drops.onSourceKilled('enemy', sink.x ?? 0, sink.z ?? 0)
           }
+          world.death.update(dt)
         },
         syncRender() {
           /* events only */
         },
         dispose() {
+          world.death.dispose()
           world.damage.resetFrame()
         },
       }
     },
-    vfxManager: noopStep,
+    vfxManager() {
+      const world = current()
+      return {
+        update(dt: number) {
+          world.plasmaBursts.update(dt)
+        },
+        syncRender() {
+          world.plasmaBursts.syncRender()
+        },
+        dispose() {
+          world.plasmaBursts.dispose()
+        },
+      }
+    },
     hud() {
       return current().idleHud
     },

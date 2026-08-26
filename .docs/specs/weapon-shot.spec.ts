@@ -177,6 +177,7 @@ export declare class WeaponShot extends THREE.Mesh implements WeaponShotPort {
  *
  * shotDecay (file-private helper, not a second public export — A03 already
  * owns decayFactor(elapsed)):
+ *   if aoeRadius > 0 and decayPerUnit <= 0: return 1 (plasma — full force)
  *   if totalLifetime > 0: elapsed = clamp(1 - lifetime/totalLifetime, 0, 1)
  *                         return decayFactor(elapsed)
  *   else dist = distXZ(x,z, spawnX,spawnZ)

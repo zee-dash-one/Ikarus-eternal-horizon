@@ -345,6 +345,8 @@ export declare const BALANCE: Balance
  *   vfx.shake.maxAmplitude      = 0.18
  *   vfx.shake.decayPerSec       = 6
  *   vfx.hitStopFrames           = 3
+ *   vfx.corpseMs                = 800  // wreck linger / explosion window
+ *   vfx.plasmaBurst             = { poolSize: 24, color: 0xfbbf24 }
  *   audio.masterVolume          = 1
  *   audio.sfxVolume             = 1
  *   audio.musicVolume           = 0.65

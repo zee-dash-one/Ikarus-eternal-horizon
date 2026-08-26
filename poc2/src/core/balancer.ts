@@ -486,6 +486,10 @@ export interface DropsConfig {
 export interface VfxConfig {
   readonly shake: { readonly maxAmplitude: number; readonly decayPerSec: number }
   readonly hitStopFrames: number
+  /** Wreck linger after a ship death (explosion animation window). */
+  readonly corpseMs: number
+  /** Orange-yellow impact sphere for plasma detonations. */
+  readonly plasmaBurst: { readonly poolSize: number; readonly color: number }
 }
 
 export interface AudioConfig {
@@ -1023,6 +1027,8 @@ const BALANCE_DATA: Balance = {
   vfx: {
     shake: { maxAmplitude: 0.18, decayPerSec: 6 },
     hitStopFrames: 3,
+    corpseMs: 800,
+    plasmaBurst: { poolSize: 24, color: 0xfbbf24 },
   },
   audio: {
     masterVolume: 1,

@@ -5,11 +5,12 @@
 
 import { BALANCE } from '../core/balancer'
 
-export type SfxCueId = 'laser-overheat'
+export type SfxCueId = 'laser-overheat' | 'explosion'
 
 export interface SoundPort {
   play(id: SfxCueId): void
   playOverheatCue(): void
+  playExplosionCue(): void
 }
 
 export interface AudioMixerConfig {
@@ -65,6 +66,10 @@ export class SoundManager implements SoundPort {
 
   playOverheatCue(): void {
     this.play('laser-overheat')
+  }
+
+  playExplosionCue(): void {
+    this.play('explosion')
   }
 
   update(dt: number): void {

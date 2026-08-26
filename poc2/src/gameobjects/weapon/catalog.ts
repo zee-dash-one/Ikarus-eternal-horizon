@@ -27,6 +27,9 @@ export interface OrbSpec {
   radius: number
   lifetime: number
   aoeRadius: number
+  aoeDuration: number
+  explosionFoci: number
+  forwardSpread: number
   damageDecayPerUnit: number
 }
 
@@ -128,13 +131,16 @@ export const WEAPONS: Record<WeaponId, WeaponConfig> = {
     energyPerShot: PLASMA_L1.energyPerShot,
     damage: PLASMA_L1.damage,
     profile: 'orb',
-    poolSize: 32,
+    poolSize: 64,
     muzzleOffset: { x: 0, y: 0, z: -1.4 },
     orb: {
       speed: PLASMA_L1.speed,
       radius: PLASMA_L1.radius,
       lifetime: PLASMA_L1.lifetime,
       aoeRadius: PLASMA_L1.aoeRadius,
+      aoeDuration: PLASMA_L1.aoeDuration,
+      explosionFoci: PLASMA_L1.explosionFoci,
+      forwardSpread: PLASMA_L1.forwardSpread,
       damageDecayPerUnit: PLASMA_L1.damageDecayPerUnit,
     },
   },

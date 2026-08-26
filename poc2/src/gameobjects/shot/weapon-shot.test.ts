@@ -244,4 +244,27 @@ describe('WeaponShot', () => {
     expect(shot.lifetime).toBe(0)
     shot.dispose()
   })
+
+  it('plasma-style orb keeps 100% damage and opacity with no distance decay', () => {
+    const shot = makeShot()
+    shot.activate(
+      laserSpawn({
+        damage: 80,
+        lifetime: 0.3,
+        totalLifetime: 3,
+        aoeRadius: 2.4,
+        aoeDuration: 0.4,
+        decayPerUnit: 0,
+        range: 36,
+      }),
+    )
+    expect(shot.effectiveDamage()).toBe(80)
+    shot.syncRender()
+    expect(materialOf(shot).opacity).toBe(1)
+    shot.update(2.7)
+    expect(shot.effectiveDamage()).toBe(80)
+    shot.syncRender()
+    expect(materialOf(shot).opacity).toBe(1)
+    shot.dispose()
+  })
 })

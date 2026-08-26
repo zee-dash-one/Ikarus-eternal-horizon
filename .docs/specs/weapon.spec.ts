@@ -427,7 +427,7 @@ export declare class LaserBehaviour implements WeaponBehaviour {
  *        Real WEAPONS / LASER_LEVELS. No Scene. No ObjectPool.
  *
  * describe('WEAPONS catalog')
- *   it('has laser projectile 30/2/0.12 and plasma orb 14/2.4/0.22/2.2')           // RUL-12
+ *   it('has laser projectile 30/2/0.12 and plasma orb 12/3/0.28/2.4')           // RUL-12
  *   it('is the same object as BALANCE.weapons.catalog')                            // R12
  *   it('does not import balancer (source-text)')                                   // R12
  *

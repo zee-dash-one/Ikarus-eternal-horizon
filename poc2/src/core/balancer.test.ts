@@ -96,6 +96,8 @@ describe('BALANCE', () => {
     expect(BALANCE.drops.colors.equipment).toBe(0x34d399)
     expect(BALANCE.vfx.shake.maxAmplitude).toBe(0.18)
     expect(BALANCE.vfx.hitStopFrames).toBe(3)
+    expect(BALANCE.vfx.corpseMs).toBe(800)
+    expect(BALANCE.vfx.plasmaBurst).toEqual({ poolSize: 24, color: 0xfbbf24 })
   })
 
   it('exposes audio mixer volumes and default unmuted', () => {
@@ -271,7 +273,7 @@ describe('BALANCE', () => {
     )
     expect(BALANCE.weapons.loadout).toEqual(['laser', 'plasma', 'beam', 'mjolnir'])
     expect(BALANCE.weapons.catalog.laser.poolSize).toBe(768)
-    expect(BALANCE.weapons.catalog.plasma.poolSize).toBe(32)
+    expect(BALANCE.weapons.catalog.plasma.poolSize).toBe(64)
   })
 
   it('re-exports weapon / dash / squad / reach / collision tables as the initial config hub', () => {

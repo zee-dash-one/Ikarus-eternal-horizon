@@ -32,6 +32,7 @@ export interface ShotSpawn {
   readonly totalLifetime: number
   readonly radius: number
   readonly aoeRadius: number
+  readonly aoeDuration?: number
   readonly range: number
   readonly decayPerUnit: number
   readonly color?: number
@@ -52,6 +53,7 @@ export class WeaponShot extends Mesh implements WeaponShotPort {
   lifetime = 0
   radius = 0
   aoeRadius = 0
+  aoeDuration = 0
   decayPerUnit = 0
   range = 0
   totalLifetime = 0
@@ -88,6 +90,7 @@ export class WeaponShot extends Mesh implements WeaponShotPort {
     this.totalLifetime = spawn.totalLifetime
     this.radius = spawn.radius
     this.aoeRadius = spawn.aoeRadius
+    this.aoeDuration = spawn.aoeDuration ?? 0
     this.range = spawn.range
     this.decayPerUnit = spawn.decayPerUnit
     this.spawnX = spawn.x
@@ -132,6 +135,9 @@ export class WeaponShot extends Mesh implements WeaponShotPort {
 }
 
 function shotDecay(shot: WeaponShot): number {
+  if (shot.aoeRadius > 0 && shot.decayPerUnit <= 0) {
+    return 1
+  }
   if (shot.totalLifetime > 0) {
     const elapsed = clamp(1 - shot.lifetime / shot.totalLifetime, 0, 1)
     return decayFactor(elapsed)

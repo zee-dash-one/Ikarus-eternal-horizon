@@ -398,6 +398,7 @@ function makeBinds(sheet: LiveSheet): DebuggerBinds {
       trackedShips: () => 0,
       rogueShips: () => 0,
       furyShips: () => 0,
+      fleeShips: () => 0,
     },
     parallax: {
       layerCount: () => parallaxLayers.length,

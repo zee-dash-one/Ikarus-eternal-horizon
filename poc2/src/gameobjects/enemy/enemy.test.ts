@@ -447,7 +447,6 @@ describe('Enemy Warrior — squad life', () => {
 
     const startX = enemy.x
     const startZ = enemy.z
-    enemy.vz = 6
     for (let i = 0; i < 40; i++) {
       enemy.update(0.05)
     }
@@ -455,6 +454,44 @@ describe('Enemy Warrior — squad life', () => {
     expect(enemy.z).toBeLessThan(startZ)
     expect(enemy.vz).toBeLessThan(0)
     enemy.dispose()
+    geo.dispose()
+  })
+
+  it('refuses a fifth FLEE while four are already fleeing', () => {
+    const seek = { x: 0, y: 0, z: 0 }
+    const gate = { x: 0, y: 0, z: -8 }
+    const geo = new BoxGeometry(1, 1, 1)
+    const squad = makeSquad()
+    squad.liveConfig().maxFury = 4
+    const sheet = cloneWarriorSheet(WARRIOR)
+    sheet.targets = ['player']
+    const enemies: Enemy[] = []
+    for (let i = 0; i < 5; i += 1) {
+      const enemy = new Enemy({ geometry: geo, seekTarget: seek, gateTarget: gate, squad })
+      enemy.activate({ x: i * 4, y: 0, z: -40, sheet })
+      enemies.push(enemy)
+    }
+    for (const enemy of enemies) {
+      enemy.applyDamage(sheet.shieldMax, 0)
+    }
+    const fleeing = enemies.filter((enemy) => enemy.aiState() === 'flee').length
+    expect(fleeing).toBe(4)
+    expect(squad.fleeCount()).toBe(4)
+    expect(squad.canEnterFlee()).toBe(false)
+    const held = enemies.filter((enemy) => enemy.aiState() === 'formation')
+    expect(held).toHaveLength(1)
+    const waiter = held[0]
+    const opener = enemies.find((enemy) => enemy.aiState() === 'flee')
+    expect(waiter).toBeDefined()
+    expect(opener).toBeDefined()
+    if (waiter && opener) {
+      opener.deactivate()
+      waiter.update(0.05)
+      expect(waiter.aiState()).toBe('flee')
+    }
+    for (const enemy of enemies) {
+      enemy.dispose()
+    }
     geo.dispose()
   })
 

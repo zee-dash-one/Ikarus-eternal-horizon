@@ -115,6 +115,11 @@ export class SquadTab implements DebuggerTab {
       'fury',
       () => `${squad.furyShips()} / ${squad.config().maxFury}`,
     )
+    this._readOnly(
+      form,
+      'flee',
+      () => `${squad.fleeShips()} / ${squad.config().maxFury}`,
+    )
     for (let i = 0; i < squad.groupCount(); i += 1) {
       this._readOnly(form, `group ${i}`, () => {
         const snap = squad.groups()[i]

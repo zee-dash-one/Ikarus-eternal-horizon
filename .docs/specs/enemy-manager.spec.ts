@@ -16,7 +16,7 @@
 // ─── 1. Scope ────────────────────────────────────────────────────────────────
 /**
  * Owns:      The enemy population — spawn schedule, live list, pooling, despawn,
- *            and the composed `EnemySquadManager` (groups, affinity, FURY cap).
+ *            and the composed `EnemySquadManager` (groups, affinity, FURY/FLEE cap).
  *            Registers / unregisters colliders with F01. Culls via BattleField.contains.
  * Does not own: Enemy class internals (E01), group steering math (EnemyGroup),
  *            difficulty math (F03), damage (F04).
@@ -127,7 +127,7 @@ export declare class EnemyManager {
  *   ---------------|----------|-----------------------
  *   liveCount      | int      | active pooled enemies
  *   spawnAcc       | sec      | accumulator toward next spawn
- *   squad          | EnemySquadManager | groups, affinity, FURY cap
+ *   squad          | EnemySquadManager | groups, affinity, FURY/FLEE cap
  *   patternId      | string   | copied from F03; G0 generic ignores, §7 branches
  *
  *   spawnOne — acquire; null on exhaustion (no `new`). activate in SpawnArea

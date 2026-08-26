@@ -143,7 +143,9 @@ export declare class EnemySquadManager {
   detachFromGroup(ship: unknown): void
   update(dt: number, playerX: number, playerZ: number, minX: number, maxX: number): void
   furyCount(): number
+  fleeCount(): number
   canEnterFury(): boolean
+  canEnterFlee(): boolean
   rogueCount(): number
   activeGroupCount(): number
 }
@@ -157,7 +159,9 @@ export declare class EnemySquadManager {
  *     egress    — centroid z ≥ playerZ; seek +Z to the BattleField near wall
  *
  *   EnemySquadManager.canEnterFury — furyCount() < maxFury (live, same frame)
+ *   EnemySquadManager.canEnterFlee — fleeCount() < maxFury (independent bucket)
  *   Enemy._enterRogue('fury')      — no-op when the cap is full; retries later
+ *   Enemy._enterRogue('flee')      — no-op when the FLEE cap is full; retries later
  *   Enemy._steerFlee               — locked ±X edge + −Z (diagonal peel, not +Z)
  *   Enemy group label sprite       — "0"…"5" group id, "F" fury, "L" flee, "-" birth
  */
@@ -170,13 +174,14 @@ export declare class EnemySquadManager {
  *   R3. Formation templates never place a slot on the group centroid.
  *   R4. Patrol never aims closer than playerZ − patrolStandoffZ (default 10).
  *   R5. Crossing the player Z line commits the group to egress (no turnaround).
- *   R6. At most maxFury (4) ships may be in FURY at once.
+ *   R6. At most maxFury (4) ships may be in FURY at once. The same number
+ *       independently caps concurrent FLEE (4 fury + 4 flee is legal).
  *   R7. FURY seeks the player's X and a Z always past them; never parks on playerZ.
  *   R8. Structural decisions run at tickHz, not every render frame.
  *   R9. Per-frame allocation: none in integrate / ship steering hot path.
  *   R10. BattleField.contains false ⇒ EnemyManager pool.release (despawn).
  *   R12. FLEE seeks a locked X-edge and a point behind the ship (−Z). It never
- *        continues the inbound +Z run.
+ *        continues the inbound +Z run. Concurrent FLEE is capped at maxFury.
  */
 
 // ─── 6. View / syncRender ────────────────────────────────────────────────────
@@ -204,7 +209,7 @@ export declare class EnemySquadManager {
  *   maxPerGroup        = 8     // slots + formation buffer
  *   tickHz             = 5     // structural AI (200 ms)
  *   shipsPerTick       = 12    // affinity/migration slice per tick
- *   maxFury            = 4     // concurrent kamikaze peel-offs
+ *   maxFury            = 4     // concurrent FURY dives AND concurrent FLEE ships
  *
  * Formation geometry (center always empty)
  *   circleRadius       = 7
@@ -298,9 +303,11 @@ export declare class EnemySquadManager {
  *   it('never activates more than maxGroups')
  *   it('runs structural decisions on the staggered tick')
  *   it('caps concurrent FURY ships at maxFury')
+ *   it('caps concurrent FLEE ships at maxFury, independently of FURY')
  * describe('Enemy')
  *   it('registers in a group after birth / gate')
  *   it('refuses a fifth FURY while four are already raging')
+ *   it('refuses a fifth FLEE while four are already fleeing')
  *   it('FURY keeps advancing past the player')
  *   it('FLEE peels to the side and back (−Z) instead of continuing +Z')
  * describe('SquadTab')
@@ -309,7 +316,7 @@ export declare class EnemySquadManager {
  *
  * Manual:
  *   A-manual-1. [manual] group numbers 0–5 match nearby formation mates
- *   A-manual-2. [manual] at most four "F" labels at once
+ *   A-manual-2. [manual] at most four "F" labels and four "L" labels at once
  *   A-manual-3. [manual] patrol holds ~10 Z in front; overshoot flies to the wall
  *   A-manual-4. [manual] "L" ships cut to a screen corner, not straight +Z
  *

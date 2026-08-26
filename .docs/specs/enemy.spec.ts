@@ -184,7 +184,7 @@ export declare class Enemy extends THREE.Mesh implements TargetHit, DamageSink {
  *       Gate handoff keeps cruise velocity and switches to formation seek.
  *       squad → slot arrive (formation), BOOST to rejoin, FURY kamikaze (capped
  *       at BALANCE.enemy.squad.maxFury), FLEE diagonally to the X edge and
- *       back toward spawn (−Z). Group centroid
+ *       back toward spawn (−Z), also capped at maxFury (independent of FURY). Group centroid
  *       motion is EnemyGroup (patrol standoff / intercept / egress).
  *   R4b. syncRender shows a billboard group id ("0"–"5", "F", "L", or "-").
  *   R5. update(dt) never allocates and never writes material/geometry; syncRender
@@ -289,6 +289,7 @@ export declare class Enemy extends THREE.Mesh implements TargetHit, DamageSink {
  *   it('refuses a fifth FURY while four are already raging')                          // R4, maxFury
  *   it('FURY keeps advancing past the player instead of parking on their Z line')     // R4
  *   it('FLEEs the moment its shield breaks (diagonal: +|X| and −Z)')                  // R4
+ *   it('refuses a fifth FLEE while four are already fleeing')                         // R4, maxFury
  *
  * describe('Enemy')
  *   it('extends THREE.Mesh')                                                          // R1

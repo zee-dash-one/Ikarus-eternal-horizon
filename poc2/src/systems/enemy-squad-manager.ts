@@ -29,6 +29,8 @@ export interface SquadShipPort extends GroupMemberPort {
   isRogue(): boolean
   /** True only while in FURY (subset of rogue). */
   isFury(): boolean
+  /** True only while in FLEE (subset of rogue). */
+  isFlee(): boolean
   currentGroup(): EnemyGroup | null
   /** One float per group id, allocated once by the ship. */
   readonly affinity: Float32Array
@@ -45,8 +47,11 @@ export interface SquadRegistryPort {
   rogueCount(): number
   rogueAt(index: number): SquadShipPort | null
   furyCount(): number
+  fleeCount(): number
   /** False when the concurrent FURY cap is already full. */
   canEnterFury(): boolean
+  /** False when the concurrent FLEE cap (same number as maxFury) is already full. */
+  canEnterFlee(): boolean
   liveConfig(): SquadConfig
   arenaMinX(): number
   arenaMaxX(): number
@@ -131,18 +136,34 @@ export class EnemySquadManager {
   }
 
   furyCount(): number {
+    return this._countActive((ship) => ship.isFury())
+  }
+
+  fleeCount(): number {
+    return this._countActive((ship) => ship.isFlee())
+  }
+
+  canEnterFury(): boolean {
+    return this.furyCount() < this._rogueCap()
+  }
+
+  canEnterFlee(): boolean {
+    return this.fleeCount() < this._rogueCap()
+  }
+
+  private _rogueCap(): number {
+    return Math.max(0, Math.floor(this._config.maxFury))
+  }
+
+  private _countActive(pred: (ship: SquadShipPort) => boolean): number {
     let n = 0
     for (let i = 0; i < this._shipCount; i += 1) {
       const ship = this._ships[i]
-      if (ship && ship.active && ship.isFury()) {
+      if (ship && ship.active && pred(ship)) {
         n += 1
       }
     }
     return n
-  }
-
-  canEnterFury(): boolean {
-    return this.furyCount() < Math.max(0, Math.floor(this._config.maxFury))
   }
 
   /** Track a ship that just cleared the gate and give it a slot. */

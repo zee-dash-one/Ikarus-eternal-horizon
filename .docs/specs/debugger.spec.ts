@@ -194,6 +194,8 @@ export interface DebuggerSquadBind {
   rogueShips(): number
   /** Live FURY count; the tab shows `furyShips() / config().maxFury`. */
   furyShips(): number
+  /** Live FLEE count; the tab shows `fleeShips() / config().maxFury`. */
+  fleeShips(): number
 }
 
 export interface DebuggerBinds {
@@ -346,7 +348,8 @@ export declare class SquadTab implements DebuggerTab {
  *       via PlayerController.setDashLevel. Module selects call Ship.equip*
  *       so BALANCE.ship.modules mods apply. EnemyTab edits the live Warrior
  *       sheet (including formation / morale / affinity) without moving ship
- *       pose. SquadTab edits BALANCE.enemy.squad live and shows fury N / maxFury.
+ *       pose. SquadTab edits BALANCE.enemy.squad live and shows fury N / maxFury
+ *       and flee N / maxFury.
  *       None invents a second number table.
  *   R6. Q09: when `enabled === false`, mount writes nothing into the host
  *       and sync/reset are no-ops.
@@ -399,7 +402,7 @@ export declare class SquadTab implements DebuggerTab {
  *             fleeGroupHealthPct, fleeAgilityMul
  *     affinity: gainPerSec, decayPerSec, radius, loyalty
  *   Squad — live `BALANCE.enemy.squad` + group readout (enemy-squad.spec.ts §4):
- *     readout: groups N / max, ships (rogue), fury N / maxFury, per-group
+ *     readout: groups N / max, ships (rogue), fury N / maxFury, flee N / maxFury, per-group
  *              members · objective · formation · health%
  *     Limits (read-only): maxGroups, maxPerGroup
  *     Performance: tickHz, shipsPerTick, maxFury
@@ -475,7 +478,7 @@ export declare class SquadTab implements DebuggerTab {
  *   A-manual-2. [manual] dragging integrity current updates the sheet live
  *   A-manual-3. [manual] Equips weapon level 12 fans 12 laser bolts
  *   A-manual-4. [manual] production build (Q09) shows an empty debugger-area
- *   A-manual-5. [manual] Squad tab fury line matches on-screen "F" labels (≤ maxFury)
+ *   A-manual-5. [manual] Squad tab fury/flee lines match on-screen "F"/"L" labels (≤ maxFury each)
  *   A-manual-6. [manual] patrolStandoffZ slider changes how close groups hold
  *
  * Coverage: R1–R8 + Ship + Equips + Enemy + Squad Acceptance. Other tabs: later passes.

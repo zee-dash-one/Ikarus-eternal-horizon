@@ -331,6 +331,10 @@ export class Enemy extends Mesh {
     return this._aiState === 'fury'
   }
 
+  isFlee(): boolean {
+    return this._aiState === 'flee'
+  }
+
   currentGroup(): EnemyGroup | null {
     return this._group
   }
@@ -927,6 +931,11 @@ export class Enemy extends Mesh {
       return
     }
 
+    if (this.shieldMax > 0 && this.shield <= 0) {
+      this._enterRogue('flee')
+      return
+    }
+
     const morale = this._sheet.morale
     const toPlayer = distXZ(this.x, this.z, this._seek.x, this._seek.z)
     if (toPlayer <= morale.furyProximityRadius) {
@@ -971,6 +980,10 @@ export class Enemy extends Mesh {
     }
     if (state === 'fury' && this._squad && !this._squad.canEnterFury()) {
       // Cap full — stay in formation; proximity/retaliation can retry next frames.
+      return
+    }
+    if (state === 'flee' && this._squad && !this._squad.canEnterFlee()) {
+      // Same cap as FURY dives — stay in formation; shield/group triggers retry.
       return
     }
     this._aiState = state

@@ -14,7 +14,7 @@ export interface SquadConfig {
   readonly tickHz: number
   /** Ships evaluated for affinity / migration on each structural tick. */
   readonly shipsPerTick: number
-  /** Hard cap of simultaneous FURY (kamikaze) ships. */
+  /** Hard cap of simultaneous FURY dives — also the cap of simultaneous FLEE ships. */
   readonly maxFury: number
 
   readonly circleRadius: number

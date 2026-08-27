@@ -1,39 +1,63 @@
 ---
-description: POC2 multi-agent SDD+TDD — Orchestrator, Programming/Three.js, Game Design, TDD
-globs: poc2/**/*,.docs/specs/**/*,.docs/plans/planning.spec.MD,poc2/todo.md
-alwaysApply: false
+description: POC3 multi-agent SDD+TDD — docs3 hub, CHAR/ENEMY/SQUAD, Orchestrator/Programming/Game Design/TDD
+globs: poc3/**/*,.docs3/**/*,.docs3/plans/planning.spec.MD,.docs3/todo.md
+alwaysApply: true
 ---
 
-# POC2 multi-agent SDD + TDD
+# POC3 multi-agent SDD + TDD
 
-Hub: `.docs/plans/planning.spec.MD` §6.3 · `D17`. Template: `.docs/specs/_template.spec.ts`.
+**Active workstream:** `poc3/` · backlog `.docs3/todo.md` · hub `.docs3/plans/planning.spec.MD`
 
-POC-1 (`poc/`) is **frozen**. Do not edit it. Do not open tasks against it.
+POC-1 (`poc/`) and POC-2 (`poc2/`) are **frozen**. Do not edit them. Do not open tasks against them. Reference only (feel / coverage checklist).
+
+Docs2 (`.docs2/`) is a **coverage checklist only** — not inherited architecture.
+
+## Hub summary (docs3 v0.1.0)
+
+English design source of truth. Key locks:
+
+| Lock | Rule |
+|---|---|
+| **Summary Sheet only** | Frame systems read `ENE` `SHD` `DEF` `SPD` `S_D` `S_R` `REG` `LVL` `HP` + integrity state. Full Sheet recalc is event-driven (`CHAR-05`). |
+| **Death** | Integrity 0 = **DRIFTING**; next hit = **DEAD** → run over (`CHAR-04`). |
+| **Slots** | 12 Special (incl. Primary/Secondary weapon) + 21 Generic + 21 Effect (`CHAR-01`). |
+| **Damage** | Mitigate by `DEF/10` → Shield → Integrity; ship–ship = other `HP/2` (`CHAR-06`). |
+| **Classes** | **Tanker** · Warrior · Rogue (+ Special). Docs2 “Tank” = Tanker. |
+| **Enemy SM** | `EnterGate` · `FindGroup` · `LoopBack` · `Flee` · `Fury` (`ENEMY-02`). |
+| **Squad** | 1–8 · formations `V`/`Circle`/`CircleII–IV`/`LineDivers` · independent squad SM (`SQUAD-*`). |
+| **Boot** | Login (skip if session) → Start (cockpit + `welcome_screen_ready`) → Title → Run; **Pause** freezes Run (`SCENE-05`, `D21`). |
+| **IDs** | `CHAR-` · `ENEMY-` · `SQUAD-` · `SCENE-` (stable). System classes: `*Manager` only (`D22`, hub §2.6). |
+
+Full decisions: hub §3 (`D01`–`D18`). Requirement index: hub §7.
 
 ## Agents (disjoint ownership)
 
 | Agent | Spec sections | Code | Forbidden |
 |---|---|---|---|
-| **Orchestrator** | header, §1 Scope, §8 Requires, §9 sign-off | `poc2/todo.md` checkoff, refuse open `requires` | numbers, THREE, tests |
-| **Programming / Three.js** | §2 Contract, §3 Fields, §5 Rules, §6 View | classes, `extends THREE.*`, `dispose()`, pools | BALANCE values, skipping tests |
-| **Game Design** | §4 BALANCE / feel / leveling / graphics | `BALANCE` numbers, palette, cadence | class shape, tests, literals outside BALANCE |
-| **TDD** | §7 cases | `{subject}.test.ts` written **red** first; runs `npm run test` | production implementation |
+| **Orchestrator** | header, Scope, Requires, sign-off | `.docs3/todo.md` checkoff; refuse open `requires` | numbers, THREE, tests |
+| **Programming / Three.js** | Contract, Fields, Rules, View | classes, `extends THREE.*`, `dispose()`, pools | BALANCE values, skipping tests |
+| **Game Design** | BALANCE / feel / leveling / graphics | `BALANCE` numbers, palette, cadence | class shape, tests, literals outside BALANCE |
+| **TDD** | Acceptance cases | `{subject}.test.ts` written **red** first; runs `npm run test` | production implementation |
+
+Template (when specs exist): `.docs3/specs/_template.spec.ts`. Until then, Orchestrator still owns order and DoD from this rule + hub.
 
 ## Order on every card
 
-1. Orchestrator copies the template and fills Scope + Requires.
+1. Orchestrator opens/fills the spec (Scope + Requires) from the hub ID.
 2. Programming fills contract / memory / view.
 3. Game Design fills BALANCE + feel + leveling + graphics.
 4. TDD names cases and writes the failing test file.
-5. Programming implements until green. TDD re-runs `verify`. Game Design play-checks. Orchestrator ticks DoD.
+5. Programming implements until green. TDD re-runs `verify`. Game Design play-checks. Orchestrator ticks DoD in `.docs3/todo.md`.
 
 A spec with an empty agent section is incomplete. `N/A` is allowed; blank is not.
 
 ## Implementation gates
 
 - Spec before code. Tests before implementation.
-- `interface` + `class`, one public class per `kebab-case.ts`.
+- `interface` + `class`, one public class per `kebab-case.ts`. Domain owners use `*Manager` — never `*Controller` or `*Resolver` (`D22`).
 - `update(dt)` = logic; `syncRender()` = transforms/opacity/material only.
-- Gameplay numbers only in `BALANCE` (`RUL-12`). Gamepad indices, deadzone, trigger threshold and haptic presets live in `BALANCE.controls.gamepad` and `BALANCE.haptics` (`D18`). No third-party pad library.
+- Gameplay numbers only in `BALANCE`. Frame code must not recompute Full Sheet math.
 - Zero per-frame allocation on hot paths.
-- `npm run verify` in `poc2/` must be green before Orchestrator marks done.
+- Audio is always `SoundManager` (volumes, mute, AI VO, cue log).
+- `npm run verify` in `poc3/` must be green before Orchestrator marks done.
+- Follow `.docs3/todo.md` theme order — do not skip upstream themes.

@@ -1,4 +1,5 @@
 # IKARUS: ETERNAL HORIZON
+
 ## Game Design Document — v3.0 "Full Lore Integration"
 
 > *Somewhere past the last charted beacon, a signal keeps repeating: SECTOR CLASSIFIED. PILOT DESIGNATION: IKARUS. DO NOT PURSUE.*
@@ -6,32 +7,42 @@
 > Space shooter roguelite. Two-axis gameplay, 3D rendering, endless arcade pressure — now wired straight into the mercenary, monster-haunted universe it always deserved.
 
 **Status:** pre-production (Gate G0) · **Stack:** TypeScript · Vite · Three.js · Yuka · Howler
-**Operational source of truth:** [`.docs/plans/planning.spec.MD`](.docs/plans/planning.spec.MD) (canonical names, decisions, gates, traceable requirements, SDD build order)
-**Builds:** [`poc/`](poc/README.md) — POC-1, frozen playable reference · [`poc2/`](poc2/README.md) — active build (`npm run dev` in `poc2/`)
-**POC2 now:** fly the modular airplane, fire four weapons, dash, pause to pick a scheme, remap binds. Laser overheat cues go through `SoundManager.playOverheatCue()` (silent until Howler). Warriors form squads after the gate (10 Z standoff, FURY cap 4). Collision is live; HUD bars / Title flow are still next.
+**Operational source of truth:** `[.docs2/plans/planning.spec.MD](.docs2/plans/planning.spec.MD)` v4.3.0 (canonical names, decisions, gates, traceable requirements, SDD build order)
+**Architecture:** `[.docs2/phases/phase-0-poc2.md](.docs2/phases/phase-0-poc2.md)` — pattern constructor, Model/View by THREE inheritance, collision layers, managers, target tree
+**Specs index:** `[.docs2/specs/README.md](.docs2/specs/README.md)` — one SDD+TDD card per Stage A–G subject
+**Builds:** `[poc/](poc/README.md)` — POC-1, frozen playable reference · `[poc2/](poc2/README.md)` — active build (`npm run dev` in `poc2/`)
+**POC2 now (Fase 0 playable):** modular airplane · four weapons L1–12 (`F`/`Y` fire, `G`/`X` switch) · dash on shared Energy · four exclusive schemes + live remap · pause scheme picker · SpawnArea (left/right/front) + EnemyGate → Warrior squads (10 Z standoff, FURY cap 4) · collision + damage resolver live · DEV debugger (Ship · Equips · Enemy · Squad · SpawnArea · Parallax). Laser overheat cues via `SoundManager.playOverheatCue()` (silent until Howler). **Next:** remaining G08 tabs · wire C03 onto byte pools · statuses · G07 HUD · G11 inventory · G01 Title.
 **This document supersedes GDD v2.0.** All mechanical systems from v2.0 are preserved; this revision folds in the full lore bible and the narrative-delivery systems (HUD storytelling, Bounty Board, item flavor text, sector staging, boss narrative beats) that were previously parked as "open worldbuilding questions."
 
 ---
 
+
+
 ## 0. Technical Sheet
 
-| Field | Detail |
-|---|---|
-| **Title** | Ikarus: Eternal Horizon |
-| **Genre** | Shooter roguelite / arcade shmup, 2.5D |
-| **Perspective** | 3D rendering with **two-axis (X/Y) gameplay** — depth is visual only |
-| **Tech** | TypeScript, Vite, HTML canvas, **Three.js** (graphics/layers), **Yuka** (logic/AI), **Howler** (audio), HTML/CSS (menus) |
-| **Visual style** | G0–G1: neon wireframe → G2+: low-poly flat-shaded neon |
-| **Setting** | The **Vangarde Sector**, the last live stretch of the lawless **Outer Grids**, on the doorstep of the **Eternal Horizon** |
-| **Modes** | **Normal** (full systems) · **Survivor** (one-shot from scratch) |
-| **Play session** | Short, intense runs; no fixed ending — difficulty scales endlessly |
-| **Platforms** | Web (Itch.io) → PC (Steam) |
-| **Audience** | Arcade/shmup fans, short-session players, synthwave nostalgia, 80s pulp sci-fi readers |
-| **References** | Star Fox 64 silhouettes, classic arcade shmups, synthwave/cyberpunk, VHS box-art sci-fi, *Heavy Metal* magazine, mixtape-era cockpit dressing |
+
+| Field            | Detail                                                                                                                                        |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Title**        | Ikarus: Eternal Horizon                                                                                                                       |
+| **Genre**        | Shooter roguelite / arcade shmup, 2.5D                                                                                                        |
+| **Perspective**  | 3D rendering with **two-axis (X/Y) gameplay** — depth is visual only                                                                          |
+| **Tech**         | TypeScript, Vite, HTML canvas, **Three.js** (graphics/layers), **Yuka** (logic/AI), **Howler** (audio), HTML/CSS (menus)                      |
+| **Visual style** | low-poly                                                                                                                                      |
+| **Setting**      | The **Vangarde Sector**, the last live stretch of the lawless **Outer Grids**, on the doorstep of the **Eternal Horizon**                     |
+| **Modes**        | **Normal** (full systems) · **Survivor** (one-shot from scratch)                                                                              |
+| **Play session** | Short, intense runs; no fixed ending — difficulty scales endlessly                                                                            |
+| **Platforms**    | Web (Itch.io, Poki Games) → PC (Steam)                                                                                                        |
+| **Audience**     | Arcade/shmup fans, short-session players, synthwave nostalgia, 80s pulp sci-fi readers                                                        |
+| **References**   | Star Fox 64 silhouettes, classic arcade shmups, synthwave/cyberpunk, VHS box-art sci-fi, *Heavy Metal* magazine, mixtape-era cockpit dressing |
+
 
 ---
 
+
+
 ## 1. Synopsis and Pillars
+
+
 
 ### 1.1 Commercial Synopsis
 
@@ -49,6 +60,8 @@
 >
 > Weekly, monthly, annual, eternal — the leaderboard never forgets your name. Neither will the Grids.
 
+
+
 ### 1.2 Design Pillars
 
 1. **Visible risk, instant decisions** — Force Field, Integrity, Energy and resources are always readable.
@@ -58,6 +71,8 @@
 5. **"One more kill" loop** — the run ends only on death; the goal is always the next milestone.
 6. **Leaderboards as the meta** — Normal rewards system mastery, Survivor rewards raw skill.
 7. **Lore earned, never forced** — the world is dense, but it arrives through HUD chatter, item labels, and radio transmissions the player can absorb at their own pace. Nobody stops shooting to read a cutscene.
+
+
 
 ### 1.3 Narrative Premise (short form)
 
@@ -70,7 +85,11 @@ Full worldbuilding lives in **Section 2**. This section exists so a new hire can
 
 ---
 
+
+
 ## 2. World & Lore Bible
+
+
 
 ### 2.1 The Core Motive: The High-Stakes Mercenary Loop
 
@@ -100,11 +119,13 @@ PILOT STATUS: OPERATOR - IKARUS  [IDENTITY: CLASSIFIED]
 
 Aether is the setting's master resource — the thing every faction wants, the thing that fuels travel, weapons, and dimensional manipulation, and the reason M.A.L.I.C.E. exists to extract it in the first place.
 
-| Tier | Name | Description |
-|---|---|---|
-| Raw | **Aether Shards** | Unstable, volatile fragments harvested straight from cracked planetary cores and dead stars. |
-| Pre-refined | **Aether Ore** | Stabilized industrial cargo, heavily contested in deep space. |
-| Star-forged | **Aether Crystals / Fractals** | Hyper-concentrated energy, capable of warping space and breaching dimensional barriers. |
+
+| Tier        | Name                           | Description                                                                                  |
+| ----------- | ------------------------------ | -------------------------------------------------------------------------------------------- |
+| Raw         | **Aether Shards**              | Unstable, volatile fragments harvested straight from cracked planetary cores and dead stars. |
+| Pre-refined | **Aether Ore**                 | Stabilized industrial cargo, heavily contested in deep space.                                |
+| Star-forged | **Aether Crystals / Fractals** | Hyper-concentrated energy, capable of warping space and breaching dimensional barriers.      |
+
 
 In gameplay terms, the Aether Cycle is the *fluff layer* sitting on top of the five concrete crafting resources defined in **Section 6.3** — those are what you actually scoop up mid-run, and each one maps onto a stage of the Cycle. Think of Section 2.3 as the economics; Section 6.3 as the loot table.
 
@@ -136,6 +157,8 @@ Three factions run the black markets of the Outer Grids. None of them are your f
 
 ---
 
+
+
 ## 3. Cockpit, HUD & Environmental Storytelling
 
 Lore in this game is never a cutscene. It lives in the frame around the action — the cockpit dressing, the status readouts, the radio chatter — so nobody ever has to stop shooting to get the story.
@@ -158,15 +181,21 @@ Between runs, the camera sits inside or just outside the Ikarus Horizon's cockpi
 - A retro cassette deck playing on a loop — and it's not just set dressing, it **doubles as the in-menu BGM control**: swap tapes, swap tracks.
 - A blurred photograph, taped crooked to the dash, of two flight cadets — a young man and a young woman. The game never says who they are. Neither does Ikarus.
 
+
+
 ### 3.3 The AI Narrator (Radio Overlay)
 
 A retro waveform radio UI sits in a top corner of the screen for the whole run. The Ship AI is the one actually talking — tactical narrator, mission broker, occasional straight man to Ikarus's one-liners.
 
 **Entering a sector:**
+
 > *"Detecting high concentrations of Aether Ore. Warning: M.A.L.I.C.E. corruption signatures in proximity."*
 
 **Reacting to a dash or super-attack:**
+
 > AI: *"Shields compromised, but... impressive maneuver, Operator."*
+
+
 
 ### 3.4 Ikarus Voice Lines
 
@@ -186,6 +215,8 @@ Enemy chatter and allied radio traffic exist specifically to sell how insane Ika
 
 ---
 
+
+
 ## 4. Camera, Perspective and Play Space
 
 - **Rendering:** real 3D scene (Three.js) with a fixed, tilted presentation angle that shows the ship's top face, rear thrusters and right side.
@@ -195,21 +226,27 @@ Enemy chatter and allied radio traffic exist specifically to sell how insane Ika
 
 ---
 
+
+
 ## 5. Controls and Interface
+
+
 
 ### 5.1 Control Scheme
 
 POC2 uses **four exclusive schemes** (`D19`). One is active at a time. Default is **Keyboard**. Pause (Esc / Start) picks the scheme. The left column (`area-inputs`) remaps what each key / mouse button / pad button / overlay slot does for the current session. `BALANCE` stays the default table; Escape always pauses.
 
-| Action | Keyboard | Mix (keyboard + mouse) | Gamepad (W3C standard) | Touch |
-|---|---|---|---|---|
-| Movement | WASD | WASD | Left stick (axes 0/1, deadzone 0.18) | Left nipple stick |
-| Primary fire | F | F **or** Left click | Y (button 3) | Fire |
-| Special Ordnance / bomb | T | T **or** Right click | South / A (button 0) | Bomb |
-| Switch weapon | G | G **or** wheel down | X (button 2) | Wpn |
-| Switch bomb | Y | Y **or** wheel up | B (button 1) | Bomb× |
-| Dash | Space | Space | RB (button 5) | Dash |
-| Pause | Esc | Esc | Start (button 9) **or** Esc | Pause |
+
+| Action                  | Keyboard | Mix (keyboard + mouse) | Gamepad (W3C standard)               | Touch             |
+| ----------------------- | -------- | ---------------------- | ------------------------------------ | ----------------- |
+| Movement                | WASD     | WASD                   | Left stick (axes 0/1, deadzone 0.18) | Left nipple stick |
+| Primary fire            | F        | F **or** Left click    | Y (button 3)                         | Fire              |
+| Special Ordnance / bomb | T        | T **or** Right click   | South / A (button 0)                 | Bomb              |
+| Switch weapon           | G        | G **or** wheel down    | X (button 2)                         | Wpn               |
+| Switch bomb             | Y        | Y **or** wheel up      | B (button 1)                         | Bomb×             |
+| Dash                    | Space    | Space                  | RB (button 5)                        | Dash              |
+| Pause                   | Esc      | Esc                    | Start (button 9) **or** Esc          | Pause             |
+
 
 Camera debug rig stays IJKL / UO + Shift (not combat). Pointer-steer (mouse moves the ship) stays deferred. Dedicated jet reserve stays `SHIP-08`; dash spends the shared Energy pool. Dual-rumble presets live in `BALANCE.haptics` (wired when F04/F05 land). Persistent save of remaps and Steam Input stay **G3** (`SHIP-13`).
 
@@ -234,19 +271,25 @@ Camera debug rig stays IJKL / UO + Shift (not combat). Pointer-steer (mouse move
 
 ---
 
+
+
 ## 6. Core Mechanics
+
+
 
 ### 6.1 Ship Attributes
 
-| Attribute | Role |
-|---|---|
+
+| Attribute            | Role                                                          |
+| -------------------- | ------------------------------------------------------------- |
 | **Integrity** (hull) | Health. Hits 0 → run over. Does **not** regenerate on its own |
-| **Force Field** | Absorbs all damage until depleted; slow passive regen |
-| **Speed** | Agility across the playfield |
-| **Energy** | Operational fuel: weapons, jets and crafting all draw from it |
-| **Weapon** | One active primary weapon slot |
-| **Missiles** | Special Ordnance charges |
-| **Inventory** | Resources and equipment |
+| **Force Field**      | Absorbs all damage until depleted; slow passive regen         |
+| **Speed**            | Agility across the playfield                                  |
+| **Energy**           | Operational fuel: weapons, jets and crafting all draw from it |
+| **Weapon**           | One active primary weapon slot                                |
+| **Missiles**         | Special Ordnance charges                                      |
+| **Inventory**        | Resources and equipment                                       |
+
 
 POC2 already mounts the craft as a **modular airplane**: Body (integrity + energy, hull hitbox), Wings ×4 (agility + deflection), Shield on top (shield + deflection), Weapon on the nose (+ level), Bombs on side pylons (+ level), Energy Collector on the tail (energy gain), Energy Converter as the cockpit (`labFusion` craft/convert speed, stored for G11). Equips tab and `BALANCE.ship.modules` drive the live sheet.
 
@@ -254,26 +297,32 @@ POC2 already mounts the craft as a **modular airplane**: Body (integrity + energ
 
 ### 6.2 Damage and Degradation
 
-| State | Effect |
-|---|---|
+
+| State           | Effect                               |
+| --------------- | ------------------------------------ |
 | Force Field > 0 | Absorbs shots, collisions and debris |
-| Force Field = 0 | Damage hits Integrity |
-| Hull level 1 | Gradual loss of agility |
-| Hull level 2 | Reduced fire rate and efficiency |
-| Hull level 3 | Ship adrift, minimal control |
-| Integrity = 0 | Destruction — end of run |
+| Force Field = 0 | Damage hits Integrity                |
+| Hull level 1    | Gradual loss of agility              |
+| Hull level 2    | Reduced fire rate and efficiency     |
+| Hull level 3    | Ship adrift, minimal control         |
+| Integrity = 0   | Destruction — end of run             |
+
+
+
 
 ### 6.3 Resources
 
 Each core resource is a specific stage of the Aether Cycle (Section 2.3), or salvage adjacent to it. Flavor text lives here and doubles as tooltip copy (see also the full catalog in Section 12).
 
-| Resource | Rarity | Aether Cycle Link | Main use |
-|---|---|---|---|
-| **Metal Scrap** | Common | Salvaged hull plating, Aether-Ore adjacent | Hull repair, basic crafts |
-| **Prismatic Crystal** | Uncommon | Refined Aether Ore facet | Weapon and tech projects |
-| **Dense Core** | Rare | Compressed Aether Crystal fragment | Advanced upgrades |
-| **Dark Matter** | Special | Unstable raw Aether Shard, bleeding nether-corruption | High-tier recipes |
-| **Equipment** | Epic | Ready-made salvage, corporate or alien-made | A ready-made item |
+
+| Resource              | Rarity   | Aether Cycle Link                                     | Main use                  |
+| --------------------- | -------- | ----------------------------------------------------- | ------------------------- |
+| **Metal Scrap**       | Common   | Salvaged hull plating, Aether-Ore adjacent            | Hull repair, basic crafts |
+| **Prismatic Crystal** | Uncommon | Refined Aether Ore facet                              | Weapon and tech projects  |
+| **Dense Core**        | Rare     | Compressed Aether Crystal fragment                    | Advanced upgrades         |
+| **Dark Matter**       | Special  | Unstable raw Aether Shard, bleeding nether-corruption | High-tier recipes         |
+| **Equipment**         | Epic     | Ready-made salvage, corporate or alien-made           | A ready-made item         |
+
 
 Fragments are pulled in by a magnet radius; collection has its own audio pitch per type.
 
@@ -281,57 +330,75 @@ Fragments are pulled in by a magnet radius; collection has its own audio pitch p
 
 Everything active costs **Energy**.
 
-| Rule | Value |
-|---|---|
-| Menu (inventory / craft / skills) | **Pause** |
-| Build progress | **Real time**, continues once unpaused |
-| Simultaneous CraftSlots | **1** — exclusive |
-| Materials | Committed when the recipe starts |
-| While a slot is busy | No other craft can begin |
+
+| Rule                              | Value                                  |
+| --------------------------------- | -------------------------------------- |
+| Menu (inventory / craft / skills) | **Pause**                              |
+| Build progress                    | **Real time**, continues once unpaused |
+| Simultaneous CraftSlots           | **1** — exclusive                      |
+| Materials                         | Committed when the recipe starts       |
+| While a slot is busy              | No other craft can begin               |
+
 
 Energy sources: **Reactive Panels** (slow passive gathering) and **Nuclear Reversor** (materials → Energy). The same pool feeds movement, fire and construction, so crafting during a heavy wave has to hurt.
 
 ### 6.5 Weapons
 
-| Weapon | Profile | Rate | Damage | Energy |
-|---|---|---|---|---|
-| **Laser** (default) | Straight projectiles | High | Low | Minimal |
-| **Plasma** | Slow orbs, medium AoE | Low | Medium (area) | Moderate |
-| **Beam** | Continuous scaling DPS | Continuous | Scaling /s | High |
-| **Mjolnir** | Piercing electric cone | Medium | High (cone AoE) | High |
+
+| Weapon              | Profile                | Rate       | Damage          | Energy   |
+| ------------------- | ---------------------- | ---------- | --------------- | -------- |
+| **Laser** (default) | Straight projectiles   | High       | Low             | Minimal  |
+| **Plasma**          | Slow orbs, medium AoE  | Low        | Medium (area)   | Moderate |
+| **Beam**            | Continuous scaling DPS | Continuous | Scaling /s      | High     |
+| **Mjolnir**         | Piercing electric cone | Medium     | High (cone AoE) | High     |
+
+
+
 
 ### 6.6 Special Ordnance
 
-| Special | Effect | Craftable item |
-|---|---|---|
-| **Pulse Nova** | Expanding wave: stuns common ships and destroys enemy projectiles | Nova Bomb |
-| **Swarm Torpedo** | Multiple homing missiles on the nearest targets | Wasp Cluster |
-| **Star Killer** | Gravity anomaly that pulls in ships, enemy fire and nearby asteroids, then detonates | Singularity Bomb |
+
+| Special           | Effect                                                                               | Craftable item   |
+| ----------------- | ------------------------------------------------------------------------------------ | ---------------- |
+| **Pulse Nova**    | Expanding wave: stuns common ships and destroys enemy projectiles                    | Nova Bomb        |
+| **Swarm Torpedo** | Multiple homing missiles on the nearest targets                                      | Wasp Cluster     |
+| **Star Killer**   | Gravity anomaly that pulls in ships, enemy fire and nearby asteroids, then detonates | Singularity Bomb |
+
+
+
 
 ### 6.7 Equipment
 
-| Equipment | Effect |
-|---|---|
-| **Reactive Panels** | Generates Energy slowly and passively |
-| **Nuclear Reversor** | Converts materials into Energy |
-| **Gravity Assist Engine** | Raises movement speed with Jets |
-| **Quantum Deflectors** | Raises Force Field capacity |
-| **Laser Cannons** | Laser pulse count: 1, 2, 3, 5, 8, 13, 21 |
-| **Plasma Cannon** | Larger plasma explosion radius |
-| **Beam Emitter** | Wider beam, higher DPS |
-| **Storm Maker** | Denser, longer, stronger Mjolnir |
+
+| Equipment                 | Effect                                   |
+| ------------------------- | ---------------------------------------- |
+| **Reactive Panels**       | Generates Energy slowly and passively    |
+| **Nuclear Reversor**      | Converts materials into Energy           |
+| **Gravity Assist Engine** | Raises movement speed with Jets          |
+| **Quantum Deflectors**    | Raises Force Field capacity              |
+| **Laser Cannons**         | Laser pulse count: 1, 2, 3, 5, 8, 13, 21 |
+| **Plasma Cannon**         | Larger plasma explosion radius           |
+| **Beam Emitter**          | Wider beam, higher DPS                   |
+| **Storm Maker**           | Denser, longer, stronger Mjolnir         |
+
+
+
 
 ### 6.8 Skills (Tech Tree)
 
 Opened while paused. Three branches, expandable via DLC.
 
-| Branch | Focus |
-|---|---|
+
+| Branch          | Focus                                                          |
+| --------------- | -------------------------------------------------------------- |
 | **Engineering** | Max Integrity, speed, inventory space, lower craft energy cost |
-| **Power Flow** | Lower Jet/weapon energy drain, faster Force Field regen |
-| **Weaponry** | Damage, crit chance, fire rate, weapon effects |
+| **Power Flow**  | Lower Jet/weapon energy drain, faster Force Field regen        |
+| **Weaponry**    | Damage, crit chance, fire rate, weapon effects                 |
+
 
 ---
+
+
 
 ## 7. The Bounty Board — Contract System
 
@@ -343,19 +410,26 @@ The mercenary loop from Section 2.1 becomes a concrete system here. At the end o
 - Completing a contract pays out in **Blueprints, Equipment Modules, or bulk crafting materials** — never raw combat power mid-run, keeping leaderboard fairness intact (see Section 11).
 - Multiple contracts can be active at once; the Board refreshes between runs.
 
+
+
 ### 7.2 Faction Requests (sample transmissions)
 
 **Orc Warlord Request:**
+
 > *"Bring me 50 Heavy Scrap Plates from M.A.L.I.C.E. hulks. I need to reinforce my war-fleet!"*
 > → Reward: Weapon Blueprint.
 
 **Prismari Entity Request:**
+
 > *"Extract 10 Pure Aether Fractals from the Nebula. Stop the corps from bleeding us out!"*
 > → Reward: Shield/Energy Module.
 
 **Hollowed Request:**
+
 > *"We need 12 Working Life-Support Cores. Help us keep our kin alive."*
 > → Reward: Crafting Materials.
+
+
 
 ### 7.3 Reputation & Progressive Lore Unlocks
 
@@ -363,7 +437,11 @@ Each faction tracks standing independently, persisting between runs as meta-prog
 
 ---
 
+
+
 ## 8. Progression, Difficulty & Sector Storytelling
+
+
 
 ### 8.1 Kill-Count Milestones
 
@@ -398,32 +476,40 @@ After Sector 3, the band loop repeats with tighter pacing and harsher enemy patt
 
 ---
 
+
+
 ## 9. Bestiary & Threat Escalation
 
-Canonical catalog (identity, fichas, ranks): [`.docs/specs/enemy-bestiary.spec.ts`](.docs/specs/enemy-bestiary.spec.ts).
+Canonical catalog (identity, fichas, ranks): `[.docs2/specs/enemy-bestiary.spec.ts](.docs2/specs/enemy-bestiary.spec.ts)`.
 
 A hostile is always **race × class × rank**. Class is the silhouette you dodge. Rank is the name on the kill. Race is who built the hull.
 
 ### 9.1 Races
 
-| Race | Availability | Who |
-|---|---|---|
-| **Maldroids** | Base game | Drones of **M.A.L.I.C.E.** — the only race in POC2 |
-| **Hollows** | DLC | The Hollowed clone kin |
-| **Orcs** | DLC | Warlord raiders of the Outer Grids |
-| **Prismari** | DLC | Light-beings of the contested nebulae |
+
+| Race          | Availability | Who                                                |
+| ------------- | ------------ | -------------------------------------------------- |
+| **Maldroids** | Base game    | Drones of **M.A.L.I.C.E.** — the only race in POC2 |
+| **Hollows**   | DLC          | The Hollowed clone kin                             |
+| **Orcs**      | DLC          | Warlord raiders of the Outer Grids                 |
+| **Prismari**  | DLC          | Light-beings of the contested nebulae              |
+
+
+
 
 ### 9.2 Classes
 
-| Class | Behavior | Tactical role | POC2 sheet (rank 1) |
-|---|---|---|---|
-| **Warrior** | High projectile volume | Constant pressure, forces movement | 80 / 40 · rose · **1× laser L1** |
-| **Rogue** | Fragile, fast, actively dodges | Lethal if ignored, demands precision | 60 / 30 · violet · **1× laser L1** |
-| **Tank** | Very tough, slow | Living shield, blocks lines of fire | 140 / 70 · amber · **1× laser L1** |
+
+| Class       | Behavior                       | Tactical role                        | POC2 sheet (rank 1)                |
+| ----------- | ------------------------------ | ------------------------------------ | ---------------------------------- |
+| **Warrior** | High projectile volume         | Constant pressure, forces movement   | 80 / 40 · rose · **1× laser L1**   |
+| **Rogue**   | Fragile, fast, actively dodges | Lethal if ignored, demands precision | 60 / 30 · violet · **1× laser L1** |
+| **Tank**    | Very tough, slow               | Living shield, blocks lines of fire  | 140 / 70 · amber · **1× laser L1** |
+
 
 Silhouette rule (`ENM-06`): class must read in under 0.3s. Race skins change colour and detailing only, never the shape. **Special** is reserved for named uniques that break the trio (Valkaru-5, Omega-Imp, M.A.L.I.C.E.).
 
-Guns are the same catalog as the player (`laser` / `plasma` / `beam` / `mjolnir`, L1–L12), stamped onto the ficha as `equips` (`laser_lvl_1` × slot count). Optional RPG mods (placeholder `enemy_lvl_1_equip`) add damage, rate, speed and radius on top of that stamp — they do not invent a second gun table. Every filled hardpoint fires. Mini-bosses mount **2**, the Boss mounts **3**. See [equipment.spec.ts](.docs/specs/equipment.spec.ts).
+Guns are the same catalog as the player (`laser` / `plasma` / `beam` / `mjolnir`, L1–L12), stamped onto the ficha as `equips` (`laser_lvl_1` × slot count). Optional RPG mods (placeholder `enemy_lvl_1_equip`) add damage, rate, speed and radius on top of that stamp — they do not invent a second gun table. Every filled hardpoint fires. Mini-bosses mount **2**, the Boss mounts **3**. See [equipment.spec.ts](.docs2/specs/equipment.spec.ts).
 
 Drone display name: `{Rank} {Class}` — e.g. **Private Warrior**. Uniques use the title alone.
 
@@ -431,43 +517,53 @@ Drone display name: `{Rank} {Class}` — e.g. **Private Warrior**. Uniques use t
 
 Names apply to Maldroids only. Other races do not reuse this ladder.
 
-| Rank | Name | Tier | Notes |
-|---|---|---|---|
-| 1 | Scavan | drone | POC2 live spawn |
-| 2 | Recruit | drone | |
-| 3 | Cadet | drone | |
-| 4 | Private | drone | |
-| 5 | Corp | drone | |
-| 6 | Lieut | drone | |
-| 7 | Cap | drone | |
-| 8 | Jok | drone | |
-| 9 | Nog | drone | |
-| 10 | Chip | drone | |
-| 11 | Ace | drone | |
-| 12 | Overlord | drone | |
-| 13 | **Valkaru-5** | special | Unique. Not warrior / rogue / tank |
-| 15 | **Apex-Trooper** | Mini-boss | Warrior |
-| 15 | **Neon-Phantom** | Mini-boss | Rogue |
-| 15 | **Cyber-Juggernaut** | Mini-boss | Tank |
-| 50 | **Omega-Imp** | boss | Unique. Boss General body |
-| 1000 | **M.A.L.I.C.E.** | final-boss | DLC only — never in the base spawn table |
+
+| Rank | Name                 | Tier       | Notes                                    |
+| ---- | -------------------- | ---------- | ---------------------------------------- |
+| 1    | Scavan               | drone      | POC2 live spawn                          |
+| 2    | Recruit              | drone      |                                          |
+| 3    | Cadet                | drone      |                                          |
+| 4    | Private              | drone      |                                          |
+| 5    | Corp                 | drone      |                                          |
+| 6    | Lieut                | drone      |                                          |
+| 7    | Cap                  | drone      |                                          |
+| 8    | Jok                  | drone      |                                          |
+| 9    | Nog                  | drone      |                                          |
+| 10   | Chip                 | drone      |                                          |
+| 11   | Ace                  | drone      |                                          |
+| 12   | Overlord             | drone      |                                          |
+| 13   | **Valkaru-5**        | special    | Unique. Not warrior / rogue / tank       |
+| 15   | **Apex-Trooper**     | Mini-boss  | Warrior                                  |
+| 15   | **Neon-Phantom**     | Mini-boss  | Rogue                                    |
+| 15   | **Cyber-Juggernaut** | Mini-boss  | Tank                                     |
+| 50   | **Omega-Imp**        | boss       | Unique. Boss General body                |
+| 1000 | **M.A.L.I.C.E.**     | final-boss | DLC only — never in the base spawn table |
+
+
+
 
 ### 9.4 Environmental Obstacles
 
-| Type | Behavior |
-|---|---|
+
+| Type                            | Behavior                                                                |
+| ------------------------------- | ----------------------------------------------------------------------- |
 | Small / Medium / Large Asteroid | Inert drift; damage scales with size and density (Ice, Rocky, Metallic) |
-| **Mega Asteroid** | Fills 25–33% of the screen, sheds fragments when hit, pays out heavily |
+| **Mega Asteroid**               | Fills 25–33% of the screen, sheds fragments when hit, pays out heavily  |
+
+
+
 
 ### 9.5 Bosses & Narrative Beats
 
-| Body | Rank | Guns | Traits |
-|---|---|---|---|
-| **Apex-Trooper** | 15 | 2× laser L1 | Mini-boss Warrior — escorted |
-| **Neon-Phantom** | 15 | 2× laser L1 | Mini-boss Rogue — extreme speed, lethal bursts |
-| **Cyber-Juggernaut** | 15 | 2× laser L1 | Mini-boss Tank — extreme sponge, shields the squadron |
-| **Omega-Imp** | 50 | 3× laser L1 | Boss — peak durability, phased patterns, 2 Mini-bosses plus a wave |
-| **M.A.L.I.C.E.** | 1000 | 3× laser L1 | Final-boss, DLC only |
+
+| Body                 | Rank | Guns        | Traits                                                             |
+| -------------------- | ---- | ----------- | ------------------------------------------------------------------ |
+| **Apex-Trooper**     | 15   | 2× laser L1 | Mini-boss Warrior — escorted                                       |
+| **Neon-Phantom**     | 15   | 2× laser L1 | Mini-boss Rogue — extreme speed, lethal bursts                     |
+| **Cyber-Juggernaut** | 15   | 2× laser L1 | Mini-boss Tank — extreme sponge, shields the squadron              |
+| **Omega-Imp**        | 50   | 3× laser L1 | Boss — peak durability, phased patterns, 2 Mini-bosses plus a wave |
+| **M.A.L.I.C.E.**     | 1000 | 3× laser L1 | Final-boss, DLC only                                               |
+
 
 **Mid-Bosses (faction champions):** a quick radio interrupt fires before the fight, e.g. an Orc Raider captain demanding the player's cargo before opening fire.
 
@@ -479,30 +575,42 @@ CORRUPT_DIRECTIVE // PURGE_ORGANIC_WASTE
 
 ---
 
+
+
 ## 10. Modes, Scoring and Leaderboards
+
+
 
 ### 10.1 Game Modes
 
-| Mode | Systems | Proposition |
-|---|---|---|
-| **Normal** | Craft, skills, full arsenal, equipment, Bounty Board | Master the systems |
-| **Survivor** | **One-shot from scratch**: base hull and shield, no inherited inventory, Laser only, craft and skills off, no contracts | Pure skill |
+
+| Mode         | Systems                                                                                                                 | Proposition        |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------- | ------------------ |
+| **Normal**   | Craft, skills, full arsenal, equipment, Bounty Board                                                                    | Master the systems |
+| **Survivor** | **One-shot from scratch**: base hull and shield, no inherited inventory, Laser only, craft and skills off, no contracts | Pure skill         |
+
+
+
 
 ### 10.2 Scoring
 
 - Cumulative score for enemies, asteroids and events (MiniBoss, Mega Asteroid and Boss General are worth far more).
 - **Multipliers** for performance, such as no-damage streaks and fast wave clears.
 
+
+
 ### 10.3 Leaderboards
 
 Four time windows per mode — **8 boards total**, never mixed:
 
-| Window | Reset |
-|---|---|
-| **Weekly** | Every week |
-| **Monthly** | Every month |
-| **Annual** | Every calendar year |
-| **Eternal** | Never |
+
+| Window      | Reset               |
+| ----------- | ------------------- |
+| **Weekly**  | Every week          |
+| **Monthly** | Every month         |
+| **Annual**  | Every calendar year |
+| **Eternal** | Never               |
+
 
 Canonical timezone is **UTC**; a run counts toward the window in which it ended. Local bests ship in G1, Steam boards in G3. Top ranks earn cosmetic titles and badges — never combat power.
 
@@ -512,12 +620,16 @@ Canonical timezone is **UTC**; a run counts toward the window in which it ended.
 
 ---
 
+
+
 ## 11. Meta-Progression
 
 - **Persists between runs:** high scores, achievements, cosmetics (neon ship skins, thruster trail colors), a light credits system for visual unlocks, and **faction reputation with the Orcs, Prismari and Hollowed** (unlocks contracts and lore transmissions only — see Section 7.3).
 - **Does not persist:** weapons, equipment, resources, skills and hull damage — every run starts on equal footing so leaderboards stay fair.
 
 ---
+
+
 
 ## 12. Item, Material & Equipment Flavor Text
 
@@ -543,7 +655,11 @@ Short, evocative descriptions on every craftable item, raw material and blueprin
 
 ---
 
+
+
 ## 13. Art Direction
+
+
 
 ### 13.1 G0–G1 — Wireframe Prototype
 
@@ -557,15 +673,21 @@ Neon wireframe blocks with no solid fill. The point is validating movement, coll
 - Distinct polygonal shapes per archetype for instant reading.
 - Base palette: deep blue/purple space, cyan/blue player ship, enemies color-coded (Tank amber, Warrior red, Rogue green/magenta), asteroids in metallic and ice tones with outline glow.
 
+
+
 ### 13.3 Sector Palette Notes (see Section 8.2)
 
-| Sector | Palette |
-|---|---|
-| 1 — Mining Belt | Industrial amber, rust, dull metallics |
-| 2 — Contested Nebula | Bioluminescent purple/cyan, Prismari light-glow |
-| 3 — Eternal Horizon | Neon red/black hellscape, frozen ship silhouettes, static-glitch accents |
+
+| Sector               | Palette                                                                  |
+| -------------------- | ------------------------------------------------------------------------ |
+| 1 — Mining Belt      | Industrial amber, rust, dull metallics                                   |
+| 2 — Contested Nebula | Bioluminescent purple/cyan, Prismari light-glow                          |
+| 3 — Eternal Horizon  | Neon red/black hellscape, frozen ship silhouettes, static-glitch accents |
+
 
 ---
+
+
 
 ## 14. Audio
 
@@ -576,6 +698,8 @@ Neon wireframe blocks with no solid fill. The point is validating movement, coll
 
 ---
 
+
+
 ## 15. Feel and Performance
 
 - **Screen shake** proportional to impact, with a hard intensity cap that never compromises readability.
@@ -585,20 +709,26 @@ Neon wireframe blocks with no solid fill. The point is validating movement, coll
 
 ---
 
+
+
 ## 16. Development Roadmap
 
 Four product gates, each shipping a playable vertical slice.
 
-| Gate | Deliverable | Exit criteria |
-|---|---|---|
-| **G0** Vertical Slice | Local playable prototype | X/Y movement, pooled Laser, one enemy, simple health, score, death and restart, wireframe visuals. **POC2 in progress:** movement + dash, four weapons L1–12, SpawnArea + 1-enemy test stream, modular ship, four schemes + live remap, pause scheme picker, DEV debugger (Ship / Equips / SpawnArea) |
-| **G1** Itch Prototype | Web build on Itch.io | `index.html` at root with relative paths and responsive canvas, Force Field vs Integrity, Metal Scrap repair in the CraftSlot, asteroid drops, local best score, essential audio, pooled bullets and particles |
-| **G2** Professional Build | Full product | Complete bestiary, 50/100/500 milestones, Mega Asteroid, Boss General, full arsenal and Special Ordnance, Energy economy, Survivor mode, low-poly neon art, event audio, **Bounty Board contracts, AI Narrator/Ikarus voice lines, sector band staging, item flavor text**, balance numbers locked |
-| **G3** Steam 1.0 | Publishable PC build | Steam runtime, **persistent remap** + Steam Input (session remap + four schemes already in POC2; rumble presets in `BALANCE.haptics`), 8 leaderboards, 15–30 achievements, Steam Cloud, store assets, Steam Deck checklist |
+
+| Gate                      | Deliverable              | Exit criteria                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| ------------------------- | ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **G0** Vertical Slice     | Local playable prototype | X/Y movement, pooled Laser, one enemy, simple health, score, death and restart, wireframe visuals. **POC2 Fase 0 playable:** movement + dash, four weapons L1–12, SpawnArea (×3) + gate + Warrior squads, modular ship, four schemes + live remap, pause scheme picker, collision/damage live, DEV debugger (Ship · Equips · Enemy · Squad · SpawnArea · Parallax). Still open for G0 exit: HUD bars, Title→Result flow, score/death/restart polish |
+| **G1** Itch Prototype     | Web build on Itch.io     | `index.html` at root with relative paths and responsive canvas, Force Field vs Integrity, Metal Scrap repair in the CraftSlot, asteroid drops, local best score, essential audio, pooled bullets and particles                                                                                                                                                                                                                                      |
+| **G2** Professional Build | Full product             | Complete bestiary, 50/100/500 milestones, Mega Asteroid, Boss General, full arsenal and Special Ordnance, Energy economy, Survivor mode, low-poly neon art, event audio, **Bounty Board contracts, AI Narrator/Ikarus voice lines, sector band staging, item flavor text**, balance numbers locked                                                                                                                                                  |
+| **G3** Steam 1.0          | Publishable PC build     | Steam runtime, **persistent remap** + Steam Input (session remap + four schemes already in POC2; rumble presets in `BALANCE.haptics`), 8 leaderboards, 15–30 achievements, Steam Cloud, store assets, Steam Deck checklist                                                                                                                                                                                                                          |
+
 
 **Ordering rule:** never start required work for the next gate while the current one is incomplete, aside from short technical spikes. Narrative-delivery systems (HUD storytelling, contracts, flavor text) are explicitly G2 scope — G0/G1 stay mechanical so the core loop gets validated before it gets dressed.
 
 ---
+
+
 
 ## 17. Design Risks and Validation
 
@@ -615,46 +745,56 @@ Four product gates, each shipping a playable vertical slice.
 
 ---
 
+
+
 ## 18. Documentation Map
 
-Detailed, versioned planning lives in `.docs/`, with `#tag/*` markers for fast search. If your checkout still git-ignores that folder, searches need `rg --no-ignore "#tag/weapons" .docs`.
+Detailed, versioned planning lives in `[.docs2/](.docs2/specs/README.md)`, with `#tag/*` markers for fast search. Parts of that tree are git-ignored (phases, plans-later); versioned surfaces are the hub + specs. Searches that miss ignored files need `rg --no-ignore "#tag/weapons" .docs2`.
 
-**Active planning — `.docs/plans/` and `.docs/phases/`**
+**Active planning —** `.docs2/plans/`**,** `.docs2/phases/`**,** `.docs2/specs/`
 
-| Document | Scope |
-|---|---|
-| [`plans/planning.spec.MD`](.docs/plans/planning.spec.MD) | **The hub.** Canonical names, decisions, engine composition, the enumerated requirement index (§3.5), the SDD subject cards in build order (§5), the POC-1 → POC2 port map (§5.0), Definition of Done (§6.1) |
-| [`phases/phase-0-poc.md`](.docs/phases/phase-0-poc.md) | POC-1 phase document — history, gate question, acceptance checklist |
-| [`phases/phase-0-poc2.md`](.docs/phases/phase-0-poc2.md) | Architecture blueprint: pattern constructor, Model/View by inheritance, layers, managers, target folder tree |
-| `specs/{subject}.spec.ts` | One SDD+TDD spec per POC2 card (all Stage A–G written). Four agent sections (Orchestrator, Programming/Three.js, Game Design, TDD). Shape: `specs/_template.spec.ts`. Index: `specs/README.md` |
 
-**Domain plans — `.docs/plans-later/`** (Portuguese legacy; they own the requirement ID definitions)
+| Document                                                  | Scope                                                                                                                                                                                                                                              |
+| --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `[plans/planning.spec.MD](.docs2/plans/planning.spec.MD)` | **The hub (v4.3.0).** Canonical names, decisions `D11`–`D19`, engine composition, requirement index (§3.5), bestiary axes (§3.6), SDD cards in build order (§5), POC-1 → POC2 port map (§5.0), DoD + multi-agent SDD (§6), build-order graph (§10) |
+| `[phases/phase-0-poc.md](.docs2/phases/phase-0-poc.md)`   | POC-1 phase document — history, gate question, acceptance checklist                                                                                                                                                                                |
+| `[phases/phase-0-poc2.md](.docs2/phases/phase-0-poc2.md)` | Architecture blueprint: pattern constructor, Model/View by THREE inheritance, six collision layers, managers, target folder tree                                                                                                                   |
+| `[specs/README.md](.docs2/specs/README.md)`               | Spec index + playable status. One SDD+TDD file per Stage A–G card; four agent sections (Orchestrator, Programming/Three.js, Game Design, TDD). Template: `[_template.spec.ts](.docs2/specs/_template.spec.ts)`                                     |
 
-| Document | Scope |
-|---|---|
-| `spaceship-plan.spec.MD` | Ship attributes, Energy, CraftSlot, skills, controls — defines `SHIP-01..13` |
-| `weapons-plan.spec.MD` | Primary weapons and Special Ordnance — defines `WPN-01..08` |
-| `resources-plan.spec.MD` | Drop table and collection economy — defines `RES-01..06` |
-| `equipments-plan.spec.MD` | Equipment and craft recipes — defines `EQP-01..07` |
-| `enemys-plan.spec.MD` | Bestiary, bosses, asteroids — defines `ENM-01..09` |
-| `game-rules-plan.spec.MD` | Run loop, damage rules, HUD, performance, packaging — defines `RUL-01..14` |
-| `ranking-plan.spec.MD` | Leaderboards and Survivor mode — defines `RNK-01..09` |
-| `achievements-plan.spec.MD` | Steam achievements and stats — defines `ACH-01..09` |
-| `lore-plan.spec.MD` | Full lore bible — largely superseded by Section 2 of this document; retained for deep-cut worldbuilding not yet promoted to canon — defines `LORE-01..09` |
-| `bounty-plan.spec.MD` *(to be created)* | Full contract list, faction reputation curve, transmission copy — will define `BNTY-` |
-| `voice-plan.spec.MD` *(to be created)* | Full AI Narrator / Ikarus / enemy bark script |
+
+**Domain plans —** `[.docs2/plans-later/](.docs2/plans-later/)` (Portuguese legacy; they own the requirement ID definitions; not all files are versioned)
+
+
+| Document                                                                    | Scope                                                                                                                                                     |
+| --------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `[spaceship-plan.spec.MD](.docs2/plans-later/spaceship-plan.spec.MD)`       | Ship attributes, Energy, CraftSlot, skills, controls — defines `SHIP-01..13`                                                                              |
+| `[weapons-plan.spec.MD](.docs2/plans-later/weapons-plan.spec.MD)`           | Primary weapons and Special Ordnance — defines `WPN-01..08`                                                                                               |
+| `[resources-plan.spec.MD](.docs2/plans-later/resources-plan.spec.MD)`       | Drop table and collection economy — defines `RES-01..06`                                                                                                  |
+| `[equipments-plan.spec.MD](.docs2/plans-later/equipments-plan.spec.MD)`     | Equipment and craft recipes — defines `EQP-01..07`                                                                                                        |
+| `[enemys-plan.spec.MD](.docs2/plans-later/enemys-plan.spec.MD)`             | Bestiary, bosses, asteroids — defines `ENM-01..09`                                                                                                        |
+| `[game-rules-plan.spec.MD](.docs2/plans-later/game-rules-plan.spec.MD)`     | Run loop, damage rules, HUD, performance, packaging — defines `RUL-01..14`                                                                                |
+| `[ranking-plan.spec.MD](.docs2/plans-later/ranking-plan.spec.MD)`           | Leaderboards and Survivor mode — defines `RNK-01..09`                                                                                                     |
+| `[achievements-plan.spec.MD](.docs2/plans-later/achievements-plan.spec.MD)` | Steam achievements and stats — defines `ACH-01..09`                                                                                                       |
+| `[lore-plan.spec.MD](.docs2/plans-later/lore-plan.spec.MD)`                 | Full lore bible — largely superseded by Section 2 of this document; retained for deep-cut worldbuilding not yet promoted to canon — defines `LORE-01..09` |
+| `bounty-plan.spec.MD` *(to be created)*                                     | Full contract list, faction reputation curve, transmission copy — will define `BNTY-`                                                                     |
+| `voice-plan.spec.MD` *(to be created)*                                      | Full AI Narrator / Ikarus / enemy bark script                                                                                                             |
+
 
 **Code**
 
-| Path | Scope |
-|---|---|
-| [`poc/README.md`](poc/README.md) | POC-1 — **frozen** playable reference; documents the tuned camera/parallax/limit-box/ship/weapons behavior the port must reproduce |
-| [`poc2/README.md`](poc2/README.md) | POC2 — active build: how to run, what is playable, default binds, architecture rules |
-| [`poc2/todo.md`](poc2/todo.md) | The live backlog: one entry per SDD card, in build order |
+
+| Path                               | Scope                                                                                                                              |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `[poc/README.md](poc/README.md)`   | POC-1 — **frozen** playable reference; documents the tuned camera/parallax/limit-box/ship/weapons behavior the port must reproduce |
+| `[poc2/README.md](poc2/README.md)` | POC2 — active build: how to run, what is playable, default binds, architecture rules                                               |
+| `[poc2/todo.md](poc2/todo.md)`     | The live backlog: one entry per SDD card, in build order                                                                           |
+
 
 Requirements are traceable per domain (`SHIP-01`, `WPN-04`, `RUL-09`, `LORE-01`, `BNTY-01`, …). The canonical English index, with each ID mapped to the SDD card that satisfies it, is §3.5 of the hub — that index is what feeds task generation.
 
 ---
+
+
 
 ## Appendix A — Voice & Copy Quick Reference
 

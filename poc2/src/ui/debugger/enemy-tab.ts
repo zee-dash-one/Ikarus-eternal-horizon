@@ -8,8 +8,10 @@ import {
   warriorMaxSpeed,
   type EditableWarriorSheet,
 } from '../../gameobjects/enemy/warrior'
+import { cloneEquips, type EquipsState } from '../../gameobjects/equipment/equipment'
 import { ENEMY_AI_STATE_CATALOG, ENEMY_STATUS_CATALOG } from '../../systems/enemy-strategy'
 import type { DebuggerBinds, DebuggerTab } from './debugger'
+import { mountEquipsBlock } from './equips-fields'
 
 interface NumberHandle {
   readonly kind: 'number'
@@ -61,24 +63,17 @@ type MoraleNumberKey =
 
 type AffinityNumberKey = 'gainPerSec' | 'decayPerSec' | 'radius' | 'loyalty'
 
-type WeaponNumberKey =
-  | 'rate'
-  | 'damage'
-  | 'speed'
-  | 'lifetime'
-  | 'range'
-  | 'radius'
-  | 'muzzleZ'
-  | 'decayPerUnit'
-  | 'fireConeDeg'
+type WeaponNumberKey = 'lifetime' | 'range' | 'muzzleZ' | 'decayPerUnit' | 'fireConeDeg'
 
 export class EnemyTab implements DebuggerTab {
   readonly id = 'enemy' as const
   private readonly _binds: DebuggerBinds
   private readonly _handles: Handle[] = []
   private _defaults: EditableWarriorSheet | null = null
+  private _equipsDefaults: EquipsState | null = null
   private _form: HTMLFormElement | null = null
   private _archetypeIndex = 0
+  private _equipsSync: (() => void) | null = null
 
   constructor(binds: DebuggerBinds) {
     this._binds = binds
@@ -94,6 +89,7 @@ export class EnemyTab implements DebuggerTab {
 
     const enemy = this._binds.enemy
     this._defaults = cloneSheet(enemy.sheet())
+    this._equipsDefaults = cloneEquips(enemy.equips.state())
 
     this._group(form, 'Archetype')
     this._selectArchetype(form)
@@ -136,20 +132,15 @@ export class EnemyTab implements DebuggerTab {
     this._sheetScalar(form, 'reachSpeedMul', 'reachSpeedMul', 1, 8, 0.1)
     this._sheetScalar(form, 'turnRateDeg', 'turnRateDeg', 15, 360, 5)
 
-    this._group(form, 'Fixed weapon')
-    this._weaponScalar(form, 'rate', 'weapon.rate', 0.1, 8, 0.05)
-    this._weaponScalar(form, 'damage', 'weapon.damage', 0, 40, 1)
-    this._weaponScalar(form, 'speed', 'weapon.speed', 1, 40, 0.5)
-    this._weaponScalar(form, 'lifetime', 'weapon.lifetime', 0.2, 6, 0.05)
+    const equips = mountEquipsBlock(form, this._binds.enemy.equips, ['weapon'])
+    this._equipsSync = equips.sync
+
+    this._group(form, 'AI weapon (cone / range)')
     this._weaponScalar(form, 'range', 'weapon.range', 1, 80, 0.5)
-    this._weaponScalar(form, 'radius', 'weapon.radius', 0.05, 1, 0.01)
+    this._weaponScalar(form, 'fireConeDeg', 'weapon.fireConeDeg', 5, 90, 1)
+    this._weaponScalar(form, 'lifetime', 'weapon.lifetime', 0.2, 6, 0.05)
     this._weaponScalar(form, 'muzzleZ', 'weapon.muzzleZ', 0, 2, 0.05)
     this._weaponScalar(form, 'decayPerUnit', 'weapon.decayPerUnit', 0, 1, 0.01)
-    this._weaponScalar(form, 'fireConeDeg', 'weapon.fireConeDeg', 5, 90, 1)
-    this._color(form, 'weapon.color', () => enemy.sheet().weapon.color, (hex) => {
-      enemy.sheet().weapon.color = hex
-      enemy.applyToActive()
-    })
 
     this._group(form, 'Status (CDs / range)')
     this._scalar(
@@ -297,6 +288,7 @@ export class EnemyTab implements DebuggerTab {
         handle.el.value = handle.read()
       }
     }
+    this._equipsSync?.()
   }
 
   reset(): void {
@@ -304,6 +296,16 @@ export class EnemyTab implements DebuggerTab {
       return
     }
     this._binds.enemy.resetSheet(this._defaults)
+    const saved = this._equipsDefaults
+    if (saved) {
+      this._binds.enemy.equips.setSlot('weapon', saved.slots.weapon)
+      while (this._binds.enemy.equips.state().general.length > 0) {
+        this._binds.enemy.equips.removeGeneral(0)
+      }
+      for (const id of saved.general) {
+        this._binds.enemy.equips.addGeneral(id)
+      }
+    }
     this.sync()
   }
 
@@ -312,6 +314,8 @@ export class EnemyTab implements DebuggerTab {
     this._form?.remove()
     this._form = null
     this._defaults = null
+    this._equipsDefaults = null
+    this._equipsSync = null
   }
 
   private _group(host: HTMLElement, label: string): void {

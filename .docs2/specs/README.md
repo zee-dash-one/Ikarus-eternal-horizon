@@ -17,6 +17,7 @@ POC-1 is frozen. These specs describe **`poc2/` only**.
 | B03 | [limit-box.spec.ts](./limit-box.spec.ts) | `poc2/src/gameobjects/limit-box/limit-box.test.ts` |
 | B04 | [gizmos.spec.ts](./gizmos.spec.ts) | `poc2/src/gameobjects/gizmos/gizmos.test.ts` |
 | C01 | [ship.spec.ts](./ship.spec.ts) | `poc2/src/gameobjects/ship/ship.test.ts` |
+| §7 EQP- | [equipment.spec.ts](./equipment.spec.ts) | `poc2/src/gameobjects/equipment/equipment.test.ts` (not written) |
 | C02 | [controller.spec.ts](./controller.spec.ts) | `poc2/src/gameobjects/controller/controller.test.ts` |
 | C03 | [ship-health.spec.ts](./ship-health.spec.ts) | `poc2/src/gameobjects/ship/ship-health.test.ts` |
 | D01 | [weapon-shot.spec.ts](./weapon-shot.spec.ts) | `poc2/src/gameobjects/shot/weapon-shot.test.ts` |
@@ -26,6 +27,7 @@ POC-1 is frozen. These specs describe **`poc2/` only**.
 | D05 | [beam.spec.ts](./beam.spec.ts) | `poc2/src/gameobjects/weapon/behaviours/beam.test.ts` |
 | D06 | [mjolnir.spec.ts](./mjolnir.spec.ts) | `poc2/src/gameobjects/weapon/behaviours/mjolnir.test.ts` |
 | E01 | [enemy.spec.ts](./enemy.spec.ts) | `poc2/src/gameobjects/enemy/enemy.test.ts` |
+| E01/E05 §7 | [enemy-bestiary.spec.ts](./enemy-bestiary.spec.ts) | `poc2/src/gameobjects/enemy/bestiary.test.ts` (not written) |
 | E02 | [meteor.spec.ts](./meteor.spec.ts) | `poc2/src/gameobjects/meteor/meteor.test.ts` |
 | E03 | [enemy-shot.spec.ts](./enemy-shot.spec.ts) | `poc2/src/gameobjects/shot/enemy-shot.test.ts` |
 | E04 | [shot-manager.spec.ts](./shot-manager.spec.ts) | `poc2/src/systems/shot-manager.test.ts` |

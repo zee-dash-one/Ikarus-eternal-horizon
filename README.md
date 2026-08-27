@@ -370,9 +370,9 @@ Each faction tracks standing independently, persisting between runs as meta-prog
 Difficulty scales with the **kill counter**, continuously and by milestone.
 
 ```
-[  50 Kills] ──► MiniBoss (Tank, Warrior or Rogue) + escort
+[  50 Kills] ──► MiniBoss (Apex-Trooper / Neon-Phantom / Cyber-Juggernaut) + escort
 [ 100 Kills] ──► Mega Asteroid (25–33% of the screen)
-[ 500 Kills] ──► Boss General + 2 MiniBosses + wave
+[ 500 Kills] ──► Omega-Imp + 2 MiniBosses + wave
 [  post-500] ──► cycle repeats, varying attack patterns
 ```
 
@@ -400,31 +400,74 @@ After Sector 3, the band loop repeats with tighter pacing and harsher enemy patt
 
 ## 9. Bestiary & Threat Escalation
 
-### 9.1 Common Enemies
+Canonical catalog (identity, fichas, ranks): [`.docs/specs/enemy-bestiary.spec.ts`](.docs/specs/enemy-bestiary.spec.ts).
 
-| Type | Behavior | Tactical role | Narrative skin |
+A hostile is always **race × class × rank**. Class is the silhouette you dodge. Rank is the name on the kill. Race is who built the hull.
+
+### 9.1 Races
+
+| Race | Availability | Who |
+|---|---|---|
+| **Maldroids** | Base game | Drones of **M.A.L.I.C.E.** — the only race in POC2 |
+| **Hollows** | DLC | The Hollowed clone kin |
+| **Orcs** | DLC | Warlord raiders of the Outer Grids |
+| **Prismari** | DLC | Light-beings of the contested nebulae |
+
+### 9.2 Classes
+
+| Class | Behavior | Tactical role | POC2 sheet (rank 1) |
 |---|---|---|---|
-| **Tank** | Very tough, slow | Living shield, blocks lines of fire | Orc warship hull (S1) / M.A.L.I.C.E.-corrupted mining hulk (S2–3) |
-| **Warrior** | High projectile volume | Constant pressure, forces movement | Orc raider gunship (S1) / corrupted sentinel drone (S2–3) |
-| **Rogue** | Fragile, fast, actively dodges | Lethal if ignored, demands precision | Orc scout skiff (S1) / corrupted wraith-drone (S2–3) |
+| **Warrior** | High projectile volume | Constant pressure, forces movement | 80 / 40 · rose · **1× laser L1** |
+| **Rogue** | Fragile, fast, actively dodges | Lethal if ignored, demands precision | 60 / 30 · violet · **1× laser L1** |
+| **Tank** | Very tough, slow | Living shield, blocks lines of fire | 140 / 70 · amber · **1× laser L1** |
 
-Silhouette rule: each archetype must be recognizable in under 0.3s regardless of narrative skin — Tanks wide and dense, Warriors balanced with visible gun points, Rogues thin wedges. Skin swaps change color and detailing only, never the readable shape.
+Silhouette rule (`ENM-06`): class must read in under 0.3s. Race skins change colour and detailing only, never the shape. **Special** is reserved for named uniques that break the trio (Valkaru-5, Omega-Imp, M.A.L.I.C.E.).
 
-### 9.2 Environmental Obstacles
+Guns are the same catalog as the player (`laser` / `plasma` / `beam` / `mjolnir`, L1–L12), stamped onto the ficha as `equips` (`laser_lvl_1` × slot count). Optional RPG mods (placeholder `enemy_lvl_1_equip`) add damage, rate, speed and radius on top of that stamp — they do not invent a second gun table. Every filled hardpoint fires. Mini-bosses mount **2**, the Boss mounts **3**. See [equipment.spec.ts](.docs/specs/equipment.spec.ts).
+
+Drone display name: `{Rank} {Class}` — e.g. **Private Warrior**. Uniques use the title alone.
+
+### 9.3 Maldroid ranks
+
+Names apply to Maldroids only. Other races do not reuse this ladder.
+
+| Rank | Name | Tier | Notes |
+|---|---|---|---|
+| 1 | Scavan | drone | POC2 live spawn |
+| 2 | Recruit | drone | |
+| 3 | Cadet | drone | |
+| 4 | Private | drone | |
+| 5 | Corp | drone | |
+| 6 | Lieut | drone | |
+| 7 | Cap | drone | |
+| 8 | Jok | drone | |
+| 9 | Nog | drone | |
+| 10 | Chip | drone | |
+| 11 | Ace | drone | |
+| 12 | Overlord | drone | |
+| 13 | **Valkaru-5** | special | Unique. Not warrior / rogue / tank |
+| 15 | **Apex-Trooper** | Mini-boss | Warrior |
+| 15 | **Neon-Phantom** | Mini-boss | Rogue |
+| 15 | **Cyber-Juggernaut** | Mini-boss | Tank |
+| 50 | **Omega-Imp** | boss | Unique. Boss General body |
+| 1000 | **M.A.L.I.C.E.** | final-boss | DLC only — never in the base spawn table |
+
+### 9.4 Environmental Obstacles
 
 | Type | Behavior |
 |---|---|
 | Small / Medium / Large Asteroid | Inert drift; damage scales with size and density (Ice, Rocky, Metallic) |
 | **Mega Asteroid** | Fills 25–33% of the screen, sheds fragments when hit, pays out heavily |
 
-### 9.3 Bosses & Narrative Beats
+### 9.5 Bosses & Narrative Beats
 
-| Boss | Traits |
-|---|---|
-| **MiniBoss Tank** | Extreme damage sponge, shields the squadron |
-| **MiniBoss Warrior** | Insane fire rate, escorted |
-| **MiniBoss Rogue** | Extreme speed, lethal bursts |
-| **Boss General** | Peak durability, phased attack patterns, 2 MiniBosses plus a wave |
+| Body | Rank | Guns | Traits |
+|---|---|---|---|
+| **Apex-Trooper** | 15 | 2× laser L1 | Mini-boss Warrior — escorted |
+| **Neon-Phantom** | 15 | 2× laser L1 | Mini-boss Rogue — extreme speed, lethal bursts |
+| **Cyber-Juggernaut** | 15 | 2× laser L1 | Mini-boss Tank — extreme sponge, shields the squadron |
+| **Omega-Imp** | 50 | 3× laser L1 | Boss — peak durability, phased patterns, 2 Mini-bosses plus a wave |
+| **M.A.L.I.C.E.** | 1000 | 3× laser L1 | Final-boss, DLC only |
 
 **Mid-Bosses (faction champions):** a quick radio interrupt fires before the fight, e.g. an Orc Raider captain demanding the player's cargo before opening fire.
 

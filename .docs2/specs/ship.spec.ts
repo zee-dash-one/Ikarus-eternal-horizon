@@ -18,10 +18,10 @@
  * Owns:      The player craft as a modular THREE.Group — hull, accent, thruster,
  *            weapon tip, hardpoints, ordnance, equipment, inventory, and the
  *            **ship sheet** G08 reads: pose, byte stats (0–255), statuses,
- *            **ship sheet** G08 reads: pose, byte stats (0–255), statuses,
  *            equipped item + owned lists, plus modular airplane parts
  *            (body / 4 wings / shield / twin bombs / collector / cockpit converter)
- *            that write those stats. Collision volume is a blue wireframe cube.
+ *            that write those stats. `loadout.equips` (slots + general) is equipment.spec.ts
+ *            (weapon stamps + RPG weapon mods). Collision volume is a blue wireframe cube.
  * Does not own: motion/tilt (C02), applyDamage routing (C03 — writes integrity
  *            / shield once wired), firing (E07), energy spend/regen (D03 — writes
  *            energy once wired), camera (B01), drop magnet (F02).
@@ -48,6 +48,7 @@
  *   SDD-G08 Debugger      — Ship tab binds ShipDebugPort
  *   SDD-G09 Renderer       — imports Ship directly into the graph
  *   SDD-G11 PauseScene     — read-only inventory + equipped weapon / shield
+ *   §7 Equipment           — loadout.equips slots + general (equipment.spec.ts)
  */
 
 // ─── 9. Agent sign-off ───────────────────────────────────────────────────────
@@ -56,6 +57,7 @@
  * Programming  : hub-v4.3 / 2026-08-19  D03 bound to stats.energy; hull still C03
  * Game Design  : hub-v4.3 / 2026-08-18  byte pools start max 100, hard cap 255
  * TDD          : hub-v4.3 / 2026-08-18  debugSnapshot cases added
+ * Game Design  : 2026-08-26  loadout.equips slots + general (equipment.spec.ts)
  *
  * DoD (§6.1): spec · tests red · shape · lifecycle · BALANCE · memory ·
  *             IDs · verify green · port fidelity
@@ -141,7 +143,29 @@ export type ArmorId = 'light' | 'standard' | 'heavy'
 export type EnergyCollectorId = 'passive' | 'wide'
 export type EnergyConverterId = 'scrap' | 'crystal'
 
+export type EquipId = string
+
+/** Exclusive slots + stacking general. Full shape: equipment.spec.ts. */
+export interface EquipsState {
+  slots: {
+    weapon: EquipId | null
+    dash: EquipId | null
+    bomb: EquipId | null
+    wings: EquipId | null
+    shield: EquipId | null
+    armor: EquipId | null
+    rockets: EquipId | null
+    engine: EquipId | null
+    collector: EquipId | null
+    converter: EquipId | null
+    lab: EquipId | null
+  }
+  general: EquipId[]
+}
+
 export interface ShipLoadout {
+  /** Exclusive slots + stacking general mods. Source of truth (equipment.spec.ts). */
+  equips: EquipsState
   equippedWeapon: WeaponId | null
   weapons: readonly WeaponId[]
   equippedBomb: BombId | null
@@ -232,13 +256,14 @@ export declare class Ship extends THREE.Group {
  *   this (Group)          | THREE.Group     | scene node; hull/accent/thruster/tip children
  *   hardpoints            | WeaponSlot[]    | primary-weapon mounts; mutated only via equip*
  *   ordnance              | BombSlot[]      | special-charge mounts; §7 fills types
- *   equipment             | Equipment[]     | declared empty; §7 EQP- populates
+ *   equipment             | Equipment[]     | owned drop stacks; not the kit list
+ *   loadout.equips        | EquipsState     | exclusive slots + general mods
  *   inventory             | Inventory       | four resources + caps (RES-05)
  *   weaponTip             | THREE.Mesh      | sphere at the bow; colour/radius from setEquippedWeapon
  *   transform             | ShipTransform   | logical pose; rotation in degrees
  *   stats                 | ShipStats       | byte pools 0–255; start current=max=100
  *   status                | ShipStatus      | flickering, dashing, shooting, recovering
- *   loadout               | ShipLoadout     | equipped + owned lists (G08)
+ *   loadout               | ShipLoadout     | equipped + owned lists + `equips` kit (G08)
  *   debugSnapshot         | () => port      | pose + stats + status + loadout
  *   applyTransform        | (t) => void     | copies pose; does not scene.add
  *   setEquippedWeapon     | (hex, r) => void| tipMat.color + tip.scale = max(0.03, r)
@@ -300,6 +325,10 @@ export declare class Ship extends THREE.Group {
  *        is equipment; stats.shield is the Force Field pool (not the same thing).
  *   R13. debugSnapshot() does not allocate: it returns a stable view object.
  *        G08 must not invent a second table of ship numbers.
+ *   R15. `loadout.equips` is exclusive slots + `general[]` (equipment.spec.ts).
+ *        Default `slots.weapon = laser_lvl_1`, `slots.dash = dash_lvl_1`.
+ *        `equipWeapon` / `setWeaponLevel` rewrite `slots.weapon`. Equipped-weapon
+ *        stats are derived (stamp + general deltas). Distinct from inventory `equipment[]`.
  */
 
 // ─── 6. View / syncRender ────────────────────────────────────────────────────
@@ -364,8 +393,10 @@ export declare class Ship extends THREE.Group {
  * Feel:      POC-1 silhouette is the law — same brick, same cyan/indigo, same
  *            flickering additive jet. Weapon switch must recolour the bow tip
  *            in one frame so the loadout is readable without a HUD glance.
- * Leveling:  N/A for the mesh. Hull degradation is C03; weapon levels are D02.
- *            Inventory counts grow via F02; caps are the only leveling here.
+ * Leveling:  N/A for the mesh. Hull degradation is C03; weapon stamps are D02
+ *            (`laser_lvl_1`); weaponMods (equipment.spec.ts) add damage/rate/
+ *            speed/radius. Inventory counts grow via F02; caps are the only
+ *            inventory leveling here.
  * Graphics:  filled hull + darker canopy + additive thruster + blue hitbox cube. Palette is
  *            the player-identity colour (cyan) against indigo. Tip sphere is
  *            the weapon colour (laser 0x22d3ee at spawn).
@@ -410,6 +441,8 @@ export declare class Ship extends THREE.Group {
  *   it('spawn flicker lasts flickerMs; shooting and dashing last their BALANCE windows') // R11
  *   it('setDashing / setShooting / setFlickering update status for the debugger')          // R11
  *   it('loadout.weapons starts as BALANCE.weapons.loadout; equippedWeapon tracks slot 0')  // R12
+ *   it('loadout.equips is slots+general and is not inventory.equipment')                    // R15
+ *   it('a mounted gun stamps laser_lvl_1; equipped stats follow LASER_LEVELS + mods')      // R15
  *   it('wings/shields/armors/collectors/converters start empty')                           // R12, §7
  *   it('mounts four wings, twin bombs, shield, collector and cockpit on the body')        // R14
  *   it('body and wing modules change integrity/energy and agility/deflection')            // R14, SHIP-10
@@ -420,6 +453,6 @@ export declare class Ship extends THREE.Group {
  *   A-manual-1. [manual] ship is readable as the player craft in the default camera
  *   A-manual-2. [manual] switching weapon recolours the bow tip in one frame
  *
- * Coverage: R1–R13 + card Acceptance (moves within bounds is C02; weapon change
+ * Coverage: R1–R15 + card Acceptance (moves within bounds is C02; weapon change
  * updates the tip; no GPU leaks on dispose; G08 can bind the sheet).
  */

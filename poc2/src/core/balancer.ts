@@ -24,12 +24,29 @@ import type { SquadConfig } from '../systems/squad-config'
 import { DEFAULT_REACH_PATH } from '../systems/reach-path'
 import type { ReachPathConfig } from '../systems/reach-path'
 import { HIT_MATRIX, contactDamageFromIntegrity, type Layer } from '../systems/layers'
+import { EQUIP_CATALOG } from '../gameobjects/equipment/equipment'
+import type { EquipsState, EquipSlotId, WeaponModDef } from '../gameobjects/equipment/equipment'
 
 export type { WeaponConfig, WeaponId, WeaponProfile }
 export type { WeaponLevelRow }
 export type { DashLevel }
 export type { ReachPathConfig }
+export type { EquipsState, EquipSlotId, WeaponModDef }
 export type WeaponCatalogEntry = WeaponConfig
+
+export interface EquipsBalance {
+  readonly catalog: typeof EQUIP_CATALOG
+  readonly mods: typeof EQUIP_CATALOG.mods
+  readonly slots: readonly EquipSlotId[]
+  readonly defaults: {
+    readonly player: EquipsState
+    readonly enemy: EquipsState
+  }
+}
+
+export interface EnemyShotVisualConfig {
+  readonly color: number
+}
 
 /** Fraction of current hull dealt on body ram (player and enemies). */
 const CONTACT_INTEGRITY_FRAC = 0.2
@@ -281,6 +298,8 @@ export interface EnemyConfig {
   readonly poolSize: number
   /** EnemyShot pool capacity (E03/E04). */
   readonly shotPoolSize: number
+  /** Hostile bolt paint (not the D02 weapon catalog colour). */
+  readonly shot: EnemyShotVisualConfig
 }
 
 /** Active play volume relative to the ship. Outside ⇒ pool-release (enemies/meteors). */
@@ -566,6 +585,7 @@ export interface Balance {
   readonly drops: DropsConfig
   readonly shot: { readonly despawn: ShotDespawnConfig }
   readonly enemy: EnemyConfig
+  readonly equips: EquipsBalance
   readonly battlefield: BattleFieldConfig
   readonly collision: CollisionConfig
   readonly vfx: VfxConfig
@@ -647,6 +667,12 @@ const BALANCE_DATA: Balance = {
       beam: BEAM_LEVELS,
       mjolnir: MJOLNIR_LEVELS,
     },
+  },
+  equips: {
+    catalog: EQUIP_CATALOG,
+    mods: EQUIP_CATALOG.mods,
+    slots: EQUIP_CATALOG.slots,
+    defaults: EQUIP_CATALOG.defaults,
   },
   gameplay: {
     fireKey: 'KeyF',
@@ -1011,6 +1037,7 @@ const BALANCE_DATA: Balance = {
     despawn: { zNear: 30, zFar: -160, halfX: 240 },
     poolSize: 48,
     shotPoolSize: 64,
+    shot: { color: WARRIOR.weapon.color },
   },
   battlefield: {
     offsetX: { min: -240, max: 240 },

@@ -48,6 +48,8 @@
  *   SDD-D04 Plasma        — 1 catalog row + 1 registerWeapon
  *   SDD-D05 / D06         — registerWeapon + weapon-levels L1–12
  *   SDD-E07 FiringManager — constructs Weapon(id, shots), feeds BehaviourCtx
+ *   SDD-E01 Enemy         — hardpoints construct the same Weapon; EnemyShot pool
+ *   §7 Equipment          — `{id}_lvl_n` stamps copy these tables; mods do not live here
  *   SDD-G08 Debugger      — LASER_LEVELS presets
  *
  * Cycle note: catalog.ts must not import BALANCE. balancer.ts imports WEAPONS
@@ -363,6 +365,9 @@ export declare class LaserBehaviour implements WeaponBehaviour {
  *   BALANCE.weapons.levels.laser === LASER_LEVELS
  *   BALANCE.weapons.loadout = ['laser', 'plasma', 'beam', 'mjolnir']
  * Laser L1 catalog stats are copied from LASER_LEVELS[0] (no second literal).
+ * Enemy hardpoints consume these same tables (enemy-bestiary.spec.ts R14);
+ * they do not get a parallel gun catalog. Weapon-mod equips (equipment.spec.ts)
+ * add damage/rate/speed/radius after the stamp — they never edit this file.
  *
  * Laser catalog (L1 defaults; applyWeaponLevel overwrites per level):
  *   id / displayName / color     = 'laser' / 'Laser' / 0x22d3ee

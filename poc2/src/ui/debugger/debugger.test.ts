@@ -3,11 +3,23 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { copyWeaponConfig, WEAPONS, type WeaponId } from '../../gameobjects/weapon/catalog'
 import {
   applyWeaponLevel,
+  LASER_LEVELS,
   patchWeaponStat,
   weaponLevelSnapshot,
 } from '../../gameobjects/weapon/weapon-levels'
+import {
+  cloneEquips,
+  defaultEnemyEquips,
+  defaultPlayerEquips,
+  parseDashStamp,
+  parseWeaponStamp,
+  resolveEquips,
+  type EquipSlotId,
+  type EquipsState,
+} from '../../gameobjects/equipment/equipment'
 import type {
   DebuggerBinds,
+  DebuggerEquipsBind,
   DebuggerGroupSnapshot,
   DebuggerShipBind,
 } from './debugger'
@@ -96,6 +108,41 @@ function makeSheet(): LiveSheet {
   }
 }
 
+function makeEquipsBind(state: EquipsState, onWeapon?: (id: string | null) => void, onDash?: (level: number) => void): DebuggerEquipsBind {
+  return {
+    state: () => state,
+    setSlot(slot, id) {
+      state.slots[slot as EquipSlotId] = id
+      if (slot === 'weapon') {
+        onWeapon?.(id)
+      }
+      if (slot === 'dash') {
+        const dash = parseDashStamp(id)
+        if (dash) {
+          onDash?.(dash.level)
+        }
+      }
+    },
+    addGeneral(id) {
+      state.general.push(id)
+    },
+    removeGeneral(index) {
+      state.general.splice(index, 1)
+    },
+    resolved() {
+      const weapon = resolveEquips(state).weapon
+      return weapon
+        ? {
+            damage: weapon.damage,
+            rate: weapon.rate,
+            speed: weapon.speed,
+            radius: weapon.radius,
+          }
+        : null
+    },
+  }
+}
+
 function makeBinds(sheet: LiveSheet): DebuggerBinds {
   let shooting = false
   let weaponLevel = 1
@@ -103,6 +150,17 @@ function makeBinds(sheet: LiveSheet): DebuggerBinds {
   let activeWeapon: WeaponId = (sheet.loadout.equippedWeapon as WeaponId) ?? 'laser'
   let weaponConfig = copyWeaponConfig(WEAPONS[activeWeapon])
   applyWeaponLevel(weaponConfig, weaponLevel)
+  const playerEquips = cloneEquips(defaultPlayerEquips())
+  playerEquips.slots.weapon = sheet.loadout.equippedWeapon
+    ? `${sheet.loadout.equippedWeapon}_lvl_1`
+    : null
+  playerEquips.slots.bomb = sheet.loadout.equippedBomb
+  playerEquips.slots.wings = sheet.loadout.equippedWings
+  playerEquips.slots.shield = sheet.loadout.equippedShield
+  playerEquips.slots.armor = sheet.loadout.equippedArmor
+  playerEquips.slots.collector = sheet.loadout.equippedEnergyCollector
+  playerEquips.slots.converter = sheet.loadout.equippedEnergyConverter
+  const enemyEquips = cloneEquips(defaultEnemyEquips())
   const enemySheet = cloneWarriorSheet(WARRIOR)
   const squadConfig = cloneSquadConfig(DEFAULT_SQUAD_CONFIG)
   const squadGroups: DebuggerGroupSnapshot[] = [
@@ -314,8 +372,27 @@ function makeBinds(sheet: LiveSheet): DebuggerBinds {
       level: () => dashLevel,
       setLevel(level) {
         dashLevel = level
+        playerEquips.slots.dash = `dash_lvl_${level}`
       },
     },
+    equips: makeEquipsBind(
+      playerEquips,
+      (id) => {
+        const stamp = parseWeaponStamp(id)
+        if (stamp) {
+          sheet.loadout.equippedWeapon = stamp.weaponId
+          activeWeapon = stamp.weaponId
+          weaponLevel = stamp.level
+          weaponConfig = copyWeaponConfig(WEAPONS[activeWeapon])
+          applyWeaponLevel(weaponConfig, weaponLevel)
+          return
+        }
+        sheet.loadout.equippedWeapon = null
+      },
+      (level) => {
+        dashLevel = level
+      },
+    ),
     spawnArea: {
       sideNames: () => ['left', 'right', 'front', 'gate'],
       offset: (side) => ({ ...sideAt(side).offset }),
@@ -386,6 +463,7 @@ function makeBinds(sheet: LiveSheet): DebuggerBinds {
       liveStatus() {
         return null
       },
+      equips: makeEquipsBind(enemyEquips),
     },
     squad: {
       config: () => squadConfig,
@@ -735,70 +813,67 @@ describe('EquipsTab', () => {
     return { host, sheet, binds, tab }
   }
 
-  it('shows equippedWeapon and the weapons list', () => {
+  it('shows exclusive slot dropdowns and owned weapons list', () => {
     const { host, sheet } = mountTab()
-    expect(selectBind(host, 'loadout.equippedWeapon').value).toBe('laser')
+    expect(selectBind(host, 'equips.slots.weapon').value).toBe('laser_lvl_1')
+    expect(selectBind(host, 'equips.slots.dash').value).toBe('dash_lvl_1')
     expect(bind(host, 'loadout.weapons', 'text').value).toBe(sheet.loadout.weapons.join(', '))
   })
 
-  it('shows bomb/wings/shield-fit/armor/collector/converter equipped+list', () => {
+  it('shows bomb/wings/shield/armor/collector/converter slots and owned lists', () => {
     const { host } = mountTab()
-    expect(selectBind(host, 'loadout.equippedBomb').value).toBe('')
+    expect(selectBind(host, 'equips.slots.bomb').value).toBe('')
     expect(bind(host, 'loadout.bombs', 'text').value).toBe('')
-    expect(selectBind(host, 'loadout.equippedWings').value).toBe('')
+    expect(selectBind(host, 'equips.slots.wings').value).toBe('')
     expect(bind(host, 'loadout.wings', 'text').value).toBe('')
-    expect(selectBind(host, 'loadout.equippedShield').value).toBe('')
+    expect(selectBind(host, 'equips.slots.shield').value).toBe('')
     expect(bind(host, 'loadout.shields', 'text').value).toBe('')
-    expect(selectBind(host, 'loadout.equippedArmor').value).toBe('')
+    expect(selectBind(host, 'equips.slots.armor').value).toBe('')
     expect(bind(host, 'loadout.armors', 'text').value).toBe('')
-    expect(selectBind(host, 'loadout.equippedEnergyCollector').value).toBe('')
+    expect(selectBind(host, 'equips.slots.collector').value).toBe('')
     expect(bind(host, 'loadout.energyCollectors', 'text').value).toBe('')
-    expect(selectBind(host, 'loadout.equippedEnergyConverter').value).toBe('')
+    expect(selectBind(host, 'equips.slots.converter').value).toBe('')
     expect(bind(host, 'loadout.energyConverters', 'text').value).toBe('')
   })
 
-  it('shows equipped weapon level 1–12 from the live firing bind', () => {
-    const { host, binds } = mountTab()
-    const slider = bind(host, 'weapons.level')
-    expect(slider.min).toBe('1')
-    expect(slider.max).toBe('12')
-    expect(slider.value).toBe('1')
-    slider.value = '12'
-    slider.dispatchEvent(new Event('input', { bubbles: true }))
-    expect(binds.weapons.level()).toBe(12)
+  it('shows read-only resolved damage/rate/speed/radius from the weapon stamp', () => {
+    const { host } = mountTab()
+    const row = LASER_LEVELS[0]
+    expect(host.querySelector('[data-bind="equips.resolved.damage"]')?.textContent).toBe(String(row?.damage))
+    expect(host.querySelector('[data-bind="equips.resolved.rate"]')?.textContent).toBe(String(row?.rate))
+    expect(host.querySelector('[data-bind="equips.resolved.speed"]')?.textContent).toBe(String(row?.speed))
+    expect(host.querySelector('[data-bind="equips.resolved.radius"]')?.textContent).toBe(String(row?.radius))
   })
 
-  it('shows dash level 1–12 from the live controller bind', () => {
-    const { host, binds } = mountTab()
-    const slider = bind(host, 'dash.level')
-    expect(slider.min).toBe('1')
-    expect(slider.max).toBe('12')
-    expect(slider.value).toBe('1')
-    slider.value = '12'
-    slider.dispatchEvent(new Event('input', { bubbles: true }))
-    expect(binds.dash.level()).toBe(12)
-  })
-
-  it('writes equippedWeapon into the ship bind', () => {
-    const { host, sheet } = mountTab()
-    const select = selectBind(host, 'loadout.equippedWeapon')
-    select.value = 'plasma'
+  it('writes the weapon slot stamp into the equips bind', () => {
+    const { host, sheet, binds } = mountTab()
+    const select = selectBind(host, 'equips.slots.weapon')
+    select.value = 'plasma_lvl_1'
     select.dispatchEvent(new Event('input', { bubbles: true }))
+    expect(binds.equips.state().slots.weapon).toBe('plasma_lvl_1')
     expect(sheet.loadout.equippedWeapon).toBe('plasma')
   })
 
-  it('reset restores mount-time loadout and weapon level', () => {
-    const { host, sheet, binds, tab } = mountTab()
-    sheet.loadout.equippedWeapon = 'plasma'
-    binds.weapons.setLevel(8)
-    binds.dash.setLevel(8)
+  it('adds and removes a general mod', () => {
+    const { host, binds } = mountTab()
+    const add = selectBind(host, 'equips.general.add')
+    add.value = 'enemy_lvl_1_equip'
+    host.querySelector('button')?.click()
+    expect(binds.equips.state().general).toEqual(['enemy_lvl_1_equip'])
+    const remove = [...host.querySelectorAll('button')].find((btn) => btn.textContent === 'Remove')
+    remove?.click()
+    expect(binds.equips.state().general).toEqual([])
+  })
+
+  it('reset restores mount-time slots', () => {
+    const { host, binds, tab } = mountTab()
+    binds.equips.setSlot('weapon', 'plasma_lvl_8')
+    binds.equips.setSlot('dash', 'dash_lvl_8')
     tab.reset()
-    expect(sheet.loadout.equippedWeapon).toBe('laser')
-    expect(binds.weapons.level()).toBe(1)
-    expect(binds.dash.level()).toBe(1)
-    expect(selectBind(host, 'loadout.equippedWeapon').value).toBe('laser')
-    expect(bind(host, 'weapons.level').value).toBe('1')
-    expect(bind(host, 'dash.level').value).toBe('1')
+    expect(binds.equips.state().slots.weapon).toBe('laser_lvl_1')
+    expect(binds.equips.state().slots.dash).toBe('dash_lvl_1')
+    expect(selectBind(host, 'equips.slots.weapon').value).toBe('laser_lvl_1')
+    expect(selectBind(host, 'equips.slots.dash').value).toBe('dash_lvl_1')
   })
 
   it('does not import ShipTab form groups', () => {
@@ -967,6 +1042,26 @@ describe('EnemyTab', () => {
     fury.value = '4'
     fury.dispatchEvent(new Event('input', { bubbles: true }))
     expect(binds.enemy.sheet().morale.furyProximitySec).toBe(4)
+    dbg.dispose()
+  })
+
+  it('shows the weapon slot stamp and resolved four-pack, not sheet.weapon damage', () => {
+    const host = document.createElement('div')
+    document.body.append(host)
+    const binds = makeBinds(makeSheet())
+    const dbg = new Debugger({
+      host,
+      binds,
+      tabs: [new EnemyTab(binds)],
+      enabled: true,
+    })
+    expect(selectBind(host, 'equips.slots.weapon').value).toBe('laser_lvl_1')
+    expect(host.querySelector('[data-bind="weapon.damage"]')).toBeNull()
+    expect(host.querySelector('[data-bind="weapon.rate"]')).toBeNull()
+    expect(host.querySelector('[data-bind="equips.resolved.damage"]')?.textContent).toBe(
+      String(LASER_LEVELS[0]?.damage),
+    )
+    expect(bind(host, 'weapon.fireConeDeg', 'number')).toBeDefined()
     dbg.dispose()
   })
 })

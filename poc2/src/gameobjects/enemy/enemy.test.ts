@@ -542,7 +542,8 @@ describe('Enemy Warrior — combat', () => {
     const bolt = spawns[0] as { vx: number; vz: number; damage: number }
     expect(bolt.vx).toBeCloseTo(0, 5)
     expect(bolt.vz).toBeGreaterThan(0)
-    expect(bolt.damage).toBe(WARRIOR.weapon.damage)
+    expect(bolt.damage).toBe(BALANCE.weapons.levels.laser[0]?.damage)
+    expect(enemy.equips().slots.weapon).toBe('laser_lvl_1')
     enemy.dispose()
     geo.dispose()
   })

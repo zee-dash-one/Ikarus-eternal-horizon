@@ -373,6 +373,51 @@ describe('FiringManager', () => {
     manager.dispose()
   })
 
+  it('overlays resolved weapon four-pack after applyLevel', () => {
+    const manager = new FiringManager({
+      input: inputStub(),
+      ship: { position: { x: 0, y: 0, z: 0 } },
+      energy: { canAfford: () => true, spend() {} },
+      health: { modifiers: { fireRateMul: 1 } },
+      loadout: ['laser'],
+      resolvedWeapon: () => ({
+        weaponId: 'laser',
+        level: 1,
+        damage: 77,
+        rate: 4,
+        speed: 9,
+        radius: 0.33,
+        energyPerShot: 0,
+        lifetime: 0,
+        damageDecayPerUnit: 0,
+        aoeRadius: 0,
+        aoeDuration: 0,
+        explosionFoci: 0,
+        forwardShots: 1,
+        diagonalShotsPerSide: 0,
+        diagonalAngleDeg: 0,
+        forwardSpread: 0,
+        width: 0,
+        length: 0,
+        angleDeg: 0,
+        ticksPerSec: 0,
+        dps: 0,
+        energyPerSec: 0,
+      }),
+      registry: {
+        create(id) {
+          return makeWeapon(id)
+        },
+      },
+    })
+    manager.update(0.016)
+    expect(manager.weapon().config.damage).toBe(77)
+    expect(manager.weapon().config.rate).toBe(4)
+    expect(manager.weapon().config.projectile?.speed).toBe(9)
+    expect(manager.weapon().config.projectile?.radius).toBe(0.33)
+    manager.dispose()
+  })
+
   it('does not register weapons on the registry (D12 consume-only)', () => {
     expect(defaultModifiers().rateMul).toBe(1)
   })

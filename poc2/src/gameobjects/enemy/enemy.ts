@@ -48,6 +48,15 @@ import {
   truncate,
   type SteerAcc,
 } from '../../systems/steering'
+import {
+  cloneEquips,
+  isGeneralMod,
+  isLegalForSlot,
+  resolveEquips,
+  type EquipId,
+  type EquipSlotId,
+  type EquipsState,
+} from '../equipment/equipment'
 import type { ReachPreviewSide } from '../../systems/reach-path'
 import type { ShotSpawn } from '../shot/weapon-shot'
 import {
@@ -73,6 +82,7 @@ export interface EnemySpawn {
   readonly y: number
   readonly z: number
   readonly sheet?: WarriorSheet | EditableWarriorSheet
+  readonly equips?: EquipsState
   readonly gateEntryOffsetX?: number
   readonly pathSide?: ReachPreviewSide
 }
@@ -194,6 +204,7 @@ export class Enemy extends Mesh {
   private _intelligence = 60
   private _fireAcc = 0
   private _sheet: EditableWarriorSheet = cloneWarriorSheet(BALANCE.enemy.warrior)
+  private _equips: EquipsState = cloneEquips(BALANCE.equips.defaults.enemy)
   private _entryOffsetX = 0
   private _pathSide: ReachPreviewSide = 'front'
 
@@ -303,6 +314,35 @@ export class Enemy extends Mesh {
     return this._sheet
   }
 
+  equips(): EquipsState {
+    return this._equips
+  }
+
+  setSlot(slot: EquipSlotId, id: EquipId | null): void {
+    if (!isLegalForSlot(slot, id)) {
+      return
+    }
+    this._equips.slots[slot] = id
+  }
+
+  addGeneral(id: EquipId): void {
+    if (!isGeneralMod(id)) {
+      return
+    }
+    this._equips.general.push(id)
+  }
+
+  removeGeneral(index: number): void {
+    if (index < 0 || index >= this._equips.general.length) {
+      return
+    }
+    this._equips.general.splice(index, 1)
+  }
+
+  applyLiveEquips(equips: EquipsState): void {
+    this._equips = cloneEquips(equips)
+  }
+
   facingY(): number {
     return this._movement.facingY()
   }
@@ -407,6 +447,7 @@ export class Enemy extends Mesh {
   activate(spawn: EnemySpawn): void {
     const sheet = cloneWarriorSheet(spawn.sheet ?? BALANCE.enemy.warrior)
     this._sheet = sheet
+    this._equips = cloneEquips(spawn.equips ?? BALANCE.equips.defaults.enemy)
     this.hpMax = sheet.hp
     this.hp = this.hpMax
     this.shieldMax = sheet.shieldMax
@@ -1089,6 +1130,10 @@ export class Enemy extends Mesh {
     if (this._aiState === 'birth' || !this._shots) {
       return
     }
+    const resolved = resolveEquips(this._equips).weapon
+    if (!resolved) {
+      return
+    }
     const weapon = this._sheet.weapon
     const engage = warriorEngageRange(this._intelligence, weapon.range)
     const toPlayer = distXZ(this.x, this.z, this._seek.x, this._seek.z)
@@ -1111,14 +1156,14 @@ export class Enemy extends Mesh {
       return
     }
     this._fireAcc += dt
-    const interval = 1 / Math.max(0.05, weapon.rate)
+    const interval = 1 / Math.max(0.05, resolved.rate)
     while (this._fireAcc >= interval) {
       this._fireAcc -= interval
-      this._fireBolt(weapon)
+      this._fireBolt(resolved)
     }
   }
 
-  private _fireBolt(weapon: EditableWarriorSheet['weapon']): void {
+  private _fireBolt(resolved: { damage: number; speed: number; radius: number; lifetime: number }): void {
     if (!this._shots) {
       return
     }
@@ -1126,8 +1171,9 @@ export class Enemy extends Mesh {
     if (!shot) {
       return
     }
+    const weapon = this._sheet.weapon
     const facing = this._movement.facingY()
-    const speed = Math.abs(weapon.speed)
+    const speed = Math.abs(resolved.speed)
     const muzzle = weapon.muzzleZ
     const dirX = Math.sin(facing)
     const dirZ = Math.cos(facing)
@@ -1136,14 +1182,14 @@ export class Enemy extends Mesh {
       z: this.z + dirZ * muzzle,
       vx: dirX * speed,
       vz: dirZ * speed,
-      damage: weapon.damage,
-      lifetime: weapon.lifetime,
-      totalLifetime: weapon.lifetime,
-      radius: weapon.radius,
+      damage: resolved.damage,
+      lifetime: resolved.lifetime,
+      totalLifetime: resolved.lifetime,
+      radius: resolved.radius,
       aoeRadius: 0,
       range: weapon.range,
       decayPerUnit: weapon.decayPerUnit,
-      color: weapon.color,
+      color: BALANCE.enemy.shot.color,
     }
     shot.activate(spawn)
     this.notifyHitting()

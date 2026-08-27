@@ -232,6 +232,18 @@ describe('BALANCE', () => {
     expect(BALANCE.enemy.warrior.targets).toEqual(['enemyGate', 'player'])
     expect(BALANCE.enemy.warrior.weapon.rate).toBeGreaterThan(0)
     expect(BALANCE.enemy.shotPoolSize).toBe(64)
+    expect(BALANCE.enemy.shot.color).toBe(0xfb923c)
+    expect(BALANCE.equips.defaults.player.slots.weapon).toBe('laser_lvl_1')
+    expect(BALANCE.equips.defaults.player.slots.dash).toBe('dash_lvl_1')
+    expect(BALANCE.equips.defaults.enemy.slots.weapon).toBe('laser_lvl_1')
+    expect(BALANCE.equips.mods.enemy_lvl_1_equip).toEqual({
+      kind: 'weaponMod',
+      id: 'enemy_lvl_1_equip',
+      damage: 0,
+      rate: 0,
+      speed: 0,
+      radius: 0,
+    })
     expect(BALANCE.enemy.generic.hp).toBe(BALANCE.enemy.warrior.hp)
     expect(BALANCE.enemy.generic.contactDamage).toBeCloseTo(
       BALANCE.enemy.warrior.hp * BALANCE.collision.contactIntegrityFrac,

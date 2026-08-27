@@ -19,8 +19,10 @@
  *            Pooled. Two lives: `birth` (reachGate lerp to EnemyGate) then squad
  *            life (slot seek, BOOST, FURY/FLEE). Implements TargetHit (team 'enemy').
  * Does not own: spawn schedule / live list (E05), group centroids (EnemySquadManager),
- *            collision matrix (F01). Archetypes Warrior/Rogue/Tank are sheets on
- *            warrior.ts; EnemyManager.setArchetype picks the live spawn sheet.
+ *            collision matrix (F01). Class sheets (Warrior/Rogue/Tank) live on
+ *            warrior.ts; race × class × rank + kit is enemy-bestiary.spec.ts +
+ *            equipment.spec.ts. EnemyManager.setArchetype picks the live spawn
+ *            sheet. Fire uses resolveEquips (not sheet.weapon).
  * Player-facing: filled gunships (plus a blue wireframe hitbox cube) that form up after the gate, hold a
  *            Z standoff, and peel off as capped kamikazes. Group-id label above each.
  */
@@ -34,6 +36,7 @@
  *   SDD-A03 Math     — scratch vectors, distXZ, clamp
  *   SDD-A05 ObjectPool<T> — acquire/release; Enemy is never `new`ed in update
  *   SDD-F01 CollisionManager — TargetHit / ColliderPort / Layer.Enemy seam
+ *   §7 Equipment — equips slots + general + resolveEquips (equipment.spec.ts)
  *
  * Type seam with F01: Enemy implements TargetHit + ColliderPort. The cycle
  * E01 ⇄ F01 is types first, then both classes.
@@ -45,6 +48,7 @@
  *   SDD-F04 DamageResolver — DamageSink.applyDamage
  *   SDD-F02 DropManager    — killed source for drop tables
  *   SDD-F05 VfxManager     — killed burst
+ *   SDD-D02 Weapon         — hardpoints construct Weapon via the registry (loadout pass)
  */
 
 // ─── 9. Agent sign-off ───────────────────────────────────────────────────────
@@ -54,6 +58,7 @@
  * Game Design  : hub-v4.4 / 2026-08-20  Warrior sheet + gate y=0 play-plane handoff
  * TDD          : hub-v4.4 / 2026-08-20  enemy + enemy-movement-manager tests
  * Programming  : 2026-08-24  squad life (formation/FURY/FLEE) + group-id sprite
+ * Game Design  : 2026-08-26  hardpoints; fire from D02 tables + equips slots
  *
  * DoD (§6.1): spec · tests red · shape · lifecycle · BALANCE · memory ·
  *             IDs · verify green · port fidelity
@@ -113,6 +118,14 @@ export interface SeekTargetPort {
   readonly z: number
 }
 
+export type WeaponId = 'laser' | 'plasma' | 'beam' | 'mjolnir'
+
+export interface EnemyWeaponSlot {
+  readonly index: number
+  readonly equipped: WeaponId | null
+  readonly level: number
+}
+
 export interface EnemyOptions {
   readonly geometry: unknown
   readonly material: unknown
@@ -138,9 +151,15 @@ export declare class Enemy extends THREE.Mesh implements TargetHit, DamageSink {
     maxSpeed: number
     update(dt: number): void
   }
+  /** Ship-style mounts. Length = bestiary hardpointCountFor(tier). */
+  readonly hardpoints: readonly EnemyWeaponSlot[]
 
   activate(spawn: EnemySpawn): void
   deactivate(): void
+  /** Slot mutation lives here. Callers never write `hardpoints[i].equipped`. */
+  equipWeapon(slotIndex: number, id: WeaponId): void
+  unequipWeapon(slotIndex: number): void
+  setWeaponLevel(slotIndex: number, level: number): void
   /** Logic: birth then squad AI, hp, off-field flag. No GPU. */
   update(dt: number): void
   /** Writes position / rotation / opacity / visible only. */
@@ -166,9 +185,12 @@ export declare class Enemy extends THREE.Mesh implements TargetHit, DamageSink {
  *   radius         | world    | hit + visual half-extent
  *   contactDamage  | number   | 20% of current hp (BALANCE.collision.contactIntegrityFrac)
  *   vehicle        | first-party | position + maxSpeed; squad / birth write it
+ *   hardpoints     | EnemyWeaponSlot[] | D02 guns; mutated only via equip*/setWeaponLevel
  *
  *   activate   — pre: inactive slot. post: hp=hpMax, active, vehicle at spawn, visible.
+ *                loadout = defaultEnemyLoadout(tier) (laser L1 × N).
  *   deactivate — pre: any. post: active=false, visible=false, hp=0; GPU kept.
+ *   equipWeapon / setWeaponLevel — same catalog as Ship; slot count is fixed by tier.
  *   takeDamage — F04 path; never called from F01. killed when hp<=0.
  *   isOffField — despawn predicate for E05; this class does not release itself.
  */
@@ -194,9 +216,19 @@ export declare class Enemy extends THREE.Mesh implements TargetHit, DamageSink {
  *   R7. Per-frame allocation: none (scratch scalars / reused Vector3 for the label).
  *   R8. isOffField() is true outside BALANCE.enemy.despawn; Enemy does not release.
  *   R9. contactDamage is 20% of current hull hp; Enemy never damages the ship itself.
- *   R10. Combat numbers come from the live WarriorSheet (Warrior/Rogue/Tank). This class
- *        has no archetype if-branch — E05 selects the sheet.
+ *   R10. Hull, shield, agility, intelligence, formation/morale come from the live
+ *        WarriorSheet (Warrior/Rogue/Tank). This class has no archetype if-branch —
+ *        E05 selects the sheet. Fire uses resolveEquips(equips) — Weapon slot
+ *        stamp + general deltas — not sheet.weapon combat numbers
+ *        (equipment.spec.ts). AI cone / engage stay on the sheet (fireConeDeg,
+ *        intelligence).
  *   R11. Retires poc/src/gameobjects/testTarget.ts as the hit dummy; TargetHit lives here.
+ *   R12. Common W/R/T: 1 Weapon slot, default `slots.weapon = laser_lvl_1`,
+ *        `general = []`. Mini-boss 2 / Boss 3 are later todos. Snapshots are
+ *        derived. equipWeapon rewrites `slots.weapon`. Optional
+ *        `enemy_lvl_1_equip` in general adds damage/rate/speed/radius (stub 0).
+ *        Energy spend is skipped. EnemyShot pool. Hostile paint stays
+ *        BALANCE.enemy.shot.color.
  */
 
 // ─── 6. View / syncRender ────────────────────────────────────────────────────
@@ -253,7 +285,10 @@ export declare class Enemy extends THREE.Mesh implements TargetHit, DamageSink {
  *            standoff plus capped FURY peels, not a wall stacked on the nose.
  *            TTK is one committed volley at L1.
  * Leveling:  E05 scales spawn rate via F03, not this class's hp. Warrior / Rogue /
- *            Tank are sheets (80/40, 60/30, 140/70); ram scales with current hull.
+ *            Tank are class sheets (80/40, 60/30, 140/70) for Maldroid rank 1
+ *            (Scavan). Guns are D02 stamps on `equips` (`laser_lvl_1` × N) plus
+ *            optional weaponMods (equipment.spec.ts). Full race × class × rank +
+ *            kit: enemy-bestiary.spec.ts. Ram scales with current hull.
  * Graphics:  Filled rose gunship inside a blue wireframe hitbox cube. White group-id billboard
  *            ("0"–"5", "F", "L", "-"). Opacity tracks hp (readable damage, pillar 2).
  * Pillars:   4 legibility · 5 one-more-kill pressure · 1 visible risk (it is coming).
@@ -274,6 +309,11 @@ export declare class Enemy extends THREE.Mesh implements TargetHit, DamageSink {
  * describe('Warrior sheet')
  *   it('carries squad knobs: formation, morale and affinity')                         // R4
  *   it('starts Warrior 80/40, Rogue 60/30, Tank 140/70')                               // R10
+ *
+ * describe('Enemy loadout')
+ *   it('spawns a common Warrior with slots.weapon = laser_lvl_1')                         // R12
+ *   it('equipWeapon rewrites stamps; damage follows LASER_LEVELS + weaponMods')        // R10, R12
+ *   it('a Mini-boss ficha exposes two hardpoints, a Boss three')                      // R12
  *
  * describe('Enemy Warrior — birth')
  *   it('activate loads the Warrior sheet and starts the birth animation')             // R4
@@ -307,5 +347,5 @@ export declare class Enemy extends THREE.Mesh implements TargetHit, DamageSink {
  *   A-manual-2. [manual] group-id labels match nearby formation mates
  *   A-manual-3. [manual] poc/src/gameobjects/testTarget.ts is not imported by poc2
  *
- * Coverage: R1–R11 + ENM-01 + ENM-02 + card Acceptance.
+ * Coverage: R1–R12 + ENM-01 + ENM-02 + card Acceptance.
  */

@@ -246,6 +246,8 @@ export declare const BALANCE: Balance
  *   BALANCE            | Balance | the singleton namespace
  *   BALANCE.weapons    | catalog + loadout + levels | catalog.ts + weapon-levels.ts
  *   BALANCE.controls.dash.levels | DASH_LEVELS | dash-levels.ts
+ *   BALANCE.equips     | catalog + mods + default slot maps | equipment.ts
+ *   BALANCE.enemy.shot.color | hostile bolt paint
  *   BALANCE.enemy.squad / warrior / reachPath | domain tables
  *   BALANCE.collision.hitMatrix | HIT_MATRIX | layers.ts
  *
@@ -315,12 +317,18 @@ export declare const BALANCE: Balance
  *   weapons.levels              = LASER_LEVELS / PLASMA_LEVELS / BEAM_LEVELS / MJOLNIR_LEVELS
  *   weapons.levelCount          = 12
  *   controls.dash.levels        = DASH_LEVELS
+ *   equips.mods.enemy_lvl_1_equip = { damage: 0, rate: 0, speed: 0, radius: 0 }
+ *   equips.defaults.player.slots.weapon = laser_lvl_1
+ *   equips.defaults.player.slots.dash   = dash_lvl_1
+ *   equips.defaults.enemy.slots.weapon  = laser_lvl_1
+ *   enemy.shot.color            = 0xfb923c
  *   enemy.reachPath             = DEFAULT_REACH_PATH
  *   collision.hitMatrix         = HIT_MATRIX
  *   collision.contactIntegrityFrac = 0.2  // ram = 20% of current hull/integrity
  *   shot.despawn                = { zNear: 16, zFar: -32, halfX: 16 }  // E04
  *   enemy.spawnLeft/Right/Front = { intervalSec: 1.2, maxActive: 8, … }
- *   enemy.generic / warrior / rogue / tank = sheets (Warrior 80/40, Rogue 60/30, Tank 140/70)
+ *   enemy.generic / warrior / rogue / tank = hull sheets (Warrior 80/40, Rogue 60/30, Tank 140/70)
+ *   enemy fire = D02 WeaponLevelRow on hardpoints (common 1× laser L1; Mini-boss 2; Boss 3)
  *   enemy.despawn               = { zNear: 18, zFar: -40, halfX: 22 }
  *   enemy.poolSize              = 48
  *   enemy.squad                 = DEFAULT_SQUAD_CONFIG  // systems/squad-config.ts

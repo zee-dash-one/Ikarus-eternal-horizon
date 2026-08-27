@@ -14,7 +14,18 @@ node_modules/
 .docs/plans/*
 !.docs/plans/planning.spec.MD
 !.docs/specs/
+.docs2/*
+!.docs2/plans/
+.docs2/plans/*
+!.docs2/plans/planning.spec.MD
+!.docs2/specs/
+.docs3/*
+!.docs3/plans/
+.docs3/plans/*
+!.docs3/plans/planning.spec.MD
+!.docs3/specs/
 
 # Logs
 dev.err
 dev.out
+

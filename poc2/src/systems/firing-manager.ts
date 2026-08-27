@@ -7,6 +7,7 @@ import type { BehaviourCtx, WeaponModifiers } from '../gameobjects/weapon/regist
 import type { WeaponId } from '../gameobjects/weapon/catalog'
 import type { WeaponConfig } from '../gameobjects/weapon/catalog'
 import { WEAPON_LEVEL_COUNT } from '../gameobjects/weapon/weapon-levels'
+import { overlayResolvedWeapon, type ResolvedWeaponStats } from '../gameobjects/equipment/equipment'
 import type { InputPort } from '../core/input'
 
 export interface EnergyPort {
@@ -34,6 +35,8 @@ export interface FiringManagerOptions {
   readonly registry: WeaponRegistryPort
   readonly loadout: readonly WeaponId[]
   readonly shooting?: ShootingPort
+  readonly resolvedWeapon?: () => ResolvedWeaponStats | null
+  readonly onActive?: (id: WeaponId) => void
 }
 
 export interface WeaponPort {
@@ -58,6 +61,8 @@ export class FiringManager {
   private readonly _registry: WeaponRegistryPort
   private readonly _loadout: readonly WeaponId[]
   private readonly _shooting: ShootingPort | undefined
+  private readonly _resolvedWeapon: (() => ResolvedWeaponStats | null) | undefined
+  private readonly _onActive: ((id: WeaponId) => void) | undefined
   private readonly _muzzle = { x: 0, y: 0, z: 0 }
   private _index = 0
   private _weapon: WeaponPort
@@ -72,6 +77,8 @@ export class FiringManager {
     this._registry = options.registry
     this._loadout = options.loadout
     this._shooting = options.shooting
+    this._resolvedWeapon = options.resolvedWeapon
+    this._onActive = options.onActive
     const first = options.loadout[0]
     if (!first) {
       throw new Error('FiringManager loadout is empty')
@@ -95,6 +102,7 @@ export class FiringManager {
     const next = Math.round(level)
     this._weaponLevel = Math.min(WEAPON_LEVEL_COUNT, Math.max(1, next))
     this._weapon.applyLevel(this._weaponLevel)
+    this._overlayResolved()
   }
 
   setActive(id: WeaponId): void {
@@ -104,6 +112,7 @@ export class FiringManager {
     this._weapon.dispose()
     this._index = this._loadout.indexOf(id)
     this._weapon = this._create(id)
+    this._onActive?.(id)
   }
 
   cycleWeapon(): void {
@@ -125,6 +134,7 @@ export class FiringManager {
     }
     this._switchWasDown = switchDown
 
+    this._overlayResolved()
     this.mods.rateMul = this._health.modifiers.fireRateMul
     const offset = this._weapon.config.muzzleOffset
     this._muzzle.x = this._ship.position.x + offset.x
@@ -152,6 +162,19 @@ export class FiringManager {
   private _create(id: WeaponId): WeaponPort {
     const weapon = this._registry.create(id)
     weapon.applyLevel(this._weaponLevel)
+    this._overlayOn(weapon)
     return weapon
+  }
+
+  private _overlayResolved(): void {
+    this._overlayOn(this._weapon)
+  }
+
+  private _overlayOn(weapon: WeaponPort): void {
+    const resolved = this._resolvedWeapon?.()
+    if (!resolved) {
+      return
+    }
+    overlayResolvedWeapon(weapon.config, resolved)
   }
 }

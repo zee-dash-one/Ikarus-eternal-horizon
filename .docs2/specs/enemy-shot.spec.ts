@@ -19,8 +19,9 @@
  *            contract and lifecycle as D01 WeaponShot (activate / update / effectiveDamage /
  *            decay / pooled). Collision layer is EnemyShot. Minimal until ranged
  *            patterns land in hub §7.
- * Does not own: enemy AI or fire cadence (E01/E05/§7), the weapon/bomb pools (E04),
- *            Force Field absorption (C03 via F04), the who-hits-whom matrix (F01).
+ * Does not own: enemy AI or fire cadence (E01 — hardpoints + D02 WeaponLevelRow),
+ *            the weapon/bomb pools (E04), Force Field absorption (C03 via F04),
+ *            the who-hits-whom matrix (F01).
  * Player-facing: a warm bolt that is a threat to the ship. If it chips hull while
  *            the shield is up, SHIP-05 is broken.
  */
@@ -177,23 +178,21 @@ export declare class EnemyShot extends THREE.Mesh implements ShotPort {
 
 // ─── 4. BALANCE, feel, leveling, graphics ────────────────────────────────────
 /**
- * New keys under BALANCE.enemy.shot (declare on SDD-A01). G0 values — ranged
- * cadence is §7; these numbers exist so a spawned bolt is already fair.
+ * Cadence, damage, speed, lifetime, radius, volley and aoe come from the
+ * shooter's equipped D02 WeaponLevelRow (enemy-bestiary.spec.ts R14). This card
+ * only paints the bolt and owns the EnemyShot layer.
  *
- *   BALANCE.enemy.shot.speed     = 10     // < laser 30; readable incoming
- *   BALANCE.enemy.shot.damage    = 8      // 50 shield ⇒ ~7 hits to break; not a sniper
- *   BALANCE.enemy.shot.lifetime  = 2      // range ≈ 20 world units
- *   BALANCE.enemy.shot.radius    = 0.14   // slightly fatter than laser 0.12
- *   BALANCE.enemy.shot.color     = 0xfb7185 // warm rose bolt vs player cyan 0x22d3ee
+ *   BALANCE.enemy.shot.color     = 0xfb7185 // warm rose vs player cyan 0x22d3ee
  *   BALANCE.enemy.shot.poolSize  = 64     // E04
- *   BALANCE.enemy.shot.aoeRadius = 0
  *
- * Feel:      Incoming threat, not a reverse laser. Slow enough to dodge, fat enough
- *            to read. Hitting the ship must feel like a shield hit first (SHIP-05).
- * Leveling:  §7 fire patterns / MiniBoss cadence. This card does not scale damage
- *            with F03 — F03 may later multiply via E05, not here.
+ * Legacy G0 literals (speed 10 / damage 8 / lifetime 2 / radius 0.14) retire
+ * when Enemy hardpoints land — do not keep a second gun table.
+ *
+ * Feel:      Incoming threat, not a reverse-coloured player laser. Hitting the
+ *            ship must feel like a shield hit first (SHIP-05).
+ * Leveling:  same L1–L12 tables as the ship. Mini-boss = 2 guns, Boss = 3.
  * Graphics:  Additive warm rose. Distinct from cyan PlayerShot at a glance (<0.3s).
- *            Thickness = 2 × radius (D01 parity).
+ *            Thickness = 2 × radius from the level row (D01 parity).
  * Pillars:   1 visible risk · 2 tangible degradation (shield then hull, via F04) · 4 legibility.
  */
 

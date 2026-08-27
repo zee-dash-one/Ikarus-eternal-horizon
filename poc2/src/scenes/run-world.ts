@@ -29,6 +29,12 @@ import {
   type WingId,
 } from '../gameobjects/ship/ship'
 import { ShipHealth } from '../gameobjects/ship/ship-health'
+import {
+  parseDashStamp,
+  parseWeaponStamp,
+  resolveEquips,
+  type EquipSlotId,
+} from '../gameobjects/equipment/equipment'
 import { WeaponShot } from '../gameobjects/shot/weapon-shot'
 import { EnemyShot } from '../gameobjects/shot/enemy-shot'
 import {
@@ -202,7 +208,7 @@ export function createRunWorld(options: RunWorldOptions): RunWorldFactory {
       scene,
       weaponFactory: () => new WeaponShot({ color: BALANCE.weapons.catalog.laser.color }),
       weaponCapacity,
-      enemyFactory: () => new EnemyShot({ color: BALANCE.enemy.warrior.weapon.color }),
+      enemyFactory: () => new EnemyShot({ color: BALANCE.enemy.shot.color }),
       enemyCapacity: BALANCE.enemy.shotPoolSize,
       despawn: BALANCE.shot.despawn,
     })
@@ -317,6 +323,10 @@ export function createRunWorld(options: RunWorldOptions): RunWorldFactory {
       health,
       loadout: BALANCE.weapons.loadout,
       shooting: ship,
+      resolvedWeapon: () => ship.resolvedWeapon(),
+      onActive: (id) => {
+        ship.equipWeapon(0, id)
+      },
       registry: {
         create(id) {
           return new Weapon({ id, shots: shots.asAcquirePort(), deps: { scene, sound } })
@@ -910,6 +920,43 @@ export function createRunWorld(options: RunWorldOptions): RunWorldFactory {
           level: () => world.player.dashLevel(),
           setLevel: (level) => {
             world.player.setDashLevel(level)
+            world.ship.setSlot('dash', `dash_lvl_${level}`)
+          },
+        },
+        equips: {
+          state: () => world.ship.equips(),
+          setSlot: (slot, id) => {
+            world.ship.setSlot(slot as EquipSlotId, id)
+            if (slot === 'weapon') {
+              const stamp = parseWeaponStamp(id)
+              if (stamp) {
+                world.firing.setActive(stamp.weaponId)
+                world.firing.setWeaponLevel(stamp.level)
+              }
+            }
+            if (slot === 'dash') {
+              const dash = parseDashStamp(id)
+              if (dash) {
+                world.player.setDashLevel(dash.level)
+              }
+            }
+          },
+          addGeneral: (id) => {
+            world.ship.addGeneral(id)
+          },
+          removeGeneral: (index) => {
+            world.ship.removeGeneral(index)
+          },
+          resolved: () => {
+            const weapon = world.ship.resolvedWeapon()
+            return weapon
+              ? {
+                  damage: weapon.damage,
+                  rate: weapon.rate,
+                  speed: weapon.speed,
+                  radius: weapon.radius,
+                }
+              : null
           },
         },
         spawnArea: {
@@ -991,6 +1038,29 @@ export function createRunWorld(options: RunWorldOptions): RunWorldFactory {
             world.enemies.resetLiveSheet()
           },
           liveStatus: () => world.enemies.firstActiveStatus(),
+          equips: {
+            state: () => world.enemies.liveEquips(),
+            setSlot: (slot, id) => {
+              world.enemies.setEquipSlot(slot as EquipSlotId, id)
+            },
+            addGeneral: (id) => {
+              world.enemies.addGeneralEquip(id)
+            },
+            removeGeneral: (index) => {
+              world.enemies.removeGeneralEquip(index)
+            },
+            resolved: () => {
+              const weapon = resolveEquips(world.enemies.liveEquips()).weapon
+              return weapon
+                ? {
+                    damage: weapon.damage,
+                    rate: weapon.rate,
+                    speed: weapon.speed,
+                    radius: weapon.radius,
+                  }
+                : null
+            },
+          },
         },
         squad: {
           config: () => world.enemies.squad().liveConfig(),

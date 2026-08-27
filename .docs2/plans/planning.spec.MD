@@ -210,6 +210,19 @@ IDs are **stable and never renumbered**. Origin of the definitions is `.docs/pla
 
 **Future prefixes:** `EQP-01..07` (equipment) · `RNK-01..09` (leaderboards) · `ACH-01..09` (achievements) · `LORE-01..09` (worldbuilding) — all §7, defined in their own `plans-later` documents.
 
+### 3.6 Enemies (bestiary)
+
+Identity is always **race × class × rank**. Catalog: [enemy-bestiary.spec.ts](../specs/enemy-bestiary.spec.ts). GDD: README §9.
+
+| Axis | Values | Rule |
+|---|---|---|
+| **Race** | Maldroids · Hollows · Orcs · Prismari | Base game = Maldroids only (M.A.L.I.C.E. drones). Other races DLC |
+| **Class** | Warrior · Rogue · Tank · Special | Silhouette <0.3s (`ENM-06`). Special = named uniques outside the trio |
+| **Rank** | 1–12 drones, 13 special, 15 Mini-boss, 50 boss, 1000 final-boss | Maldroid names only (Scavan … Overlord, then Valkaru-5 / Apex-Trooper / Neon-Phantom / Cyber-Juggernaut / Omega-Imp / M.A.L.I.C.E.) |
+| **Loadout** | kit list `equips` (equipment.spec.ts) | Weapon stamps `{id}_lvl_n` fill hardpoints. Common 1, Mini-boss 2, Boss 3. Default `laser_lvl_1` × N. Optional weaponMod (placeholder `enemy_lvl_1_equip`) adds damage/rate/speed/radius. D02 tables stay the only gun catalog. |
+
+Display: drones = `{Rank} {Class}` (Private Warrior). Uniques = title alone. POC2 live = Maldroid × class × rank 1 (Scavan).
+
 ## 4. Architecture policy
 
 This planning **adopts** [`phase-0-poc2.md`](../phases/phase-0-poc2.md) as its architecture contract (single source for these rules):
@@ -460,7 +473,7 @@ Change types: **port** (move with no behavior change) · **class-ify** (same beh
 
 #### `SDD-E01` Enemy (basic)
 - **Folder:** `src/gameobjects/enemy/` · spec [enemy.spec.ts](../specs/enemy.spec.ts)
-- **Scope:** `class Enemy extends THREE.Mesh` — pooled; `active`, `hp`, `takeDamage(amount)`, thin seek toward ship, despawn off-field. Implements `TargetHit` port (`team 'enemy'`, `radius`). Archetypes Tank/Warrior/Rogue → §7. **Yuka SeekBehavior deferred** (first-party drift for now).
+- **Scope:** `class Enemy extends THREE.Mesh` — pooled; `active`, `hp`, `takeDamage(amount)`, thin seek toward ship, despawn off-field. Implements `TargetHit` port (`team 'enemy'`, `radius`). Identity is race × class × rank — [enemy-bestiary.spec.ts](../specs/enemy-bestiary.spec.ts). Live sheets: Warrior / Rogue / Tank (Maldroid rank 1). Uniques / DLC races → later. **Yuka SeekBehavior deferred** (first-party drift for now).
 - **Requires:** A01, A03, A05. (F01 for shot hits — not a blocker for spawn/visual.)
 - **Lib:** **Three.js** (wireframe box mesh)
 - **Maps:** `ENM-01`, `ENM-02`. **Acceptance:** spawns from SpawnArea, closes in, despawns off-screen; dies when `takeDamage` empties hp (F01 will call this).
@@ -718,9 +731,9 @@ flowchart LR
 ## 7. Future SDD subjects (stubs)
 
 Declared for naming/traceability; detailed cards arrive in later phases:
-- **Equipment** (`gameobjects/equipment/`) — Reactive Panels, Nuclear Reversor, Gravity Assist Engine, Quantum Deflectors, weapon mules (Laser Cannons: pulses 1,2,3,5,8,13,21), etc. — `EQP-`, `SHIP-10`, `WPN-07`.
+- **Equipment** (`gameobjects/equipment/`) — kit list on every ship ficha: weapon stamps (`laser_lvl_1`) + RPG weaponMods (`enemy_lvl_1_equip`, placeholder). Spec: [equipment.spec.ts](../specs/equipment.spec.ts). Later: Reactive Panels, Nuclear Reversor, Gravity Assist Engine, Quantum Deflectors, weapon mules. — `EQP-`, `SHIP-10`, `WPN-07`.
 - **Bomb** (`gameobjects/bomb/`) + **BombShot** — Pulse Nova / Swarm Torpedo / Star Killer — `WPN-06`.
-- **Enemy archetypes & bosses** — Tank/Warrior/Rogue + MiniBosses/Mega Asteroid/Boss General — `ENM-03`, `ENM-05`–`ENM-08`.
+- **Enemy archetypes & bosses** — race × class × rank catalog [enemy-bestiary.spec.ts](../specs/enemy-bestiary.spec.ts). Maldroid drones + Valkaru-5 / Mini-bosses / Omega-Imp / M.A.L.I.C.E.; Hollows / Orcs / Prismari DLC. Mega Asteroid stays E02/E06. — `ENM-03`, `ENM-05`–`ENM-08`.
 - **Craft / skills** — pause screen surface from `G11`, 1 CraftSlot real-time — `SHIP-07`, `SHIP-11`, `RUL-05`.
 - **Jet / dash** — dedicated Energy reserve on the `C02`/`D03` seam — `SHIP-08`. Dash already spends the shared D03 pool.
 - **Rankings + persistence** — Weekly/Monthly/Annual/Eternal boards, UTC, Survivor boards separate — `RNK-`.

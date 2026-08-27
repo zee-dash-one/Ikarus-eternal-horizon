@@ -5,6 +5,7 @@
 import { BALANCE } from '../../core/balancer'
 import type { EnemyStatusSnapshot } from '../../gameobjects/enemy/enemy'
 import type { EditableWarriorSheet } from '../../gameobjects/enemy/warrior'
+import type { EquipsState, EquipSlotId } from '../../gameobjects/equipment/equipment'
 import type { EditableSquadConfig } from '../../systems/squad-config'
 import type { WeaponId } from '../../gameobjects/weapon/catalog'
 import type { ParallaxLayerConfig } from '../../gameobjects/parallax/parallax-layer'
@@ -66,6 +67,7 @@ export interface DebuggerShipBind {
       energyConverters: readonly string[]
       weaponLevel?: number
       bombLevel?: number
+      equips?: EquipsState
     }
   }
   applyTransform(): void
@@ -90,6 +92,14 @@ export interface DebuggerShipBind {
   equipArmor(id: string | null): void
   equipEnergyCollector(id: string | null): void
   equipEnergyConverter(id: string | null): void
+}
+
+export interface DebuggerEquipsBind {
+  state(): EquipsState
+  setSlot(slot: EquipSlotId, id: string | null): void
+  addGeneral(id: string): void
+  removeGeneral(index: number): void
+  resolved(): { damage: number; rate: number; speed: number; radius: number } | null
 }
 
 export interface DebuggerLevelBind {
@@ -133,6 +143,7 @@ export interface DebuggerEnemyBind {
   resetSheet(defaults?: EditableWarriorSheet): void
   /** Snapshot of the first active enemy (statuses / AI state / slot). */
   liveStatus(): EnemyStatusSnapshot | null
+  readonly equips: DebuggerEquipsBind
 }
 
 /** Live readout of one EnemyGroup for the Squad tab (reused buffer). */
@@ -206,6 +217,7 @@ export interface DebuggerBinds {
   readonly ship: DebuggerShipBind
   readonly weapons: DebuggerWeaponsBind
   readonly dash: DebuggerLevelBind
+  readonly equips: DebuggerEquipsBind
   readonly spawnArea: DebuggerSpawnAreaBind
   readonly enemy: DebuggerEnemyBind
   readonly squad: DebuggerSquadBind

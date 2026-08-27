@@ -24,7 +24,8 @@
  *            Does not rumble Laser pulses (Q13).
  * Does not own: weapon catalog/registry (D02), energy pool arithmetic (D03), shot
  *            pools (E04), collision (F01), hull math (C03 — only reads fireRateMul),
- *            haptics (F05).
+ *            haptics (F05), **enemy fire** (E01 hardpoints construct their own
+ *            Weapon devices; they do not go through this manager).
  * Player-facing: holding Space or RT shoots; F or LB cycles weapons without stalling
  *            fire; empty Energy clicks dry; a wounded hull shoots slower (SHIP-12).
  */
@@ -164,7 +165,7 @@ export declare class FiringManager {
  *            Energy gate is inside the behaviour via EnergyPort — this class does not
  *            duplicate canAfford, but must pass the port (WPN-05).
  *   setActive / cycleWeapon — dispose previous Weapon, registry.create(next),
- *            then applyLevel(weaponLevel). D12.
+ *            then applyLevel(weaponLevel) and overlay resolveEquips four-pack. D12.
  *   dispose — weapon.dispose().
  */
 
@@ -190,6 +191,8 @@ export declare class FiringManager {
  *        did; this is the deliberate split).
  *   R11. loadout of length 1: switch is a no-op.
  *   R12. Does not call rumble('fireLaser') for Laser (Q13).
+ *   R13. After applyLevel, overlay resolveEquips damage/rate/speed/radius from
+ *        the ship's equips (equipment.spec.ts). General mods apply here.
  */
 
 // ─── 6. View / syncRender ────────────────────────────────────────────────────

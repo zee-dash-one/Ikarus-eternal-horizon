@@ -15,6 +15,18 @@ import type { Material } from 'three'
 import { BALANCE } from '../../core/balancer'
 import { DEG2RAD } from '../../core/math'
 import {
+  cloneEquips,
+  isGeneralMod,
+  isLegalForSlot,
+  parseWeaponStamp,
+  resolveEquips,
+  weaponStampId,
+  type EquipId,
+  type EquipSlotId,
+  type EquipsState,
+  type ResolvedWeaponStats,
+} from '../equipment/equipment'
+import {
   createShipModules,
   moduleModsFor,
   syncModuleVisibility,
@@ -96,6 +108,8 @@ export type EnergyCollectorId = 'passive' | 'wide'
 export type EnergyConverterId = 'scrap' | 'crystal'
 
 export interface ShipLoadout {
+  /** Exclusive slots + stacking general mods. Source of truth for mounted gear. */
+  equips: EquipsState
   equippedWeapon: WeaponId | null
   weapons: readonly WeaponId[]
   equippedBomb: BombId | null
@@ -252,6 +266,7 @@ export class Ship extends Group {
   readonly stats: ShipStats
   private readonly _status: ShipStatusState
   private readonly _loadout: ShipLoadout
+  private readonly _equips: EquipsState
   private readonly _debugPort: ShipDebugPort
   private readonly _hardpoints: readonly WeaponMount[]
   private readonly _ordnance: readonly BombMount[]
@@ -299,16 +314,18 @@ export class Ship extends Group {
       energy: clonePool(pools.energy),
     }
     this._status = new ShipStatusState()
+    this._equips = cloneEquips(BALANCE.equips.defaults.player)
     this._loadout = {
+      equips: this._equips,
       equippedWeapon: null,
       weapons: [...BALANCE.weapons.loadout],
       equippedBomb: null,
       bombs: [],
-      equippedWings: 'standard',
+      equippedWings: null,
       wings: ['standard'],
       equippedShield: null,
       shields: [],
-      equippedArmor: 'standard',
+      equippedArmor: null,
       armors: ['standard'],
       equippedEnergyCollector: null,
       energyCollectors: [],
@@ -397,7 +414,44 @@ export class Ship extends Group {
     })
     this._modules.group.add(this.weaponTip)
     this.add(this._hull, this._accent, this._thruster, this._modules.group, this._hitbox)
-    this._applyModules()
+    this._syncDerivedFromSlots()
+  }
+
+  equips(): EquipsState {
+    return this._equips
+  }
+
+  resolvedWeapon(): ResolvedWeaponStats | null {
+    return resolveEquips(this._equips).weapon
+  }
+
+  setSlot(slot: EquipSlotId, id: EquipId | null): void {
+    if (!isLegalForSlot(slot, id)) {
+      return
+    }
+    this._equips.slots[slot] = id
+    if (slot === 'bomb') {
+      if (id === null) {
+        this._ordnance[0]?.setOrdnance(null, 0)
+      } else {
+        this._ordnance[0]?.setOrdnance(id as BombId, 1)
+      }
+    }
+    this._syncDerivedFromSlots()
+  }
+
+  addGeneral(id: EquipId): void {
+    if (!isGeneralMod(id)) {
+      return
+    }
+    this._equips.general.push(id)
+  }
+
+  removeGeneral(index: number): void {
+    if (index < 0 || index >= this._equips.general.length) {
+      return
+    }
+    this._equips.general.splice(index, 1)
   }
 
   get hitbox(): Mesh {
@@ -434,14 +488,16 @@ export class Ship extends Group {
   }
 
   weaponLevel(): number {
-    return this._loadout.weaponLevel
+    return parseWeaponStamp(this._equips.slots.weapon)?.level ?? this._loadout.weaponLevel
   }
 
   setWeaponLevel(level: number): void {
     if (!Number.isInteger(level) || level < 1 || level > 12) {
       return
     }
-    this._loadout.weaponLevel = level
+    const stamp = parseWeaponStamp(this._equips.slots.weapon)
+    const weaponId = stamp?.weaponId ?? 'laser'
+    this.setSlot('weapon', weaponStampId(weaponId, level))
   }
 
   bombLevel(): number {
@@ -474,48 +530,45 @@ export class Ship extends Group {
   }
 
   equipWeapon(slotIndex: number, id: WeaponId): void {
-    this._hardpoints[slotIndex]?.setEquipped(id)
-    this._applyModules()
+    const level = this.weaponLevel() || 1
+    this.setSlot('weapon', weaponStampId(id, level))
+    void slotIndex
   }
 
   unequipWeapon(slotIndex: number): void {
-    this._hardpoints[slotIndex]?.setEquipped(null)
-    this._applyModules()
+    this.setSlot('weapon', null)
+    void slotIndex
   }
 
   equipBomb(slotIndex: number, id: BombId, charges: number): void {
+    this.setSlot('bomb', id)
     this._ordnance[slotIndex]?.setOrdnance(id, charges)
-    this._applyModules()
+    this._syncDerivedFromSlots()
   }
 
   unequipBomb(slotIndex: number): void {
-    this._ordnance[slotIndex]?.setOrdnance(null, 0)
-    this._applyModules()
+    this.setSlot('bomb', null)
+    void slotIndex
   }
 
   equipWings(id: WingId | null): void {
-    this._loadout.equippedWings = id
-    this._applyModules()
+    this.setSlot('wings', id)
   }
 
   equipShield(id: ShieldFitId | null): void {
-    this._loadout.equippedShield = id
-    this._applyModules()
+    this.setSlot('shield', id)
   }
 
   equipBody(id: ArmorId | null): void {
-    this._loadout.equippedArmor = id
-    this._applyModules()
+    this.setSlot('armor', id)
   }
 
   equipEnergyCollector(id: EnergyCollectorId | null): void {
-    this._loadout.equippedEnergyCollector = id
-    this._applyModules()
+    this.setSlot('collector', id)
   }
 
   equipEnergyConverter(id: EnergyConverterId | null): void {
-    this._loadout.equippedEnergyConverter = id
-    this._applyModules()
+    this.setSlot('converter', id)
   }
 
   attachEquipment(item: Equipment): void {
@@ -595,6 +648,28 @@ export class Ship extends Group {
   private _refreshLoadout(): void {
     this._loadout.equippedWeapon = this._hardpoints[0]?.equipped ?? null
     this._loadout.equippedBomb = this._ordnance[0]?.equipped ?? null
+  }
+
+  private _syncDerivedFromSlots(): void {
+    const stamp = parseWeaponStamp(this._equips.slots.weapon)
+    if (stamp) {
+      this._hardpoints[0]?.setEquipped(stamp.weaponId)
+      this._loadout.weaponLevel = stamp.level
+    } else {
+      this._hardpoints[0]?.setEquipped(null)
+    }
+    const bomb = this._equips.slots.bomb
+    if (bomb === null) {
+      this._ordnance[0]?.setOrdnance(null, 0)
+    }
+    this._loadout.equippedWings = (this._equips.slots.wings as WingId | null) ?? null
+    this._loadout.equippedShield = (this._equips.slots.shield as ShieldFitId | null) ?? null
+    this._loadout.equippedArmor = (this._equips.slots.armor as ArmorId | null) ?? null
+    this._loadout.equippedEnergyCollector =
+      (this._equips.slots.collector as EnergyCollectorId | null) ?? null
+    this._loadout.equippedEnergyConverter =
+      (this._equips.slots.converter as EnergyConverterId | null) ?? null
+    this._applyModules()
   }
 
   private _applyModules(): void {

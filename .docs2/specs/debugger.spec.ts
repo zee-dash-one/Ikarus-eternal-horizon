@@ -325,8 +325,8 @@ export declare class SquadTab implements DebuggerTab {
  *                 else refresh from binds
  *   reset       — restore mount-time snapshot, then apply hooks
  *   ShipTab     — pose, six byte pools, three statuses; id is 'ship'
- *   EquipsTab   — loadout lists + equipped weapon level 1–12 + dash level 1–12; id is 'equips'
- *   EnemyTab    — Warrior sheet (hp/weapon + formation/morale/affinity); id is 'enemy'
+ *   EquipsTab   — exclusive slot dropdowns + general list + resolved four-pack; id is 'equips'
+ *   EnemyTab    — hull + Weapon slot/general/resolved + formation/morale/affinity; id is 'enemy'
  *   SquadTab    — live groups + BALANCE.enemy.squad sliders; id is 'squad'
  *   SpawnAreaTab — offset/size/intervalSec/maxActive/lanesX + visual; id is 'spawn-area'
  */
@@ -343,13 +343,17 @@ export declare class SquadTab implements DebuggerTab {
  *   R3. `sync()` skips any control that is `document.activeElement`.
  *   R4. Reset restores the snapshot taken at mount, then apply hooks run.
  *   R5. ShipTab shows pose, six byte pools, three statuses. EquipsTab shows
- *       every loadout field plus equipped weapon level (LASER_LEVELS 1–12)
- *       via FiringManager.setWeaponLevel and dash level (DASH_LEVELS 1–12)
- *       via PlayerController.setDashLevel. Module selects call Ship.equip*
- *       so BALANCE.ship.modules mods apply. EnemyTab edits the live Warrior
- *       sheet (including formation / morale / affinity) without moving ship
- *       pose. SquadTab edits BALANCE.enemy.squad live and shows fury N / maxFury
- *       and flee N / maxFury.
+ *       exclusive slot dropdowns (Weapon/Dash/Bomb/Wings/Shield/Armor/Rockets/
+ *       Engine/Collector/Converter/Lab) plus stacking general add/remove and
+ *       read-only resolved damage/rate/speed/radius. Owned-gear lists stay as
+ *       inventory of what you may put in a slot. The Weapon slot stamp *is*
+ *       the gun (no second dropdown+level table). Module selects still call
+ *       Ship.equip* so BALANCE.ship.modules mods apply. EnemyTab edits hull +
+ *       the same Weapon slot / general / resolved four-pack, plus formation /
+ *       morale / affinity and AI cone/range. It does not live-edit
+ *       sheet.weapon damage/rate/speed as the combat source, and does not
+ *       move ship pose. SquadTab edits BALANCE.enemy.squad live and
+ *       shows fury N / maxFury and flee N / maxFury.
  *       None invents a second number table.
  *   R6. Q09: when `enabled === false`, mount writes nothing into the host
  *       and sync/reset are no-ops.
@@ -383,19 +387,16 @@ export declare class SquadTab implements DebuggerTab {
  *     agility / deflection / integrity / shield / precision / energy
  *       each current + max, slider 0–255, spawn 100/100
  *     status_flickering, status_dashing, status_shooting, status_recovering
- *   Equips — same loadout objects the sim reads, plus live weapon and dash level:
- *     equippedWeapon + weapons[]  (equipWeapon / FiringManager.setActive)
- *     weapon level 1–12           (FiringManager.setWeaponLevel → applyWeaponLevel)
- *     weapon stats (editable)       (EquipsTab reads stats()/patchStat per profile)
- *     dash level 1–12             (PlayerController.setDashLevel → DASH_LEVELS)
- *     equippedBomb + bombs[]
- *     equippedWings + wings[]
- *     equippedShield + shields[]   // fit module, not Force Field pool
- *     equippedArmor + armors[]
- *     equippedEnergyCollector + energyCollectors[]
- *     equippedEnergyConverter + energyConverters[]
+ *   Equips — source of truth UI (equipment.spec.ts):
+ *     one dropdown per exclusive slot (legal EquipIds + empty)
+ *     general list add/remove (start with enemy_lvl_1_equip)
+ *     resolved equippedWeapon damage / rate / speed / radius (read-only)
+ *     owned lists weapons[] / bombs[] / … (inventory of what you may slot)
  *   Enemy — live Warrior sheet (does not move the player ship):
- *     hp / shield / agility / intelligence / weapon stats
+ *     hp / shield / agility / intelligence
+ *     Weapon slot + general + resolved four-pack (equipment.spec.ts)
+ *     AI cone/range (fireConeDeg, weapon.range) — not combat damage/rate/speed
+ *     formation / morale / affinity as today
  *     formation: slotTolerance, boostDistance, boostAgilityMul, hoverAmp,
  *                hoverHz, imperfectionRadius
  *     morale: furyProximityRadius/Sec, furyAgilityMul, retaliationHits/WindowMs,
@@ -458,17 +459,18 @@ export declare class SquadTab implements DebuggerTab {
  *   it('does not import CamTab or invent a second number table')            // R1, R5
  *
  * describe('EquipsTab')
- *   it('shows equippedWeapon and the weapons list')                         // R5
- *   it('shows bomb/wings/shield-fit/armor/collector/converter equipped+list') // R5
- *   it('shows equipped weapon level 1–12 from the live firing bind')        // R5, D02
- *   it('shows dash level 1–12 from the live controller bind')               // R5, C02
- *   it('writes equippedWeapon into the ship bind')                          // R2
- *   it('reset restores mount-time loadout and weapon level')                // R4
+ *   it('shows exclusive slot dropdowns and owned weapons list')             // R5
+ *   it('shows bomb/wings/shield/armor/collector/converter slots and lists') // R5
+ *   it('shows read-only resolved damage/rate/speed/radius from the stamp')  // R5, D02
+ *   it('writes the weapon slot stamp into the equips bind')                 // R2
+ *   it('adds and removes a general mod')                                    // R5
+ *   it('reset restores mount-time slots')                                   // R4
  *   it('does not import ShipTab form groups')                               // R1
  *
  * describe('EnemyTab')
  *   it('edits Warrior sheet hp live without touching ship pose')            // R5
  *   it('edits the squad-driven formation knobs live')                       // R5, E01
+ *   it('shows the weapon slot stamp and resolved four-pack')                // R5
  *
  * describe('SquadTab')
  *   it('edits squad tuning live and resets it back to the balance defaults') // R2, R4, R5

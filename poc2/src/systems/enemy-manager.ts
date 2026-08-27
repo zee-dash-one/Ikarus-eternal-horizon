@@ -17,6 +17,7 @@ import {
   type EditableWarriorSheet,
   WARRIOR,
 } from '../gameobjects/enemy/warrior'
+import { cloneEquips, isGeneralMod, isLegalForSlot, type EquipId, type EquipSlotId, type EquipsState } from '../gameobjects/equipment/equipment'
 import type { SpawnArea } from '../gameobjects/spawn-area/spawn-area'
 import { ObjectPool } from '../pools/object-pool'
 import { EnemySquadManager } from './enemy-squad-manager'
@@ -72,6 +73,7 @@ export class EnemyManager {
   private readonly _squad: EnemySquadManager
   private readonly _pool: ObjectPool<Enemy>
   private readonly _liveSheet: EditableWarriorSheet = cloneWarriorSheet(WARRIOR)
+  private _liveEquips: EquipsState = cloneEquips(BALANCE.equips.defaults.enemy)
   private _archetypeIndex = 0
   private readonly _acc: Record<SpawnSide, number> = { left: 0, right: 0, front: 0 }
   private readonly _lane: Record<SpawnSide, number> = { left: 0, right: 0, front: 0 }
@@ -130,6 +132,45 @@ export class EnemyManager {
   /** Live Warrior sheet used by new spawns and the Enemy debugger tab. */
   liveSheet(): EditableWarriorSheet {
     return this._liveSheet
+  }
+
+  liveEquips(): EquipsState {
+    return this._liveEquips
+  }
+
+  applyLiveEquipsToActive(): void {
+    this._pool.forEachActive((enemy) => {
+      enemy.applyLiveEquips(this._liveEquips)
+    })
+  }
+
+  resetLiveEquips(): void {
+    this._liveEquips = cloneEquips(BALANCE.equips.defaults.enemy)
+    this.applyLiveEquipsToActive()
+  }
+
+  setEquipSlot(slot: EquipSlotId, id: EquipId | null): void {
+    if (!isLegalForSlot(slot, id)) {
+      return
+    }
+    this._liveEquips.slots[slot] = id
+    this.applyLiveEquipsToActive()
+  }
+
+  addGeneralEquip(id: EquipId): void {
+    if (!isGeneralMod(id)) {
+      return
+    }
+    this._liveEquips.general.push(id)
+    this.applyLiveEquipsToActive()
+  }
+
+  removeGeneralEquip(index: number): void {
+    if (index < 0 || index >= this._liveEquips.general.length) {
+      return
+    }
+    this._liveEquips.general.splice(index, 1)
+    this.applyLiveEquipsToActive()
   }
 
   archetypeNames(): readonly string[] {
@@ -205,6 +246,7 @@ export class EnemyManager {
       y: center.y,
       z,
       sheet: this._liveSheet,
+      equips: this._liveEquips,
       gateEntryOffsetX,
       pathSide: side,
     })

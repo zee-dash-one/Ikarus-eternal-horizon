@@ -18,14 +18,14 @@ English design source of truth. Key locks:
 
 | Lock | Rule |
 |---|---|
-| **Summary Sheet only** | Frame systems read `ENE` `SHD` `DEF` `SPD` `S_D` `S_R` `REG` `LVL` `HP` + integrity state. Full Sheet recalc is event-driven (`CHAR-05`). |
+| **Summary Sheet only** | Frame systems read `ENE` `SHD` `DEF` `MIT` `SPD` `S_D` `S_R` `REG` `LVL` `HP` + integrity state. Full Sheet recalc is event-driven (`CHAR-05`). Hits use precomputed `MIT` (`D24`). |
 | **Death** | Integrity 0 = **DRIFTING**; next hit = **DEAD** → run over (`CHAR-04`). |
 | **Slots** | 12 Special (incl. Primary/Secondary weapon) + 21 Generic + 21 Effect (`CHAR-01`). |
 | **Damage** | Mitigate by `DEF/10` → Shield → Integrity; ship–ship = other `HP/2` (`CHAR-06`). |
 | **Classes** | **Tanker** · Warrior · Rogue (+ Special). Docs2 “Tank” = Tanker. |
 | **Enemy SM** | `EnterGate` · `FindGroup` · `LoopBack` · `Flee` · `Fury` (`ENEMY-02`). |
 | **Squad** | 1–8 · formations `V`/`Circle`/`CircleII–IV`/`LineDivers` · independent squad SM (`SQUAD-*`). |
-| **Boot** | Login (skip if session) → Start (cockpit + `welcome_screen_ready`) → Title → Run; **Pause** freezes Run (`SCENE-05`, `D21`). |
+| **Boot** | All flow scenes on the **shared canvas** (`D23`): Login → Start → Title → Run; Pause is a canvas UI layer (`SCENE-05`). |
 | **IDs** | `CHAR-` · `ENEMY-` · `SQUAD-` · `SCENE-` (stable). System classes: `*Manager` only (`D22`, hub §2.6). |
 
 Full decisions: hub §3 (`D01`–`D18`). Requirement index: hub §7.

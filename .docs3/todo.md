@@ -9,44 +9,45 @@
 >
 > Hard runtime rule: **Summary Sheet only** per frame (`D07`). Full Sheet recalc is event-driven (`CHAR-05`).
 > **Naming (`D22`):** domain owners are `*Manager` only — never `*Controller` / `*Resolver` (see hub §2.6).
+> **Scenes (`D23`):** Login · Start · Title · Run · Result · Rankings · Pause all render in the **shared canvas**.
 
 ---
 
 ## Theme 0 — Project scaffold
 
-Stand up the playable shell before any gameplay systems.
+Stand up the playable shell before any gameplay systems. **All scene-flow screens render in the shared canvas** (`D23`).
 
 - [ ] Scaffold `poc3/`: Vite + TypeScript + eslint + vitest, folder tree (`core` · `gameobjects` · `systems` · `scenes` · `ui` · `pools` · `render`)
-- [ ] Three-area shell: `area-inputs` · `game-area` · `debugger-area`
-- [ ] `SceneManager` stub (dispose outgoing → mount next)
+- [ ] Shared WebGL / Three.js canvas + `SceneManager` (dispose outgoing → mount next) — Login through Pause all on canvas
+- [ ] Optional DEV chrome (`debugger-area`) may stay DOM; **game scenes do not**
 - [ ] `npm run verify` (typecheck + lint + test) green on empty/smoke suite
 - [ ] Specs folder + `_template.spec.ts` under `.docs3/specs/` (multi-agent sections)
 
-**Done when:** `poc3` boots and can swap HTML scenes without leaking listeners.
+**Done when:** `poc3` boots a canvas and can swap canvas scenes without leaking GPU/listeners.
 
 ---
 
 ## Theme 0b — Login scene (auth gate)
 
-Hub §2.5 · §7.5 · `SCENE-01` · `D19`.
+Hub §2.5 · §7.5 · `SCENE-01` · `D19` · `D23`.
 
-- [ ] `LoginScene` (HTML/CSS): username + password + **Sign in**
+- [ ] `LoginScene` **on canvas**: username + password + **Sign in** (canvas UI / CSS2D OK)
 - [ ] Password path: mock auth — **always succeeds** when both fields non-empty → **Start**
-- [ ] **Continue with Google**: new tab OAuth; game tab stays on Login
+- [ ] **Continue with Google**: new **browser** tab OAuth; game canvas stays on Login
 - [ ] Google return stub marks `AuthSession` → **Start**
 - [ ] Persist/restore `AuthSession` so cold boot can **skip Login** (`Q06`)
 - [ ] Boot: no session → Login; session ok → Start (no Login flash)
 - [ ] Spec + tests · `SCENE-01`
 
-**Done when:** auth → Start; returning player skips Login.
+**Done when:** auth → Start on canvas; returning player skips Login.
 
 ---
 
 ## Theme 0c — Start scene (preload + immersion)
 
-Hub §2.5 · §7.6 · `SCENE-02` · `D20`. Cockpit art, centered Start, warm assets, ship-AI welcome.
+Hub §2.5 · §7.6 · `SCENE-02` · `D20` · `D23`. Cockpit art, centered Start, warm assets, ship-AI welcome — **all on canvas**.
 
-- [ ] `StartScene`: full-bleed **cockpit** background + centered **Start** button
+- [ ] `StartScene` (canvas): full-bleed **cockpit** background + centered **Start** button
 - [ ] `AssetManager` / bundle: critical · warm · deferred buckets (`Q07`)
 - [ ] Preload starts on Start mount (music, art, BALANCE/data, fonts)
 - [ ] Cache by asset id — no double-fetch in session
@@ -94,10 +95,10 @@ Build the craft data plane **before** wiring guns and AI. Hub §4 · `CHAR-01`�
 
 - [ ] Full Sheet: 12 Special + 21 Generic + 21 Effect slots · `CHAR-01`
 - [ ] Attribute families + op order (`D09`/`D10`) · `CHAR-02`
-- [ ] Summary Sheet publish (`ENE` `SHD` `DEF` `SPD` `S_D` `S_R` `REG` `LVL` `HP`) · `CHAR-03`
-- [ ] Recalc triggers: equip → full; effect → summary only; `LVL` → `DEF`/`SPD`/`S_D` only · `CHAR-05`
+- [ ] Summary Sheet publish (`ENE` `SHD` `DEF` `MIT` `SPD` `S_D` `S_R` `REG` `LVL` `HP`) · `CHAR-03`
+- [ ] Recalc triggers: equip → full; effect → summary only; `LVL` → `DEF`/`MIT`/`SPD`/`S_D` · `CHAR-05`
 - [ ] Integrity states LIGHT → MEDIUM → SEVERE → **DRIFTING** → **DEAD** · `CHAR-04`
-- [ ] Damage pipeline: `DEF/10` mitigate → Shield → Integrity; collision layers `D14`; ship–ship other cause damagem by `HP/2` · `CHAR-06`
+- [ ] Damage pipeline: precompute `MIT = DEF/10` on recalc; hit uses `MIT` → Shield → Integrity (`D24`); collision `D14`; ship–ship other `HP/2` · `CHAR-06`
 - [ ] Frame systems **forbidden** from reading Full Sheet fields (tests assert)
 
 **Done when:** equip change republishes Summary; Integrity 0 drifts; next hit kills; no Full Sheet reads in update loops.
@@ -118,24 +119,24 @@ Motion and presentation consume **Summary** only.
 
 ---
 
-## Theme 4b — Pause overlay (ship + parallax live)
+## Theme 4b — Pause canvas UI (ship + parallax live)
 
-Hub §2.5 · §7.7 · `SCENE-05` · `D21`. Ship as soon as Run renders **player craft + parallax** — do not wait for Theme 10.
+Hub §2.5 · §7.7 · `SCENE-05` · `D21` · `D23`. Ship as soon as Run renders **player craft + parallax** — do not wait for Theme 10.
 
 - [ ] Minimal Run mount that owns camera / parallax / player craft (if not already from Themes 2–4)
 - [ ] Pause toggle (Esc / Start / pause action) **freezes** sim time — no world `dt`
-- [ ] Near-fullscreen pause window + dimmed canvas behind
+- [ ] Near-fullscreen **canvas** pause UI + dimmed frozen Run behind
 - [ ] Run panel: **elapsed** · **kills** · **score** (stub counters OK)
 - [ ] Run panel: **Inventory** with Use / Drop (stubs OK)
 - [ ] Run panel: **Lab** craft UI (stubs OK)
-- [ ] Right rail: **Controls** → in-overlay controls config tab (`InputManager`)
+- [ ] Right rail: **Controls** → in-canvas controls config tab (`InputManager`)
 - [ ] Right rail: **Audio** → `SoundManager`: music · SFX · mute · mute ship AI · Show Audio as Text Log
 - [ ] Right rail: **Graphics** → screen size + TBD graphics rows (`Q10`)
 - [ ] Right rail: **Dev** (DEV only) → live Balancer editors with **inner tabs** by domain
-- [ ] Resume / unpause: same pose, no dt catch-up; overlay `dispose` does not tear down Run
+- [ ] Resume / unpause: same pose, no dt catch-up; pause UI `dispose` does not tear down Run
 - [ ] Spec + tests · `SCENE-05`
 
-**Done when:** pausing mid-flight freezes ship/parallax; overlay shows run stats + four rail tabs; Dev hidden in production builds.
+**Done when:** pausing mid-flight freezes ship/parallax; canvas pause UI shows run stats + four rail tabs; Dev hidden in production builds.
 
 ---
 

@@ -3,7 +3,7 @@
 tag_g_docs tag_s_docs_tag_registry tag_g_system tag_s_system_manager_classes
 RESUME: Shared vocabulary — sheet layers, Summary codes, enemy/squad identity, scene boot order, *Manager naming, grep tag rules.
 
-**Hub index:** [`planning.spec.MD`](./planning.spec.MD) · **Hub version:** 0.3.16
+**Hub index:** [`planning.spec.MD`](./planning.spec.MD) · **Hub version:** 0.3.18
 
 ---
 
@@ -105,6 +105,7 @@ Runtime owners that drive a domain use the `…Manager` suffix. Do **not** use `
 | ------------------- | ---------------------------------------------------------------- |
 | `SceneManager`      | Screen transitions / dispose-mount                               |
 | `PlayerManager`     | Player craft commands from virtual pad (`moveX`/`moveZ`, `R1` dash) |
+| `CharSheetManager`  | CHAR Full/Summary instances + recalc (`CHAR-01`–`05`); Pause Balancer binds these types ([`char-sheet.spec.MD`](./char-sheet.spec.MD)) |
 | `CameraManager`     | Follow-box sim + published camera pose / parallax offsets; **Free Cam** View override (`CAM-06`, [`world.spec.MD`](./world.spec.MD)) |
 | `AssetManager`      | Preload buckets + in-memory asset cache                          |
 | `SoundManager`      | All audio cues, volumes, mute, AI VO, text-log feed              |

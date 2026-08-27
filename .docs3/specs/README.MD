@@ -419,7 +419,7 @@ Convenção de colunas: **Theme** = fatia vertical do `todo.md` · **Prio** = mu
 | --- | --- | --- | --- | --- |
 | `CHAR-01` | must | char-sheet | 54 slots sempre presentes | `char/CHAR-01.spec.ts` |
 | `CHAR-02` | must | char-sheet | Full Sheet families com `D09`/`D10` | `char/CHAR-02.spec.ts` |
-| `CHAR-03` | must | char-sheet | Só Summary Sheet lido em runtime; `MIT` pré-computado | `char/CHAR-03.spec.ts` |
+| `CHAR-03` | must | char-sheet | Só Summary Sheet lido em runtime; `MIT` pré-computado; `integrityState` publicado | `char/CHAR-03.spec.ts` |
 | `CHAR-04` | must | char-sheet | LIGHT→MEDIUM→SEVERE→DRIFTING→DEAD | `char/CHAR-04.spec.ts` |
 | `CHAR-05` | must | char-sheet | Gatilhos de recalc corretos (equip=Full; effect=Summary; LVL=parcial) | `char/CHAR-05.spec.ts` |
 | `CHAR-06` | must | char-sheet | Hit path usa `MIT`→SHD→INT; colisão `D13`/`D14` | `char/CHAR-06.spec.ts` |
@@ -520,7 +520,7 @@ Depende de `CHAR-03` (Summary) e `CTRL-01` (pad). Sem novos IDs formais além de
 
 | ID | Prio | Fonte | Aceite | Teste sugerido |
 | --- | --- | --- | --- | --- |
-| `EQP-01` | must | equipment | Item só concede campos `*_mod`/`*_mul` registrados | `equipment/EQP-01.spec.ts` |
+| `EQP-01` | must | equipment | Item só concede campos registrados (registry + `baseSum`); sem orphans | `equipment/EQP-01.spec.ts` |
 | `EQP-02` | must | equipment | Grants contextuais (`when: dashing`, …) fazem patch no toggle | `equipment/EQP-02.spec.ts` |
 | `EQP-03` | should | equipment | `lab_craft_time_*` lido só no início do craft | `equipment/EQP-03.spec.ts` |
 | `EQP-04` | must | crafting | CraftSlot exclusivo; segundo craft bloqueado | `crafting/EQP-04.spec.ts` |

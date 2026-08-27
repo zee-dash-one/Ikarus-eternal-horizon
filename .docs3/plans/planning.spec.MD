@@ -3,7 +3,7 @@
 tag_g_docs tag_s_docs_tag_registry
 RESUME: Design hub authority — requirement IDs, locked decisions, coverage matrix, and grep-tag matrix for docs3 / poc3.
 
-**Version:** 0.3.17 · **Status:** active (design hub · implementation in `poc3/`)
+**Version:** 0.3.19 · **Status:** active (design hub · implementation in `poc3/`)
 **Purpose:** the **design hub index** — theme specs live as sibling files in this folder for the next model of the game. It is written **from scratch**. Canonical rules for ship sheets, individual enemies, and squads come from `[.docs3/consider/](../consider/)` (historical drafts). Runtime systems read only the **Summary Sheet**; the **Full Sheet** exists for equip/effect recalculation — not per-frame math. Code and tasks: `poc3/` + `[.docs3/todo.md](../todo.md)`.
 **Sources:** `[../consider/char_sheet.MD](../consider/char_sheet.MD)` · `[../consider/enemy_sheet.MD](../consider/enemy_sheet.MD)` · `[../consider/squad_sheet.MD](../consider/squad_sheet.MD)` · public GDD `[README.md](../../README.md)`
 **Docs2 role:** `[.docs2/plans/planning.spec.MD](../../.docs2/plans/planning.spec.MD)` is a **coverage checklist only** — not inherited architecture, not a workstream, not a port map. See [`coverage.spec.MD`](./coverage.spec.MD).
@@ -53,8 +53,8 @@ Each file is self-contained English design authority for its domain. **This inde
 | --- | --- | --- |
 | [`nomenclature.spec.MD`](./nomenclature.spec.MD) | tag_g_system · tag_g_docs | Sheet layers, Summary codes, enemy/squad vocabulary, canvas scene boot order, *Manager table, grep tag rules and matrix snapshot. |
 | [`decisions.spec.MD`](./decisions.spec.MD) | tag_g_docs | Locked decisions D01–D45 and open questions Q01–Q49. |
-| [`char-sheet.spec.MD`](./char-sheet.spec.MD) | tag_g_char_sheet · tag_g_combat | CHAR-01–06: 54 slots, Full/Summary math, DRIFTING→DEAD, recalc triggers, MIT damage path. |
-| [`equipment.spec.MD`](./equipment.spec.MD) | tag_g_equipment | EQP-01–03: *_mod/*_mul grants, contextual when-bundles, lab craft time modifiers. |
+| [`char-sheet.spec.MD`](./char-sheet.spec.MD) | tag_g_char_sheet · tag_g_combat | CHAR-01–06: data contract (Core + Balancer) + 54 slots, Full/Summary math, DRIFTING→DEAD, recalc, MIT. |
+| [`equipment.spec.MD`](./equipment.spec.MD) | tag_g_equipment | EQP-01–03: data contract (registry + items) + *_mod/*_mul grants, when-bundles, lab craft time. |
 | [`crafting.spec.MD`](./crafting.spec.MD) | tag_g_resources · tag_g_crafting | RES-05 · EQP-04–06: inventory caps, CraftSlot, recipes, energy tension. |
 | [`drops.spec.MD`](./drops.spec.MD) | tag_g_drops · tag_g_resources | RES-01–04 · RES-06: DropManager, loot tables, magnet, pool, collect handoff. |
 | [`dev-tools.spec.MD`](./dev-tools.spec.MD) | tag_g_dev | DEV-01–11: `/dev/*` HTML CRUD for equips, buffs, enemies, squads; DevContentManager. |
@@ -161,7 +161,7 @@ Full tables: [`decisions.spec.MD`](./decisions.spec.MD). Locked **D01–D45**; o
 | **D01** | `consider` CHAR/ENEMY/SQUAD canonical over docs2 |
 | **D06** | DRIFTING at Integrity 0 → DEAD on next hit |
 | **D07** | Frame loop reads Summary Sheet only |
-| **D22** | Domain owners named `*Manager` only |
+| **D22** | Domain owners named `*Manager` only (`CharSheetManager` owns CHAR sheets) |
 | **D23** | Canvas: **Start · Title · Run · Pause**; DOM: Login · Store · Result · Rankings |
 | **D24** | `MIT = DEF/10` precomputed at recalc |
 | **D25–D26** | Grep tag matrix + validate before publish |
@@ -214,7 +214,7 @@ Full tables: [`decisions.spec.MD`](./decisions.spec.MD). Locked **D01–D45**; o
 
 | Field | Value |
 | --- | --- |
-| Hub version | **0.3.17** (Free Cam `CAM-06`) |
+| Hub version | **0.3.19** (CHAR + EQP data contracts) |
 | Structure | Index + 22 theme files in `.docs3/plans/` |
 | Crafting | Inventory + CraftSlot (`D31`, [`crafting.spec.MD`](./crafting.spec.MD)) |
 | Drops | DropManager loot / magnet / pool (`D32`, [`drops.spec.MD`](./drops.spec.MD)) |

@@ -42,7 +42,7 @@ Dev CRUD screens live under client routes **`/dev/*`** (Vite SPA — same shell 
 
 | Route | Entity | Design anchor |
 | --- | --- | --- |
-| `/dev/special-equips` | **Special equips** — Primary/Secondary weapon, Dash, Bomb, Wings, Shield, Armor, Rockets, Engine, Collector, Conversor, Lab | `CHAR-01` Special slots · [`equipment.spec.MD`](./equipment.spec.MD) |
+| `/dev/special-equips` | **Special equips** — Primary/Secondary weapon, Dash, Bomb, Wings, Shield, Armor, Rockets, Engine, Collector, Converter, Lab | `CHAR-01` Special slots · [`equipment.spec.MD`](./equipment.spec.MD) |
 | `/dev/generic-equips` | **Generic equips** — any generic-slot item (`*_mod`/`*_mul` grants) | `CHAR-01` Generic slots · `EQP-01` |
 | `/dev/buffs` | **Buffs / Effects** — temporary Summary patches (Effect slots) | `CHAR-01` Effect slots · contextual `when` (`EQP-02`) |
 | `/dev/enemies` | **Enemies** — Enemy Base + class + CHAR sheet binding | `ENEMY-01`–`03` · [`consider/enemy_sheet.MD`](../consider/enemy_sheet.MD) |
@@ -66,10 +66,12 @@ Gameplay Core **never** reads Dexie directly at runtime — boot loads exported 
 
 ---
 
-## Entity sketches (interfaces TBD — v1 contract)
+## Entity sketches (v1 contract)
 
 tag_g_dev tag_s_dev_entities
-RESUME: Minimal record shapes for CRUD forms; full TypeScript interfaces land in Theme 0d implementation.
+RESUME: CRUD records mirror EQP-01 catalog types; enemy/squad sketches remain Theme 0d.
+
+Equip / buff rows **are** `SpecialEquipItem` / `GenericEquipItem` / `EffectItem` ([`equipment.spec.MD`](./equipment.spec.MD)). Fields below are the form mapping.
 
 ### Special equip (`DevSpecialEquipRecord`)
 
@@ -92,16 +94,17 @@ RESUME: Minimal record shapes for CRUD forms; full TypeScript interfaces land in
 
 ### Buff / Effect (`DevBuffRecord`)
 
+Maps 1:1 to `EffectItem` in [`equipment.spec.MD`](./equipment.spec.MD) (`EQP-01` data contract).
+
 | Field | Rule |
 | --- | --- |
 | `id` | Unique |
 | `displayName` | UI label |
-| `durationTicks` | Effect duration (0 = instant patch semantics TBD) |
-| `cooldownTicks` | Effect slot cooldown |
-| `summaryPatch` | Summary fields affected while active (not Full Sheet rewrite — `CHAR-05`) |
-| `when` | Optional contextual bundle id |
+| `durationTicks` | Effect duration (`0` allowed) |
+| `cooldownTicks` | Effect slot cooldown (`0` allowed) |
+| `grants` | Same `EquipGrant[]` as Special/Generic — Summary-only patch while active (`CHAR-05`) |
 
-> **Open:** exact `summaryPatch` schema mirrors Effect-slot recalc rules — refine when Effect runtime lands.
+`when` lives **per grant**, not on the buff row.
 
 ### Enemy (`DevEnemyRecord`)
 
@@ -221,7 +224,7 @@ RESUME: Shared CRUD chrome — entity-specific columns plug into data tables.
 | `DEV-07` | should | Special equip form enforces `specialSlot` enum (12 types) | Invalid slot → validation error |
 | `DEV-08` | should | Enemy form exposes class + strategy defaults | Matches `ENEMY-01`/`ENEMY-03` fields |
 | `DEV-09` | should | Squad form exposes formation + member count 1–8 | Invalid formation mix flagged (stub OK v1) |
-| `DEV-10` | defer | Generic equip + buff grant editors (full `EQP-01` UI) | Stub grants JSON until interfaces locked |
+| `DEV-10` | defer | Generic equip + buff grant editors (full `EQP-01` UI) | Grant **types** locked; form chrome still stub JSON OK |
 | `DEV-11` | defer | Import JSON into DevContentStore | Round-trip with export |
 
 ---

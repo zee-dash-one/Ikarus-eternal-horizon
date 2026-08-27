@@ -12,7 +12,7 @@ POC-1 (`poc/`) and POC-2 (`poc2/`) are **frozen**. Do not edit them. Do not open
 
 Docs2 (`.docs2/`) is a **coverage checklist only** — not inherited architecture.
 
-## Hub summary (docs3 v0.3.17)
+## Hub summary (docs3 v0.3.19)
 
 English design source of truth — **index:** `.docs3/plans/planning.spec.MD` · **theme specs:** sibling `*.spec.MD` files in the same folder. Key locks:
 
@@ -27,7 +27,7 @@ English design source of truth — **index:** `.docs3/plans/planning.spec.MD` ·
 | **Enemy SM** | `EnterGate` · `FindGroup` · `LoopBack` · `Flee` · `Fury` (`ENEMY-02`). |
 | **Squad** | 1–8 · formations `V`/`Circle`/`CircleII–IV`/`LineDivers` · independent squad SM (`SQUAD-*`). |
 | **Boot** | HTML **Login** → canvas **Start/Title/Run**; HTML **Result/Rankings** post-run; Pause canvas overlay; Store DOM tab |
-| **IDs** | `CHAR-` · `ENEMY-` · `SQUAD-` · `SCENE-` · `CAM-` · `WPN-` · `MET-` · `HUD-` · `AUTH-` · `DEV-` · `CTRL-` · `RES-` · `RNK-` · `STR-` · `BLD-` · `ARCH-` · `RUL-02` (stable). System classes: `*Manager` only (`D22`). |
+| **IDs** | `CHAR-` · `ENEMY-` · `SQUAD-` · `SCENE-` · `CAM-` · `WPN-` · `MET-` · `HUD-` · `AUTH-` · `DEV-` · `CTRL-` · `RES-` · `RNK-` · `STR-` · `BLD-` · `ARCH-` · `RUL-02` (stable). System classes: `*Manager` only (`D22`) — sheet owner `CharSheetManager`. |
 | **World** | Landscape 16:9 + letterbox (`D44`); follow box + **Free Cam** (`CAM-06`) + 3-layer parallax; off-field despawn (`RUL-02`, [`world.spec.MD`](.docs3/plans/world.spec.MD)). |
 | **Weapons** | Theme 5 Laser pool (`WPN-01`/`02`/`05`); Theme 11 catalog + ordnance (`WPN-03`/`04`/`06`, [`weapons.spec.MD`](.docs3/plans/weapons.spec.MD)). |
 | **Meteors** | Pooled S/M/L through `MeteorManager` (`MET-*`, [`meteors.spec.MD`](.docs3/plans/meteors.spec.MD)). Docs2 `RUL-04` = pause (`SCENE-05`), not asteroids. |

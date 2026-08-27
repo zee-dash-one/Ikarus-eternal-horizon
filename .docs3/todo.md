@@ -122,11 +122,12 @@ Camera and space before the ship has meaning. Hub [`world.spec.MD`](./plans/worl
 
 ## Theme 3 — CHAR sheet (new model)
 
-Build the craft data plane **before** wiring guns and AI. Hub §4 · `CHAR-01`…`CHAR-06`.
+Build the craft data plane **before** wiring guns and AI. Hub [`char-sheet.spec.MD`](./plans/char-sheet.spec.MD) · `CHAR-01`…`CHAR-06`.
+**Spec opened:** data contract (slots · Full · Summary) + SDD files `.docs3/specs/char/CHAR-01.spec.ts` · `CHAR-02` · `CHAR-03` (red until `poc3/` implements). Do not tick until `npm run verify` green.
 
 - [ ] Full Sheet: 12 Special + 21 Generic + 21 Effect slots · `CHAR-01`
 - [ ] Attribute families + op order (`D09`/`D10`) · `CHAR-02`
-- [ ] Summary Sheet publish (`ENE` `SHD` `DEF` `MIT` `SPD` `S_D` `S_R` `REG` `LVL` `HP`) · `CHAR-03`
+- [ ] Summary Sheet publish (`ENE` `SHD` `DEF` `MIT` `SPD` `S_D` `S_R` `REG` `LVL` `HP` + `integrityState`) · `CHAR-03`
 - [ ] Recalc triggers: equip → full; effect → summary only; `LVL` → `DEF`/`MIT`/`SPD`/`S_D` · `CHAR-05`
 - [ ] Integrity states LIGHT → MEDIUM → SEVERE → **DRIFTING** → **DEAD** · `CHAR-04`
 - [ ] Damage pipeline: precompute `MIT = DEF/10` on recalc; hit uses `MIT` → Shield → Integrity (`D24`); collision `D14`; ship–ship other `HP/2` · `CHAR-06`
@@ -277,6 +278,7 @@ Widen the gun fantasy after the loop is honest. Hub [`weapons.spec.MD`](./plans/
 ## Theme 12 — Equipment, craft, progression
 
 Hub [`equipment.spec.MD`](./plans/equipment.spec.MD) + [`crafting.spec.MD`](./plans/crafting.spec.MD) · `D31`.
+**Spec opened:** data contract (registry · grant · Special/Generic/Effect) + SDD files `.docs3/specs/equipment/EQP-01.spec.ts` · `EQP-02` · `EQP-03` (red until `poc3/` implements). Do not tick until `npm run verify` green.
 
 - [ ] Equip item schema: grants any registered `*_mod`/`*_mul` (`EQP-01`)
 - [ ] Contextual grants — e.g. `when: dashing` → `deflection_mod` (`EQP-02`)

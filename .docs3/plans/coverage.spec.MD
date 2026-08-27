@@ -45,6 +45,8 @@ Legend: **Covered** = owned by a docs3 ID above · **Deferred** = acknowledged, 
 | `ENM-08` Boss General              | Deferred               | Special class seam                                              |
 | `ENM-09` post-500 patterns         | Deferred               |                                                                 |
 | `RES-01..06`                       | **Partial**            | Drop path [`drops.spec.MD`](./drops.spec.MD) · caps [`crafting.spec.MD`](./crafting.spec.MD) |
+| `STR-`                     | **Partial**            | [`store.spec.MD`](./store.spec.MD) · shop/streak `STR-01`–`09` · adapters `STR-10`–`12` · `D36` |
+| `BLD-`                     | **Partial**            | [`builds.spec.MD`](./builds.spec.MD) · four outputs `BLD-01`–`06` · Steam upload `BLD-07` defer · `D37` |
 | `RUL-01` game loop                 | Deferred               |                                                                 |
 | `RUL-02` bounds/despawn            | Deferred               |                                                                 |
 | `RUL-03` score / game over         | Deferred (hook)        | Player DEAD → run over (Q04)                                    |
@@ -59,7 +61,7 @@ Legend: **Covered** = owned by a docs3 ID above · **Deferred** = acknowledged, 
 | `RUL-13` worst-case perf           | **Covered** (rule)     | `D07` Summary-only frame reads                                  |
 | `RUL-14` settings persistence      | Deferred               |                                                                 |
 | `EQP-`                     | **Partial**            | Grants `EQP-01`–`03` [`equipment.spec.MD`](./equipment.spec.MD) · craft `EQP-04`–`06` [`crafting.spec.MD`](./crafting.spec.MD) |
-| `RNK-`                     | **Partial**            | [`rankings.spec.MD`](./rankings.spec.MD) + [`rankings.spec.MD`](./rankings.spec.MD) · Local/Itch/Poki `RNK-01`–`05`/`10`–`11` · Steam defer |
+| `RNK-`                     | **Partial**            | [`rankings.spec.MD`](./rankings.spec.MD) · Local/Itch/Poki `RNK-01`–`05`/`10`–`12` · Steam defer · `D30` |
 | `LORE-`                    | Deferred               |                                                                 |
 | `ACH-`                     | **Partial**            | [`achievements.spec.MD`](./achievements.spec.MD) + [`achievements.spec.MD`](./achievements.spec.MD) · Local + Itch/Poki/Steam adapters (`D28`)         |
 

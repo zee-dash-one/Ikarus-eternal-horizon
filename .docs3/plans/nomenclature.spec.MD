@@ -3,7 +3,7 @@
 tag_g_docs tag_s_docs_tag_registry tag_g_system tag_s_system_manager_classes
 RESUME: Shared vocabulary — sheet layers, Summary codes, enemy/squad identity, scene boot order, *Manager naming, grep tag rules.
 
-**Hub index:** [`planning.spec.MD`](./planning.spec.MD) · **Hub version:** 0.3.0
+**Hub index:** [`planning.spec.MD`](./planning.spec.MD) · **Hub version:** 0.3.10
 
 ---
 
@@ -62,7 +62,7 @@ English only. All gameplay terms in this hub use the names below.
 tag_g_scene_flow tag_s_scene_canvas_render
 RESUME: Boot order and canvas-rendered scenes from Login through Pause — shared WebGL view, no HTML scene shells.
 
-**Render rule (`D23`):** every scene in this flow presents inside the **shared WebGL / Three.js canvas** (one game view). No full-page HTML menu routes. UI chrome (buttons, panels, fields) is canvas-space (meshes / sprites / textured quads / CSS2D attached to the scene). External browser tabs remain allowed only for OAuth (Google).
+**Render rule (`D23`):** every **scene-flow** screen presents inside the **shared WebGL / Three.js canvas** (one game view). No full-page HTML menu routes. UI chrome for those scenes is canvas-space (meshes / sprites / textured quads / CSS2D). **Exception (`D34`):** the hub **Store** tab is an HTML/CSS shell overlay communicating via JS Bridge — not a scene swap. External browser tabs remain allowed only for OAuth (Google).
 
 
 | Scene        | Render | Role                                                                                                          |
@@ -118,11 +118,15 @@ Runtime owners that drive a domain use the `…Manager` suffix. Do **not** use `
 | `MeteorManager`     | Asteroid population                                              |
 | `DropManager`       | World loot — tables, pool, magnet, collect (`D32`)                   |
 | `CraftManager`      | CraftSlot timer, recipe pay/complete (`D31`)                         |
+| `StoreManager`      | Hub store catalog + purchase commit (`D33`); UI via `StoreUIBridge` (`D34`) |
+| `LoginStreakManager`| Weekly UTC login streak → grant **BUD** (`D35`)                          |
+| — platform adapters | `DemoStoreAdapter` · `ItchStoreAdapter` · `PokiStoreAdapter` · `SteamStoreAdapter` (`D36`/`D38`); `LocalStoreAdapter` = tests only |
 | `DifficultyManager` | Kill-based scaling                                               |
 | `VfxManager`        | Pooled feedback FX                                               |
 | `InputManager`      | Virtual pad owner; scheme adapters; binds ([`input.spec.MD`](./input.spec.MD))                     |
 | `AchievementManager`| Catalog + run tracker; publish via Local / Itch / Poki / Steam adapters ([`achievements.spec.MD`](./achievements.spec.MD)) |
-| `RankingManager`  | Run score finalize; 8-board matrix; Local + platform upload adapters ([`rankings.spec.MD`](./rankings.spec.MD)) |
+| `RankingManager`  | Run score finalize; 8-board matrix; platform-blind + `RankingPlatformAdapter` (`D30`/`D38`) |
+| — ranking adapters | `DemoRankingAdapter` · `ItchRankingAdapter` · `PokiRankingAdapter` · `SteamRankingAdapter`; Local mirrors + tests |
 
 
 Pause right-rail label for bind UI is **Controls** (settings), not a `*Controller` class.
@@ -173,13 +177,15 @@ RESUME: Hit path, shield-first absorption, and collision layers for every craft.
 | `tag_g_scene_flow` | `tag_s_scene_canvas_render` · `tag_s_scene_manager_transitions` · `tag_s_scene_login_auth` · `tag_s_scene_start_preload` · `tag_s_scene_pause_overlay` · `tag_s_scene_title_menu` · `tag_s_scene_run_gameplay` · `tag_s_scene_result_summary` · `tag_s_scene_rankings_board` |
 | `tag_g_audio` | `tag_s_audio_cue_dispatch` · `tag_s_audio_volume_mute` · `tag_s_audio_ship_ai_vo` · `tag_s_audio_text_log` |
 | `tag_g_assets` | `tag_s_assets_preload_buckets` · `tag_s_assets_cache_by_id` · `tag_s_assets_critical_ready_gate` |
-| `tag_g_engine` | `tag_s_engine_game_loop` · `tag_s_engine_object_pool` · `tag_s_engine_balance_source` · `tag_s_engine_zero_alloc` |
+| `tag_g_engine` | `tag_s_engine_game_loop` · `tag_s_engine_object_pool` · `tag_s_engine_balance_source` · `tag_s_engine_zero_alloc` · `tag_s_engine_core_view_split` · `tag_s_engine_fixed_tick` · `tag_s_engine_command_event_flow` · `tag_s_engine_architecture_guardrails` |
 | `tag_g_run_meta` | `tag_s_run_stats_panel` · `tag_s_run_inventory_actions` · `tag_s_run_lab_craft` · `tag_s_run_result_screen` · `tag_s_run_rankings_screen` |
 | `tag_g_achievements` | `tag_s_achievements_catalog` · `tag_s_achievements_virtual_api` · `tag_s_achievements_local_adapter` · `tag_s_achievements_itch_adapter` · `tag_s_achievements_poki_adapter` · `tag_s_achievements_steam_adapter` |
-| `tag_g_rankings` | `tag_s_rankings_board_matrix` · `tag_s_rankings_local_adapter` · `tag_s_rankings_itch_adapter` · `tag_s_rankings_poki_adapter` · `tag_s_rankings_steam_adapter` · `tag_s_rankings_survivor_mode` · `tag_s_rankings_submit_pipeline` |
+| `tag_g_rankings` | `tag_s_rankings_board_matrix` · `tag_s_rankings_local_adapter` · `tag_s_rankings_demo_adapter` · `tag_s_rankings_itch_adapter` · `tag_s_rankings_poki_adapter` · `tag_s_rankings_steam_adapter` · `tag_s_rankings_survivor_mode` · `tag_s_rankings_submit_pipeline` |
 | `tag_g_resources` | `tag_s_resources_material_types` · `tag_s_resources_drop_table` · `tag_s_resources_magnet_collect` · `tag_s_resources_inventory_caps` · `tag_s_resources_fragment_pool` |
 | `tag_g_drops` | `tag_s_drops_manager` · `tag_s_drops_loot_table` · `tag_s_drops_fragment_pool` · `tag_s_drops_magnet_pull` · `tag_s_drops_collect_handoff` |
 | `tag_g_crafting` | `tag_s_crafting_craft_slot` · `tag_s_crafting_recipe_schema` · `tag_s_crafting_repair_recipes` · `tag_s_crafting_energy_cost` |
+| `tag_g_progression` | `tag_s_store_manager` · `tag_s_store_catalog` · `tag_s_store_currencies` · `tag_s_store_transactions` · `tag_s_store_ui` · `tag_s_store_ui_bridge` · `tag_s_store_platform_adapter` · `tag_s_store_adapter_local` · `tag_s_store_adapter_demo` · `tag_s_store_adapter_itch` · `tag_s_store_adapter_poki` · `tag_s_store_adapter_steam` · `tag_s_login_streak` · `tag_s_login_streak_rewards` |
+| `tag_g_builds` | `tag_s_builds_matrix` · `tag_s_builds_pipeline` · `tag_s_builds_artifacts` · `tag_s_builds_platform_wire` · `tag_s_builds_demo` · `tag_s_builds_demo_host` · `tag_s_builds_itch` · `tag_s_builds_poki` · `tag_s_builds_steam` · `tag_s_arch_stack` · `tag_s_arch_demohost_api` · `tag_s_arch_deploy` · `tag_s_arch_persist_dexie` · `tag_s_arch_persist_poki_sdk` · `tag_s_arch_persist_steam_fs` · `tag_s_arch_persist_debounce` · `tag_s_arch_demohost_security` |
 | `tag_g_system` | `tag_s_system_manager_classes` |
 | `tag_g_docs` | `tag_s_docs_requirement_ids` · `tag_s_docs_decisions_locked` · `tag_s_docs_coverage_matrix` · `tag_s_docs_tag_registry` |
 

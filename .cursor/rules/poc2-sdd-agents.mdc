@@ -12,13 +12,14 @@ POC-1 (`poc/`) and POC-2 (`poc2/`) are **frozen**. Do not edit them. Do not open
 
 Docs2 (`.docs2/`) is a **coverage checklist only** — not inherited architecture.
 
-## Hub summary (docs3 v0.3.2)
+## Hub summary (docs3 v0.3.12)
 
 English design source of truth — **index:** `.docs3/plans/planning.spec.MD` · **theme specs:** sibling `*.spec.MD` files in the same folder. Key locks:
 
 | Lock | Rule |
 |---|---|
 | **Summary Sheet only** | Frame systems read `ENE` `SHD` `DEF` `MIT` `SPD` `S_D` `S_R` `REG` `LVL` `HP` + integrity state. Full Sheet recalc is event-driven (`CHAR-05`). Hits use precomputed `MIT` (`D24`). |
+| **Sim first (`D40`)** | **Core** = pure TS fixed tick (60 Hz) · Commands in → Events + **WorldSnapshot** out. **View** = Three.js/audio/VFX on rAF. **Golden Rule:** ESLint blocks `three`/DOM in `core/` · `systems/` · `gameobjects/` (`ARCH-16`). |
 | **Death** | Integrity 0 = **DRIFTING**; next hit = **DEAD** → run over (`CHAR-04`). |
 | **Slots** | 12 Special (incl. Primary/Secondary weapon) + 21 Generic + 21 Effect (`CHAR-01`). |
 | **Damage** | Mitigate by `DEF/10` → Shield → Integrity; ship–ship = other `HP/2` (`CHAR-06`). |
@@ -26,15 +27,19 @@ English design source of truth — **index:** `.docs3/plans/planning.spec.MD` ·
 | **Enemy SM** | `EnterGate` · `FindGroup` · `LoopBack` · `Flee` · `Fury` (`ENEMY-02`). |
 | **Squad** | 1–8 · formations `V`/`Circle`/`CircleII–IV`/`LineDivers` · independent squad SM (`SQUAD-*`). |
 | **Boot** | All flow scenes on the **shared canvas** (`D23`): Login → Start → Title → Run; Pause is a canvas UI layer (`SCENE-05`). |
-| **IDs** | `CHAR-` · `ENEMY-` · `SQUAD-` · `SCENE-` · `CTRL-` · `RES-` · `RNK-` (stable). System classes: `*Manager` only (`D22`). |
+| **IDs** | `CHAR-` · `ENEMY-` · `SQUAD-` · `SCENE-` · `CTRL-` · `RES-` · `RNK-` · `STR-` · `BLD-` · `ARCH-` (stable). System classes: `*Manager` only (`D22`). |
 | **Input** | Sim reads **virtual pad only** (`D27`, `CTRL-01`); four scheme adapters ([`input.spec.MD`](.docs3/plans/input.spec.MD)). |
-| **Achievements** | Gameplay calls **apiName only** via `AchievementManager`; **Local** always + one platform adapter per boot (`D28`). |
+| **Achievements** | Gameplay calls **apiName only** via `AchievementManager`; **Local** always (Dexie) + one platform adapter per boot (`D28`/`D39`). |
 | **Equipment** | Items grant only registered **`*_mod`/`*_mul`** (+ optional `when` context); lab craft time modifiers (`D29`). |
 | **Crafting** | Pause-only CraftSlot; materials + `ENE` + time (`D31`, [`crafting.spec.MD`](.docs3/plans/crafting.spec.MD)). |
 | **Drops** | `DropManager` sole owner of world loot — tables, pool, magnet, collect (`D32`, [`drops.spec.MD`](.docs3/plans/drops.spec.MD)). |
-| **Rankings** | `RankingManager.submitRun` only; Local 8-board bests + one upload adapter per boot (`D30`). Modes never mix. |
+| **Store** | `StoreManager` + HTML hub tab via **JS Bridge** (`D33`/`D34`); **BUD** + streak (`D35`); **one** `StorePlatformAdapter` per build (`D36`); Demo = `DemoStoreAdapter` → DemoHost (`D38`). |
+| **Persist** | **Itch** = Dexie (IndexedDB) · **Poki** = Poki SDK cloud · **Steam** = Tauri `plugin-fs` + Cloud · **Demo** = DemoHost SQLite (`D39`). |
+| **Builds** | Four production outputs Demo · Itch · Poki · Steam — one `PlatformKit` (`D37`, [`builds.spec.MD`](.docs3/plans/builds.spec.MD)). |
+| **DemoHost** | Caddy → Node (`demo-host/`) static + `/api` + SQLite; Google OAuth; CSRF + Zod validation (`D38`, [`architecture.spec.MD`](.docs3/plans/architecture.spec.MD)). |
+| **Rankings** | `RankingManager` platform-blind; **one** `RankingPlatformAdapter` per build; Demo = `DemoRankingAdapter` (`D30`/`D38`); Local always mirrors (Dexie / disk). |
 
-Full decisions: [`decisions.spec.MD`](.docs3/plans/decisions.spec.MD) (`D01`–`D32`). Requirement IDs: theme files under `.docs3/plans/`.
+Full decisions: [`decisions.spec.MD`](.docs3/plans/decisions.spec.MD) (`D01`–`D40`). Requirement IDs: theme files under `.docs3/plans/`.
 
 ## Grep tags (`D25`/`D26`, hub §2.7)
 
@@ -78,7 +83,9 @@ A spec with an empty agent section is incomplete. `N/A` is allowed; blank is not
 - Spec before code. Tests before implementation.
 - **Grep tags (`D25`/`D26`):** `tag_g_*` + RESUME; `tag_s_*` without RESUME; matrix in `.docs3/tags/matrix.json`; validate before mark-done.
 - `interface` + `class`, one public class per `kebab-case.ts`. Domain owners use `*Manager` — never `*Controller` or `*Resolver` (`D22`).
-- `update(dt)` = logic; `syncRender()` = transforms/opacity/material only.
+- `updateSim(tick)` = Core logic (`D40`); `syncRender()` = View transforms/opacity/material only.
+- Core (`core/` · `systems/` · `gameobjects/`) **must not** import Three.js or DOM APIs — ESLint Golden Rule (`ARCH-16`/`ARCH-20`).
+- `npm run verify` in `poc3/` must include sim-boundary lint (merge `.docs3/templates/eslint-sim-boundary.snippet.js`).
 - Gameplay numbers only in `BALANCE`. Frame code must not recompute Full Sheet math.
 - Zero per-frame allocation on hot paths.
 - Audio is always `SoundManager` (volumes, mute, AI VO, cue log).

@@ -15,13 +15,18 @@
 
 ## Theme 0 — Project scaffold
 
-Stand up the playable shell before any gameplay systems. **All scene-flow screens render in the shared canvas** (`D23`).
+Stand up the playable shell before any gameplay systems. **All scene-flow screens render in the shared canvas** (`D23`). Stack authority: [`architecture.spec.MD`](./plans/architecture.spec.MD) (`D38`).
 
-- [ ] Scaffold `poc3/`: Vite + TypeScript + eslint + vitest, folder tree (`core` · `gameobjects` · `systems` · `scenes` · `ui` · `pools` · `render`)
+- [ ] Scaffold `poc3/`: Vite + TypeScript + eslint + vitest + **dexie**, folder tree per `D40` (`core` · `systems` · `gameobjects` · `scenes` · `render` · `ui` · `pools` · `platform` · `persist`)
+- [ ] **Core/View split (`D40`):** `GameLoop` fixed tick + `WorldSnapshot`; Input → Commands; View `syncRender` on rAF
+- [ ] **Golden Rule guardrails (`ARCH-16`/`ARCH-20`):** merge [`.docs3/templates/eslint-sim-boundary.snippet.js`](./templates/eslint-sim-boundary.snippet.js) into `poc3/eslint.config.js`
+- [ ] Lint/grep gate: `npm run verify` fails on `three`/`window`/`document`/`render/` imports under `core/` · `systems/` · `gameobjects/`
 - [ ] Shared WebGL / Three.js canvas + `SceneManager` (dispose outgoing → mount next) — Login through Pause all on canvas
 - [ ] Optional DEV chrome (`debugger-area`) may stay DOM; **game scenes do not**
+- [ ] Dexie DB schema stub for Local ACH / RNK mirrors / store cache · `D39` · `ARCH-08`
 - [ ] `npm run verify` (typecheck + lint + test) green on empty/smoke suite
 - [ ] Specs folder + `_template.spec.ts` under `.docs3/specs/` (multi-agent sections)
+- [ ] Scaffold sibling `demo-host/` (Node + Hono + SQLite stubs) — not imported by itch/poki/steam · `ARCH-02`
 
 **Done when:** `poc3` boots a canvas and can swap canvas scenes without leaking GPU/listeners.
 
@@ -29,17 +34,17 @@ Stand up the playable shell before any gameplay systems. **All scene-flow screen
 
 ## Theme 0b — Login scene (auth gate)
 
-Hub §2.5 · §7.5 · `SCENE-01` · `D19` · `D23`.
+Hub §2.5 · §7.5 · `SCENE-01` · `D19` · `D23` · `D38`.
 
 - [ ] `LoginScene` **on canvas**: username + password + **Sign in** (canvas UI / CSS2D OK)
 - [ ] Password path: mock auth — **always succeeds** when both fields non-empty → **Start**
-- [ ] **Continue with Google**: new **browser** tab OAuth; game canvas stays on Login
-- [ ] Google return stub marks `AuthSession` → **Start**
-- [ ] Persist/restore `AuthSession` so cold boot can **skip Login** (`Q06`)
+- [ ] **Continue with Google**: open OAuth via DemoHost (`/api/auth/google/start`); game canvas stays on Login
+- [ ] Google callback on DemoHost sets httpOnly session → client `GET /api/me` → `AuthSession` → **Start**
+- [ ] Persist/restore session via cookie + `/api/me` so cold boot can **skip Login** (`Q06` / `D38`)
 - [ ] Boot: no session → Login; session ok → Start (no Login flash)
-- [ ] Spec + tests · `SCENE-01`
+- [ ] Spec + tests · `SCENE-01` · `ARCH-05`
 
-**Done when:** auth → Start on canvas; returning player skips Login.
+**Done when:** Google auth → Start on canvas; returning player skips Login on Demo HTTPS origin.
 
 ---
 
@@ -267,13 +272,23 @@ Hub [`equipment.spec.MD`](./plans/equipment.spec.MD) + [`crafting.spec.MD`](./pl
 
 ## Theme 13 — Juice, audio, packaging
 
+Hub [`builds.spec.MD`](./plans/builds.spec.MD) · [`architecture.spec.MD`](./plans/architecture.spec.MD) · `D37`/`D38` · `BLD-*` · `ARCH-*`.
+
 - [ ] VFX: hit flash, shake cap, vignette, pooled bursts
 - [ ] Howler SFX/music + overheat/radio cues
 - [ ] Haptics presets (gamepad scheme)
-- [ ] Itch-ready relative `index.html` / responsive shell
+- [ ] `IKARUS_PLATFORM` + `build:demo|itch|poki|steam` scripts · `BLD-01`–`BLD-02`
+- [ ] DemoHost: Zod validation on `/api/store` · ranking integrity + rate limit · CSRF Origin guard · `ARCH-11`/`ARCH-14` · `S6`–`S8`
+- [ ] Persist debounce manager (~3s) + Dexie quota toast · `ARCH-12`/`ARCH-13`
+- [ ] Demo `dist-demo/` + DemoHost behind Caddy · `BLD-06` · `BLD-08` · `ARCH-03`
+- [ ] Manual deploy: rsync `dist-demo/` + restart Node · Litestream/cron backup · `ARCH-06`/`ARCH-15` · `Q33`
+- [ ] Steam shell (**Tauri**) + `@tauri-apps/plugin-fs` JSON saves + Cloud · `BLD-11` · `ARCH-09` · `D39`
+- [ ] Itch zip `dist-itch/` · Poki `dist-poki/` (Poki SDK cloud save) · Steam `dist-steam/` · `BLD-03` · `BLD-09`/`BLD-10`
+- [ ] Production strip Dev rail + debug camera · `BLD-05`
 - [ ] Worst-case frame stability (Mega + full wave)
+- [ ] (defer) GitHub Action SSH deploy · `ARCH-07`
 
-**Done when:** hits read, audio warns, build opens from `file://` without absolute paths.
+**Done when:** hits read, audio warns, Demo opens over HTTPS via Caddy+DemoHost; four build scripts exist.
 
 ---
 
@@ -284,14 +299,20 @@ Hub [`equipment.spec.MD`](./plans/equipment.spec.MD) + [`crafting.spec.MD`](./pl
 - [ ] `ItchAchievementAdapter` · `ACH-04`
 - [ ] `PokiAchievementAdapter` · `ACH-05`
 - [ ] Boot platform detect · `ACH-07`
-- [ ] `RankingManager` + publish adapters · `RNK-01`–`RNK-05` (§2.10 · §7.15)
-- [ ] `LocalRankingAdapter` always on · 8-board matrix · `RNK-01`–`RNK-02`
+- [ ] `RankingManager` + `RankingPlatformAdapter` per build · `RNK-01`–`RNK-05` · `RNK-12` · `D30`/`D38`
+- [ ] `LocalRankingAdapter` always mirrors · 8-board matrix · `RNK-01`–`RNK-02`
+- [ ] `DemoRankingAdapter` → DemoHost `/api/rankings` · `D38` · `BLD-08`
 - [ ] `ItchRankingAdapter` · `RNK-10`
 - [ ] `PokiRankingAdapter` · `RNK-11`
 - [ ] Survivor mode (one-shot, laser-only v1) · `RNK-03` · `Q11`
 - [ ] `SteamRankingAdapter` — 8 `LB_*` boards, KeepBest · `RNK-06`–`RNK-08`
 - [ ] Offline upload queue + sync · `RNK-07`
 - [ ] Cosmetic rank title/badge · `RNK-09` · `Q13`
+- [ ] `StoreManager` + `StoreUIBridge` (HTML hub tab) · `STR-01`–`STR-04` · `D33`/`D34`
+- [ ] Profile wallet (**BUD** `bud` + transferred scrap) · Title/hub only · `Q23`/`Q24`
+- [ ] `LoginStreakManager` weekly claim · 5/10/15/20/25/30/60 BUD · `STR-07`–`09` · `D35`
+- [ ] `StorePlatformAdapter` wire — Demo=`DemoStoreAdapter` · Itch · Poki · Steam · `STR-10`–`13` · `D36`/`D38`
+- [ ] `PlatformKit` boot wire (ACH + RNK + Store same kit) · `BLD-04` · `D37`
 - [ ] Persistent remap + Steam Input (G3)
 - [ ] `SteamAchievementAdapter` · `ACH-06` · icons/copy · `ACH-08`–`ACH-09`
 - [ ] Narrative delivery: Bounty Board, AI narrator, sector bands, flavor text

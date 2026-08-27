@@ -3,9 +3,9 @@
 tag_g_input tag_s_input_virtual_pad tag_s_input_device_adapters
 RESUME: Device-blind virtual pad; four exclusive scheme adapters (Keyboard · Mix · Gamepad · Touch).
 
-**Hub index:** [`planning.spec.MD`](./planning.spec.MD) · **Hub version:** 0.3.0
+**Hub index:** [`planning.spec.MD`](./planning.spec.MD) · **Hub version:** 0.3.12
 
----
+**Related:** [`architecture.spec.MD`](./architecture.spec.MD) (`D40` Commands → Core)
 
 ## Virtual input pad (`CTRL-01`, `D27`)
 
@@ -13,6 +13,8 @@ tag_g_input tag_s_input_virtual_pad tag_s_input_device_adapters
 RESUME: Device-blind controls — sim reads only the virtual pad; physical devices are mapped through exclusive scheme adapters.
 
 Gameplay systems (`PlayerManager`, `FiringManager`, Pause gate, …) read **only** the **virtual pad**. They never import keyboard codes, mouse buttons, `Gamepad` indices, DOM events, or **nipplejs**. Physical hardware is normalized by **adapters** inside `InputManager`.
+
+**Core boundary (`D40`):** each sim tick, `InputManager` translates pad edges/levels into **Commands** (pure objects) dispatched to Core — e.g. `{ type: 'FIRE_PRIMARY' }`. Core never reads DOM or Three.js.
 
 #### Virtual vocabulary (locked)
 

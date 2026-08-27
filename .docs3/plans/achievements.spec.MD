@@ -3,7 +3,7 @@
 tag_g_achievements tag_s_achievements_virtual_api tag_s_achievements_local_adapter
 RESUME: Gameplay unlocks by stable apiName; Local always; one platform adapter per boot (Itch · Poki · Steam).
 
-**Hub index:** [`planning.spec.MD`](./planning.spec.MD) · **Hub version:** 0.3.0
+**Hub index:** [`planning.spec.MD`](./planning.spec.MD) · **Hub version:** 0.3.10
 
 Satellite: [`../../.docs2/plans-later/achievements-plan.spec.MD`](../../.docs2/plans-later/achievements-plan.spec.MD)
 
@@ -33,7 +33,7 @@ Run systems and UI call **only** the **`AchievementManager` publish port** — n
 
 | Adapter | Host / build | Role |
 | --- | --- | --- |
-| **`LocalAchievementAdapter`** | Always (dev, offline, fallback) | `localStorage` / IndexedDB mirror; source of truth when no platform SDK |
+| **`LocalAchievementAdapter`** | Always (dev, offline, fallback) | **Dexie.js** (IndexedDB) mirror (`D39`); source of truth when no platform SDK |
 | **`ItchAchievementAdapter`** | itch.io embed or hosted web build | Maps `apiName` → Itch achievements API when host is Itch |
 | **`PokiAchievementAdapter`** | Poki Games embed | Maps `apiName` → Poki SDK achievement calls |
 | **`SteamAchievementAdapter`** | Steam PC build | Steamworks `SetAchievement` / `SetStat` / `StoreStats` |

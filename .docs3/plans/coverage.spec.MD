@@ -1,0 +1,101 @@
+# Ikarus Eternal Horizon — Docs2 Coverage Checklist
+
+tag_g_docs tag_s_docs_coverage_matrix
+RESUME: Docs2 prefix/stage coverage matrix — what docs3 owns vs defers; naming deltas vs docs2/GDD.
+
+**Hub index:** [`planning.spec.MD`](./planning.spec.MD) · **Hub version:** 0.3.0
+
+---
+
+## Deferred requirement prefixes (named for coverage; not detailed here)
+
+`WPN-` · `RES-` · `RUL-` · `LORE-` · remaining `META-` (HUD) — appear in this document as checklist rows. Detail arrives in later docs3 revisions or satellite plans.
+
+
+## Docs2 coverage checklist
+
+Legend: **Covered** = owned by a docs3 ID above · **Deferred** = acknowledged, not designed in this revision · **N/A** = docs2-only construction concern (POC2 cards / port map / DoD agents) outside this design hub’s scope.
+
+### 8.1 Docs2 requirement prefixes
+
+
+| Docs2 prefix                       | Docs3 status           | Notes                                                           |
+| ---------------------------------- | ---------------------- | --------------------------------------------------------------- |
+| `SHIP-01` motion                   | Deferred               | Needs CTRL/META when a code target exists; sheet supplies `SPD` |
+| `SHIP-02` destruction              | **Covered**            | `CHAR-04` (DRIFTING→DEAD replaces instant Integrity 0 kill)     |
+| `SHIP-03` laser fire               | Deferred               | `WPN-` later; Summary `S_D`/`S_R`/`ENE` feed it                 |
+| `SHIP-04` pointer / schemes        | **Covered**            | `CTRL-01` · [`input.spec.MD`](./input.spec.MD) (Mix scheme; no pointer-steer)                 |
+| `SHIP-05` shield first             | **Covered**            | `CHAR-06`                                                       |
+| `SHIP-06` inventory scrap          | Deferred               | RES / META                                                      |
+| `SHIP-07` craft repair             | Deferred               | Lab / Converter Special slots reserved in `CHAR-01`             |
+| `SHIP-08` jet reserve              | Deferred               | Dash Special slot reserved; economy later                       |
+| `SHIP-09` energy economy           | **Covered** (sheet)    | `ENE`/`REG` on Summary; full economy Deferred                   |
+| `SHIP-10` equipment effects        | **Covered**            | `CHAR-01`–`CHAR-05` · `EQP-01` modifier grants                  |
+| `SHIP-11` tech tree                | Deferred               |                                                                 |
+| `SHIP-12` hull penalties           | **Covered**            | `CHAR-04` states (replaces 1/2/3 level table)                   |
+| `SHIP-13` persistent remap         | Deferred               |                                                                 |
+| `WPN-01..08`                       | Deferred               | Primary/Secondary Special slots reserved                        |
+| `ENM-01` spawn enemy               | **Covered** (identity) | `ENEMY-01`–`03`; spawn managers Deferred                        |
+| `ENM-02` pooling                   | Deferred               | memory/runtime                                                  |
+| `ENM-03` distinct behaviours       | **Covered**            | `ENEMY-02` + `SQUAD-`*                                          |
+| `ENM-04` asteroids                 | Deferred               |                                                                 |
+| `ENM-05` MiniBoss telegraph        | Deferred               |                                                                 |
+| `ENM-06` trio silhouette           | **Covered**            | `ENEMY-03` (Tanker name)                                        |
+| `ENM-07` Mega Asteroid             | Deferred               |                                                                 |
+| `ENM-08` Boss General              | Deferred               | Special class seam                                              |
+| `ENM-09` post-500 patterns         | Deferred               |                                                                 |
+| `RES-01..06`                       | Deferred               |                                                                 |
+| `RUL-01` game loop                 | Deferred               |                                                                 |
+| `RUL-02` bounds/despawn            | Deferred               |                                                                 |
+| `RUL-03` score / game over         | Deferred (hook)        | Player DEAD → run over (Q04)                                    |
+| `RUL-04` pause                     | Deferred               |                                                                 |
+| `RUL-05` CraftSlot                 | Deferred               | Lab slot reserved                                               |
+| `RUL-06` / `RUL-09` difficulty     | Deferred               |                                                                 |
+| `RUL-07` local best                | **Partial**            | `RNK-01` Local adapter · full boards `RNK-02`–`05`              |
+| `RUL-08` Itch package              | Deferred               |                                                                 |
+| `RUL-10` hull levels               | **Covered**            | via `CHAR-04`                                                   |
+| `RUL-11` score multipliers         | Deferred               |                                                                 |
+| `RUL-12` single balancer           | Deferred               | numbers still must not live in prose forever                    |
+| `RUL-13` worst-case perf           | **Covered** (rule)     | `D07` Summary-only frame reads                                  |
+| `RUL-14` settings persistence      | Deferred               |                                                                 |
+| `EQP-`                     | **Partial**            | `EQP-01`–`03` [`equipment.spec.MD`](./equipment.spec.MD) · recipes `EQP-04`–`05` deferred           |
+| `RNK-`                     | **Partial**            | [`rankings.spec.MD`](./rankings.spec.MD) + [`rankings.spec.MD`](./rankings.spec.MD) · Local/Itch/Poki `RNK-01`–`05`/`10`–`11` · Steam defer |
+| `LORE-`                    | Deferred               |                                                                 |
+| `ACH-`                     | **Partial**            | [`achievements.spec.MD`](./achievements.spec.MD) + [`achievements.spec.MD`](./achievements.spec.MD) · Local + Itch/Poki/Steam adapters (`D28`)         |
+
+
+### 8.2 Docs2 Stage cards (A–G) — design coverage only
+
+
+| Docs2 cards                         | Docs3 status               | Notes                                                                                             |
+| ----------------------------------- | -------------------------- | ------------------------------------------------------------------------------------------------- |
+| A01–A05 core/pools                  | N/A → Deferred             | Implementation concern · **A02 input** → **Covered** as `CTRL-01` / `InputManager` ([`input.spec.MD`](./input.spec.MD))        |
+| B01–B04 camera/world                | Deferred                   |                                                                                                   |
+| C01 Ship / C03 ShipHealth           | **Covered** (replaced)     | by `CHAR-`*                                                                                       |
+| C02 Controller                      | **Covered** (renamed)      | → `PlayerManager` reads virtual pad (`D22`, `D27`)                                                |
+| D01–D06 weapons                     | Deferred                   | Special weapon slots                                                                              |
+| E01 Enemy                           | **Covered** (replaced)     | `ENEMY-`*                                                                                         |
+| E02–E04 / E06 meteor & shots        | Deferred                   |                                                                                                   |
+| E05 EnemyManager + squad follow-ons | **Covered** (squad design) | `SQUAD-`*; spawn cadence Deferred                                                                 |
+| E07 FiringManager                   | Deferred                   |                                                                                                   |
+| F01 layers                          | **Covered** (design set)   | `D14`                                                                                             |
+| F02–F05 drops/diff/damage/vfx       | Deferred                   | `DropManager` · `DifficultyManager` · `DamageManager` · `VfxManager`; damage *rules* in `CHAR-06` |
+| G01–G12 scenes/UI                   | **Partial**                | Login · Start · **Pause** (`SCENE-01`/`02`/`05`); Touch/nipple via `CTRL-01`; Title/Run/Result still Deferred |
+| §6.3 multi-agent SDD / DoD          | N/A                        | returns when a code target + specs exist                                                          |
+| §5.0 POC-1 port map                 | N/A                        | docs3 is not a port                                                                               |
+
+
+### 8.3 Naming deltas vs docs2 / GDD
+
+
+| Docs2 / GDD                               | Docs3                                       |
+| ----------------------------------------- | ------------------------------------------- |
+| Tank                                      | **Tanker**                                  |
+| Integrity 0 = run over                    | **DRIFTING** then **DEAD** on next hit      |
+| Modular airplane modules as runtime stats | Full Sheet → **Summary Sheet** publish      |
+| Byte pools 0–255 as live combat truth     | Summary codes (`ENE`/`SHD`/…) as live truth |
+| Factory/class POC2 architecture           | Out of scope (design hub)                   |
+| `*Controller` / `*Resolver` system names  | `*Manager` **only** (`D22`, [`nomenclature.spec.MD`](./nomenclature.spec.MD) (*Manager table))           |
+| docs2 `InputAction` (`fire`, `bomb`, …)   | Virtual pad tokens (`A`, `B`, `X`, `Y`, `R1`, `Start`, …) · `D27` |
+| docs2 single Steam bridge                 | Local + Itch + Poki + Steam **publish adapters** · `D28` · `D30`  |
+

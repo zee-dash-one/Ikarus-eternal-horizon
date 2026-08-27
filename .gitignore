@@ -22,7 +22,7 @@ node_modules/
 .docs3/*
 !.docs3/plans/
 .docs3/plans/*
-!.docs3/plans/planning.spec.MD
+!.docs3/plans/*.spec.MD
 !.docs3/specs/
 !.docs3/todo.md
 

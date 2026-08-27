@@ -1,7 +1,7 @@
 # Docs3 / POC3 — development todo
 
 > Tracker for **`poc3/`**, ordered like a vertical-slice shmup build: foundation → feel → sheet → combat → pressure → meta.
-> Design authority: [`planning.spec.MD`](./plans/planning.spec.MD) (English). Docs2 = coverage checklist only.
+> Design authority: [`planning.spec.MD`](./plans/planning.spec.MD) (index) + theme specs in [`plans/`](./plans/) (English). Docs2 = coverage checklist only.
 >
 > **How to read a line:** feature · requirement ID · notes  
 > Tick only when DoD holds: spec (when present) · failing test first · green `npm run verify` in `poc3/`.  
@@ -69,7 +69,10 @@ Numbers, time, input, memory — nothing allocates per frame on hot paths.
 - [ ] Math helpers + scratch vectors · zero alloc
 - [ ] `GameLoop`: rAF, `dt` clamp, pause gate
 - [ ] `ObjectPool<T>`: acquire/release, exhaustion → `null`
-- [ ] `InputManager`: four exclusive schemes (Keyboard · Mix · Gamepad · Touch), combat vocabulary (move/fire/bomb/switch/dash/pause)
+- [ ] `InputManager` + virtual pad (`CTRL-01` §2.8): tokens `Up`/`Down`/`Left`/`Right`/`Start`/`A`/`B`/`X`/`Y`/`R1`/`R2` + `moveX`/`moveZ`
+- [ ] Four exclusive scheme adapters: **Keyboard** · **Mix** (keyboard+mouse) · **Gamepad** · **Touch** (nipplejs via `TouchInputAdapter` — no nipple import in `InputManager`)
+- [ ] Default scheme **Keyboard**; switch on Pause → Controls tab
+- [ ] Remap tables in `BALANCE.controls` map physical → virtual only
 
 **Done when:** loop runs stable; input schemes switch on pause; pools do not grow the heap under fire tests.
 
@@ -110,9 +113,9 @@ Build the craft data plane **before** wiring guns and AI. Hub §4 · `CHAR-01`�
 Motion and presentation consume **Summary** only.
 
 - [ ] Player craft as `THREE.Group` (modular mounts map to Special slots)
-- [ ] `PlayerManager`: force motion / tilt / dash gated by Summary `SPD` + integrity multipliers
+- [ ] `PlayerManager`: force motion / tilt / dash from virtual pad (`moveX`/`moveZ`, `R1`) gated by Summary `SPD` + integrity multipliers
 - [ ] `EnergyManager`: spend/regen from Summary `ENE`/`REG` (weapons/dash)
-- [ ] Dash Special slot behaviour, equipped gains and spins amplifying `SPD` and `DEF`
+- [ ] Dash Special slot: contextual deflection (or other `when: dashing` grants) + spin/SPD (`EQP-02`)
 - [ ] Debugger: Summary + slot sheet live (DEV)
 
 **Done when:** ship flies with readable inertia/bank; damage states visibly slow movement.
@@ -129,7 +132,7 @@ Hub §2.5 · §7.7 · `SCENE-05` · `D21` · `D23`. Ship as soon as Run renders 
 - [ ] Run panel: **elapsed** · **kills** · **score** (stub counters OK)
 - [ ] Run panel: **Inventory** with Use / Drop (stubs OK)
 - [ ] Run panel: **Lab** craft UI (stubs OK)
-- [ ] Right rail: **Controls** → in-canvas controls config tab (`InputManager`)
+- [ ] Right rail: **Controls** → scheme picker + physical→virtual remap (`InputManager`, §2.8)
 - [ ] Right rail: **Audio** → `SoundManager`: music · SFX · mute · mute ship AI · Show Audio as Text Log
 - [ ] Right rail: **Graphics** → screen size + TBD graphics rows (`Q10`)
 - [ ] Right rail: **Dev** (DEV only) → live Balancer editors with **inner tabs** by domain
@@ -146,7 +149,7 @@ Vertical slice: fire → hit → shield/hull risk.
 
 - [ ] Pooled player shots + `ShotManager`
 - [ ] Primary weapon (Laser) via `Primary_Weapon` slot; cadence from `S_R`, damage from `S_D`
-- [ ] `FiringManager`: fire / switch; energy gate
+- [ ] `FiringManager`: virtual `A`/`B`/`X`/`Y` → fire / bomb / switch weapon / switch bomb; energy gate
 - [ ] `CollisionManager` (layer matrix is data · `D14`)
 - [ ] `DamageManager` sole `applyDamage` path · `CHAR-06`
 - [ ] Player DEAD ends the run (hook for Theme 10)
@@ -216,14 +219,15 @@ Hub §6 · `SQUAD-01`…`SQUAD-04`. Independent from enemy SM (`D16`).
 
 Close the “one more run” loop.
 
-- [ ] RunState + score/kills; local best
-- [ ] HUD: Integrity / Shield / Energy (+ radio slot stub)
-- [ ] Title → Run → Result → Rankings flow · `SCENE-03` / `SCENE-04` (detail TBD)
-- [ ] Player DEAD → Result with summary
+- [ ] RunState + score/kills; `RankingManager` + `LocalRankingAdapter` · `RNK-01` (§2.10)
+- [ ] HUD: Integrity / Shield / Energy (+ radio slot stub); mode high-score strip · ranking-plan §5
+- [ ] Title → Run → Result → Rankings flow · `SCENE-03` / `SCENE-04` Rankings canvas · `RNK-04`
+- [ ] Player DEAD → Result with summary → `submitRun` when valid · `RNK-01`
+- [ ] UTC period buckets W/M/Y/E on client · `RNK-02`
 - [ ] Gate: Run unreachable without auth + Start preload complete · `SCENE-01` / `SCENE-02`
 - [ ] Pause already shipped in Theme **4b** (`SCENE-05`) — extend run-panel fields (`Q09`) here as systems land
 
-**Done when:** death returns a result screen and a new run starts clean.
+**Done when:** death returns a result screen, local Eternal best persists, and a new run starts clean.
 
 ---
 
@@ -244,8 +248,11 @@ Widen the gun fantasy after the loop is honest.
 
 Longer session systems (hub deferred prefixes).
 
-- [ ] Equipment items filling Generic/Effect slots (Reactive Panels, Deflectors, weapon mules, …)
-- [ ] CraftSlot (Lab/Converter): pause to choose, real-time build, 1 slot
+- [ ] Equip item schema: grants any registered `*_mod`/`*_mul` (`EQP-01` §4.7)
+- [ ] Contextual grants — e.g. `when: dashing` → `deflection_mod` (`EQP-02`)
+- [ ] `lab_craft_time_mod` / `lab_craft_time_mul` reduce craft duration (`EQP-03`)
+- [ ] Equipment items in Generic/Special slots (Reactive Panels, Deflectors, Dash coils, …)
+- [ ] CraftSlot (Lab Special): pause to choose, real-time build, 1 slot (`EQP-04`)
 - [ ] Repair consuming Metal Scrap
 - [ ] Skill / tech tree branches (Engineering · Power Flow · Weaponry)
 - [ ] Difficulty ramp + milestones 50 / 100 / 500
@@ -268,10 +275,21 @@ Longer session systems (hub deferred prefixes).
 
 ## Theme 14 — Modes, boards, ship (later)
 
-- [ ] Survivor mode (one-shot from scratch)
-- [ ] Weekly / Monthly / Annual / Eternal boards (UTC; modes never mix)
+- [ ] `AchievementManager` + virtual apiName port · `ACH-01`–`ACH-02` (§2.9)
+- [ ] `LocalAchievementAdapter` always on · `ACH-03`
+- [ ] `ItchAchievementAdapter` · `ACH-04`
+- [ ] `PokiAchievementAdapter` · `ACH-05`
+- [ ] Boot platform detect · `ACH-07`
+- [ ] `RankingManager` + publish adapters · `RNK-01`–`RNK-05` (§2.10 · §7.15)
+- [ ] `LocalRankingAdapter` always on · 8-board matrix · `RNK-01`–`RNK-02`
+- [ ] `ItchRankingAdapter` · `RNK-10`
+- [ ] `PokiRankingAdapter` · `RNK-11`
+- [ ] Survivor mode (one-shot, laser-only v1) · `RNK-03` · `Q11`
+- [ ] `SteamRankingAdapter` — 8 `LB_*` boards, KeepBest · `RNK-06`–`RNK-08`
+- [ ] Offline upload queue + sync · `RNK-07`
+- [ ] Cosmetic rank title/badge · `RNK-09` · `Q13`
 - [ ] Persistent remap + Steam Input (G3)
-- [ ] Achievements / cosmetics / faction reputation (no combat power on boards)
+- [ ] `SteamAchievementAdapter` · `ACH-06` · icons/copy · `ACH-08`–`ACH-09`
 - [ ] Narrative delivery: Bounty Board, AI narrator, sector bands, flavor text
 
 **Done when:** product gates G2/G3 items have a home; not required for first playable slice.

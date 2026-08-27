@@ -1,6 +1,6 @@
 ---
 description: POC3 multi-agent SDD+TDD — docs3 hub, CHAR/ENEMY/SQUAD, Orchestrator/Programming/Game Design/TDD
-globs: poc3/**/*,.docs3/**/*,.docs3/plans/planning.spec.MD,.docs3/todo.md
+globs: poc3/**/*,.docs3/**/*,.docs3/plans/**/*.spec.MD,.docs3/todo.md
 alwaysApply: true
 ---
 
@@ -12,9 +12,9 @@ POC-1 (`poc/`) and POC-2 (`poc2/`) are **frozen**. Do not edit them. Do not open
 
 Docs2 (`.docs2/`) is a **coverage checklist only** — not inherited architecture.
 
-## Hub summary (docs3 v0.1.0)
+## Hub summary (docs3 v0.3.0)
 
-English design source of truth. Key locks:
+English design source of truth — **index:** `.docs3/plans/planning.spec.MD` · **theme specs:** sibling `*.spec.MD` files in the same folder. Key locks:
 
 | Lock | Rule |
 |---|---|
@@ -26,9 +26,29 @@ English design source of truth. Key locks:
 | **Enemy SM** | `EnterGate` · `FindGroup` · `LoopBack` · `Flee` · `Fury` (`ENEMY-02`). |
 | **Squad** | 1–8 · formations `V`/`Circle`/`CircleII–IV`/`LineDivers` · independent squad SM (`SQUAD-*`). |
 | **Boot** | All flow scenes on the **shared canvas** (`D23`): Login → Start → Title → Run; Pause is a canvas UI layer (`SCENE-05`). |
-| **IDs** | `CHAR-` · `ENEMY-` · `SQUAD-` · `SCENE-` (stable). System classes: `*Manager` only (`D22`, hub §2.6). |
+| **IDs** | `CHAR-` · `ENEMY-` · `SQUAD-` · `SCENE-` · `CTRL-` · `RNK-` (stable). System classes: `*Manager` only (`D22`, hub §2.6). |
+| **Input** | Sim reads **virtual pad only** (`D27`, `CTRL-01`); four input scheme adapters (§2.8). |
+| **Achievements** | Gameplay calls **apiName only** via `AchievementManager`; **Local** always + one platform adapter (Itch · Poki · Steam) per boot (`D28`, §2.9). |
+| **Equipment** | Items grant only registered **`*_mod`/`*_mul`** (+ optional `when` context); includes lab craft time (`D29`, §4.7). |
+| **Rankings** | `RankingManager.submitRun` only; **Local** 8-board UTC bests always + one upload adapter (Itch · Poki · Steam) per boot (`D30`, §2.10). Modes never mix. |
 
-Full decisions: hub §3 (`D01`–`D18`). Requirement index: hub §7.
+Full decisions: [`decisions.spec.MD`](.docs3/plans/decisions.spec.MD) (`D01`–`D30`). Requirement IDs: theme files under `.docs3/plans/`.
+
+## Grep tags (`D25`/`D26`, hub §2.7)
+
+Matrix: `.docs3/tags/matrix.json` · validate: `python .docs3/scripts/validate_tags.py validate`
+
+| Prefix | Role | RESUME |
+|---|---|---|
+| `tag_g_<domain>` | General parent | Required on scoped sections |
+| `tag_s_<domain>_<topic>` | Specific leaf | Never — must belong to a `tag_g_*` in matrix |
+
+**New content:** reuse existing `tag_s_*` or extend matrix first (`D26`).
+
+```bash
+python .docs3/scripts/validate_tags.py rg tag_g_combat   # domain grep one-liner
+rg tag_s_combat_damage_apply .docs3 poc3
+```
 
 ## Agents (disjoint ownership)
 
@@ -54,6 +74,7 @@ A spec with an empty agent section is incomplete. `N/A` is allowed; blank is not
 ## Implementation gates
 
 - Spec before code. Tests before implementation.
+- **Grep tags (`D25`/`D26`):** `tag_g_*` + RESUME; `tag_s_*` without RESUME; matrix in `.docs3/tags/matrix.json`; validate before mark-done.
 - `interface` + `class`, one public class per `kebab-case.ts`. Domain owners use `*Manager` — never `*Controller` or `*Resolver` (`D22`).
 - `update(dt)` = logic; `syncRender()` = transforms/opacity/material only.
 - Gameplay numbers only in `BALANCE`. Frame code must not recompute Full Sheet math.

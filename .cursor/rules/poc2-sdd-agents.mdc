@@ -12,7 +12,7 @@ POC-1 (`poc/`) and POC-2 (`poc2/`) are **frozen**. Do not edit them. Do not open
 
 Docs2 (`.docs2/`) is a **coverage checklist only** — not inherited architecture.
 
-## Hub summary (docs3 v0.3.12)
+## Hub summary (docs3 v0.3.17)
 
 English design source of truth — **index:** `.docs3/plans/planning.spec.MD` · **theme specs:** sibling `*.spec.MD` files in the same folder. Key locks:
 
@@ -26,8 +26,12 @@ English design source of truth — **index:** `.docs3/plans/planning.spec.MD` ·
 | **Classes** | **Tanker** · Warrior · Rogue (+ Special). Docs2 “Tank” = Tanker. |
 | **Enemy SM** | `EnterGate` · `FindGroup` · `LoopBack` · `Flee` · `Fury` (`ENEMY-02`). |
 | **Squad** | 1–8 · formations `V`/`Circle`/`CircleII–IV`/`LineDivers` · independent squad SM (`SQUAD-*`). |
-| **Boot** | All flow scenes on the **shared canvas** (`D23`): Login → Start → Title → Run; Pause is a canvas UI layer (`SCENE-05`). |
-| **IDs** | `CHAR-` · `ENEMY-` · `SQUAD-` · `SCENE-` · `CTRL-` · `RES-` · `RNK-` · `STR-` · `BLD-` · `ARCH-` (stable). System classes: `*Manager` only (`D22`). |
+| **Boot** | HTML **Login** → canvas **Start/Title/Run**; HTML **Result/Rankings** post-run; Pause canvas overlay; Store DOM tab |
+| **IDs** | `CHAR-` · `ENEMY-` · `SQUAD-` · `SCENE-` · `CAM-` · `WPN-` · `MET-` · `HUD-` · `AUTH-` · `DEV-` · `CTRL-` · `RES-` · `RNK-` · `STR-` · `BLD-` · `ARCH-` · `RUL-02` (stable). System classes: `*Manager` only (`D22`). |
+| **World** | Landscape 16:9 + letterbox (`D44`); follow box + **Free Cam** (`CAM-06`) + 3-layer parallax; off-field despawn (`RUL-02`, [`world.spec.MD`](.docs3/plans/world.spec.MD)). |
+| **Weapons** | Theme 5 Laser pool (`WPN-01`/`02`/`05`); Theme 11 catalog + ordnance (`WPN-03`/`04`/`06`, [`weapons.spec.MD`](.docs3/plans/weapons.spec.MD)). |
+| **Meteors** | Pooled S/M/L through `MeteorManager` (`MET-*`, [`meteors.spec.MD`](.docs3/plans/meteors.spec.MD)). Docs2 `RUL-04` = pause (`SCENE-05`), not asteroids. |
+| **HUD** | Canvas overlay on Run (`D45`); Integrity/Shield/Energy from Summary (`HUD-*`, [`hud.spec.MD`](.docs3/plans/hud.spec.MD)). |
 | **Input** | Sim reads **virtual pad only** (`D27`, `CTRL-01`); four scheme adapters ([`input.spec.MD`](.docs3/plans/input.spec.MD)). |
 | **Achievements** | Gameplay calls **apiName only** via `AchievementManager`; **Local** always (Dexie) + one platform adapter per boot (`D28`/`D39`). |
 | **Equipment** | Items grant only registered **`*_mod`/`*_mul`** (+ optional `when` context); lab craft time modifiers (`D29`). |
@@ -39,7 +43,7 @@ English design source of truth — **index:** `.docs3/plans/planning.spec.MD` ·
 | **DemoHost** | Caddy → Node (`demo-host/`) static + `/api` + SQLite; Google OAuth; CSRF + Zod validation (`D38`, [`architecture.spec.MD`](.docs3/plans/architecture.spec.MD)). |
 | **Rankings** | `RankingManager` platform-blind; **one** `RankingPlatformAdapter` per build; Demo = `DemoRankingAdapter` (`D30`/`D38`); Local always mirrors (Dexie / disk). |
 
-Full decisions: [`decisions.spec.MD`](.docs3/plans/decisions.spec.MD) (`D01`–`D40`). Requirement IDs: theme files under `.docs3/plans/`.
+Full decisions: [`decisions.spec.MD`](.docs3/plans/decisions.spec.MD) (`D01`–`D45`). Requirement IDs: theme files under `.docs3/plans/`.
 
 ## Grep tags (`D25`/`D26`, hub §2.7)
 
@@ -66,7 +70,7 @@ rg tag_s_combat_damage_apply .docs3 poc3
 | **Game Design** | BALANCE / feel / leveling / graphics | `BALANCE` numbers, palette, cadence | class shape, tests, literals outside BALANCE |
 | **TDD** | Acceptance cases | `{subject}.test.ts` written **red** first; runs `npm run test` | production implementation |
 
-Template (when specs exist): `.docs3/specs/_template.spec.ts`. Until then, Orchestrator still owns order and DoD from this rule + hub.
+Template (when specs exist): `.docs3/specs/_templete-spec.spec.MD` → copy to `<domain>/<ID>.spec.ts` (see `.docs3/specs/README.MD` §3.1). Until then, Orchestrator still owns order and DoD from this rule + hub.
 
 ## Order on every card
 

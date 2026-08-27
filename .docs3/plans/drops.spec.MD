@@ -90,7 +90,7 @@ RESUME: Drop extends THREE.Mesh — activate/deactivate from ObjectPool; off-fie
 | `update(dt)` | Magnet pull or idle drift; no `new Vector3` |
 | `syncRender()` | Position / opacity / visible only |
 | `deactivate` | Return to pool |
-| Off-field | Outside despawn box → recycle (`RUL-02` adjacency) |
+| Off-field | Outside despawn box → recycle ([`world.spec.MD`](./world.spec.MD) `RUL-02`) |
 | `liveCount` | Always ≤ `BALANCE.drops.poolSize` |
 
 ---

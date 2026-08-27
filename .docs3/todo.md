@@ -9,42 +9,45 @@
 >
 > Hard runtime rule: **Summary Sheet only** per frame (`D07`). Full Sheet recalc is event-driven (`CHAR-05`).
 > **Naming (`D22`):** domain owners are `*Manager` only — never `*Controller` / `*Resolver` (see hub §2.6).
-> **Scenes (`D23`):** Login · Start · Title · Run · Result · Rankings · Pause all render in the **shared canvas**.
+> **Scenes (`D23`):** **Login** is HTML/CSS shell (`D41`); **Start · Title · Run · Result · Rankings · Pause** render in the **shared canvas**. **Store** is also DOM (`D34`).
 
 ---
 
 ## Theme 0 — Project scaffold
 
-Stand up the playable shell before any gameplay systems. **All scene-flow screens render in the shared canvas** (`D23`). Stack authority: [`architecture.spec.MD`](./plans/architecture.spec.MD) (`D38`).
+Stand up the playable shell before any gameplay systems. **Login** = HTML shell (`D41`); **Start through Pause** = shared canvas (`D23`). Stack authority: [`architecture.spec.MD`](./plans/architecture.spec.MD) (`D38`) · [`login.spec.MD`](./plans/login.spec.MD).
 
 - [ ] Scaffold `poc3/`: Vite + TypeScript + eslint + vitest + **dexie**, folder tree per `D40` (`core` · `systems` · `gameobjects` · `scenes` · `render` · `ui` · `pools` · `platform` · `persist`)
 - [ ] **Core/View split (`D40`):** `GameLoop` fixed tick + `WorldSnapshot`; Input → Commands; View `syncRender` on rAF
 - [ ] **Golden Rule guardrails (`ARCH-16`/`ARCH-20`):** merge [`.docs3/templates/eslint-sim-boundary.snippet.js`](./templates/eslint-sim-boundary.snippet.js) into `poc3/eslint.config.js`
 - [ ] Lint/grep gate: `npm run verify` fails on `three`/`window`/`document`/`render/` imports under `core/` · `systems/` · `gameobjects/`
-- [ ] Shared WebGL / Three.js canvas + `SceneManager` (dispose outgoing → mount next) — Login through Pause all on canvas
+- [ ] Game shell layout: `#login-root` (DOM) + shared WebGL canvas + `#store-root` stub (DOM) · `D41`/`D34`
+- [ ] Shared WebGL / Three.js canvas + `SceneManager` (dispose outgoing → mount next) — **Start through Pause** on canvas
 - [ ] Optional DEV chrome (`debugger-area`) may stay DOM; **game scenes do not**
 - [ ] Dexie DB schema stub for Local ACH / RNK mirrors / store cache · `D39` · `ARCH-08`
 - [ ] `npm run verify` (typecheck + lint + test) green on empty/smoke suite
-- [ ] Specs folder + `_template.spec.ts` under `.docs3/specs/` (multi-agent sections)
+- [ ] Specs folder + [`_templete-spec.spec.MD`](./specs/_templete-spec.spec.MD) under `.docs3/specs/` (see [`specs/README.MD`](./specs/README.MD) §3.1)
 - [ ] Scaffold sibling `demo-host/` (Node + Hono + SQLite stubs) — not imported by itch/poki/steam · `ARCH-02`
 
 **Done when:** `poc3` boots a canvas and can swap canvas scenes without leaking GPU/listeners.
 
 ---
 
-## Theme 0b — Login scene (auth gate)
+## Theme 0b — Login (auth gate)
 
-Hub §2.5 · §7.5 · `SCENE-01` · `D19` · `D23` · `D38`.
+[`login.spec.MD`](./plans/login.spec.MD) · `SCENE-01` · `AUTH-*` · `D19` · `D41` · `D38`.
 
-- [ ] `LoginScene` **on canvas**: username + password + **Sign in** (canvas UI / CSS2D OK)
-- [ ] Password path: mock auth — **always succeeds** when both fields non-empty → **Start**
-- [ ] **Continue with Google**: open OAuth via DemoHost (`/api/auth/google/start`); game canvas stays on Login
-- [ ] Google callback on DemoHost sets httpOnly session → client `GET /api/me` → `AuthSession` → **Start**
-- [ ] Persist/restore session via cookie + `/api/me` so cold boot can **skip Login** (`Q06` / `D38`)
-- [ ] Boot: no session → Login; session ok → Start (no Login flash)
-- [ ] Spec + tests · `SCENE-01` · `ARCH-05`
+- [ ] `#login-root` HTML/CSS panel + `LoginUIBridge` (mirror Store bridge pattern · `D34`)
+- [ ] `AuthManager` + `setPlatformAdapter` — platform-blind authority
+- [ ] `DemoAuthAdapter` → DemoHost `/api/auth/*` + `/api/me` (`ARCH-05`)
+- [ ] Password path: mock auth — **always succeeds** when both fields non-empty → hide Login → **Start**
+- [ ] **Continue with Google**: `window.open` OAuth URL; shell stays on Login until `probeSession()` ok
+- [ ] Persist/restore session via cookie + `/api/me` so cold boot **skips Login** (`Q06` / `D38`)
+- [ ] Boot: no session → show `#login-root`; session ok → hide Login → Start (no flash)
+- [ ] CSS states: `.login--busy` · `.login--error` · `AUTH-08`
+- [ ] Spec + tests · `SCENE-01` · `AUTH-01`–`10` · `ARCH-05`
 
-**Done when:** Google auth → Start on canvas; returning player skips Login on Demo HTTPS origin.
+**Done when:** Google auth → Start; returning player skips Login on Demo HTTPS origin; no canvas Login scene.
 
 ---
 
@@ -63,6 +66,24 @@ Hub §2.5 · §7.6 · `SCENE-02` · `D20` · `D23`. Cockpit art, centered Start,
 - [ ] Spec + tests · `SCENE-02`
 
 **Done when:** cockpit Start warms critical assets; `welcome_screen_ready` fires once at ready; Start enters Title without a spinner scene.
+
+---
+
+## Theme 0d — Dev content CRUD (`/dev/*`)
+
+[`dev-tools.spec.MD`](./plans/dev-tools.spec.MD) · `DEV-*` · `D43` · `BLD-05`.
+
+- [ ] SPA routes **`/dev/special-equips`** · **`/dev/generic-equips`** · **`/dev/buffs`** · **`/dev/enemies`** · **`/dev/squads`** (+ optional `/dev` index)
+- [ ] `#dev-crud-root` shared HTML/CSS chrome + `DevCrudBridge` (mirror Login/Store pattern)
+- [ ] `DevContentManager` — filter · list · create · update · delete per entity kind
+- [ ] `DevContentStore` (Dexie) — **separate** from player profile persist (`D39`)
+- [ ] PROD build: routes unreachable / bundle stripped (`BLD-05`)
+- [ ] Enemy form: class + strategy defaults (`ENEMY-01`/`ENEMY-03`) · Squad: formation + 1–8 members (`SQUAD-01`)
+- [ ] Special equip: 12 Special slot enum (`CHAR-01`) · Generic/Buff grants stub until interfaces locked (`DEV-10`)
+- [ ] `exportAll()` → content JSON for game boot (`DEV-06`)
+- [ ] Spec + tests · `DEV-01`–`05` minimum
+
+**Done when:** DEV build CRUDs enemies and squads in Dexie; export produces loadable JSON; PROD has no `/dev` routes.
 
 ---
 
@@ -85,15 +106,17 @@ Numbers, time, input, memory — nothing allocates per frame on hot paths.
 
 ## Theme 2 — World presentation
 
-Camera and space before the ship has meaning.
+Camera and space before the ship has meaning. Hub [`world.spec.MD`](./plans/world.spec.MD) · `CAM-01`–`06` · `RUL-02` · `D44`.
 
-- [ ] Landscape 9:16 renderer + letterbox + relative paths (change Portraitfrom the .docs2)
-- [ ] Perspective camera (readable top / side / thrusters)
-- [ ] Limit / follow box (dead-zone, bounce, recenter)
-- [ ] 3 Parallax field (distinct layer speeds)
-- [ ] Dev gizmos (toggle; DEV-only)
+- [ ] Landscape **16:9** renderer + letterbox + relative paths (`CAM-01` · `D44` · `Q43`)
+- [ ] Perspective camera (readable top / side / thrusters) · `CAM-02`
+- [ ] Limit / follow box (dead-zone, bounce, recenter) · `CAM-03`
+- [ ] 3 Parallax field (distinct layer speeds) · `CAM-04`
+- [ ] Playfield bounds + off-area despawn (shots/meteors/drops/enemies recycle) · `RUL-02`
+- [ ] Dev gizmos (toggle; DEV-only) · `CAM-05`
+- [ ] **Free Cam** (Pause → Graphics toggle): unlock follow box in live Run **and** while paused; IJKL/UO fly · `CAM-06`
 
-**Done when:** empty craft (or placeholder mesh) reads clearly in motion against parallax.
+**Done when:** empty craft (or placeholder mesh) reads clearly in motion against parallax; off-field entities recycle.
 
 ---
 
@@ -139,7 +162,7 @@ Hub §2.5 · §7.7 · `SCENE-05` · `D21` · `D23`. Ship as soon as Run renders 
 - [ ] Run panel: **Lab** craft UI (stubs OK)
 - [ ] Right rail: **Controls** → scheme picker + physical→virtual remap (`InputManager`, §2.8)
 - [ ] Right rail: **Audio** → `SoundManager`: music · SFX · mute · mute ship AI · Show Audio as Text Log
-- [ ] Right rail: **Graphics** → screen size + TBD graphics rows (`Q10`)
+- [ ] Right rail: **Graphics** → screen size + **Free Cam** (`CAM-06`) + further rows (`Q10`)
 - [ ] Right rail: **Dev** (DEV only) → live Balancer editors with **inner tabs** by domain
 - [ ] Resume / unpause: same pose, no dt catch-up; pause UI `dispose` does not tear down Run
 - [ ] Spec + tests · `SCENE-05`
@@ -150,14 +173,15 @@ Hub §2.5 · §7.7 · `SCENE-05` · `D21` · `D23`. Ship as soon as Run renders 
 
 ## Theme 5 — Combat loop (shoot & resolve)
 
-Vertical slice: fire → hit → shield/hull risk.
+Vertical slice: fire → hit → shield/hull risk. Hub [`weapons.spec.MD`](./plans/weapons.spec.MD) · `WPN-01` · `WPN-02` · `WPN-05` · `CHAR-06`.
 
-- [ ] Pooled player shots + `ShotManager`
-- [ ] Primary weapon (Laser) via `Primary_Weapon` slot; cadence from `S_R`, damage from `S_D`
-- [ ] `FiringManager`: virtual `A`/`B`/`X`/`Y` → fire / bomb / switch weapon / switch bomb; energy gate
-- [ ] `CollisionManager` (layer matrix is data · `D14`)
-- [ ] `DamageManager` sole `applyDamage` path · `CHAR-06`
+- [ ] Pooled player shots + `ShotManager` · `WPN-01`
+- [ ] Primary weapon (Laser) via `Primary_Weapon` slot; cadence from `S_R`, damage from `S_D` · `WPN-01`
+- [ ] `FiringManager`: virtual `A`/`B`/`X`/`Y` → fire / bomb / switch weapon / switch bomb; energy gate · `WPN-05` (`B`/`X`/`Y` may no-op until Theme 11)
+- [ ] `CollisionManager` (layer matrix is data · `D14`) · `WPN-02`
+- [ ] `DamageManager` sole `applyDamage` path · `CHAR-06` · `WPN-02`
 - [ ] Player DEAD ends the run (hook for Theme 10)
+- [ ] Off-field shot recycle · `RUL-02`
 
 **Done when:** holding fire drains `ENE`, bolts hit, shield drains before integrity, DRIFTING→DEAD works in play.
 
@@ -165,13 +189,13 @@ Vertical slice: fire → hit → shield/hull risk.
 
 ## Theme 6 — Environmental pressure (meteors)
 
-Obstacles before smart enemies.
+Obstacles before smart enemies. Hub [`meteors.spec.MD`](./plans/meteors.spec.MD) · `MET-01`–`04` · `RUL-02`.
 
-- [ ] Meteor objects (S/M/L), pooled, layer `Meteor`
-- [ ] `MeteorManager` spawn / drift / despawn
-- [ ] Shot damage + contact damage through `DamageManager`
-- [ ] Optional split on large destroy
-- [ ] Basic pooled destruction VFX
+- [ ] Meteor objects (S/M/L), pooled, layer `Meteor` · `MET-01`
+- [ ] `MeteorManager` spawn / drift / despawn · `MET-02`
+- [ ] Shot damage + contact damage through `DamageManager` · `MET-03`
+- [ ] Optional split on large destroy · `MET-04`
+- [ ] Basic pooled destruction VFX · `MET-05` (Theme 13 juice OK as stub)
 
 **Done when:** meteors occupy lanes, can be shot or dodged, and contact hurts the craft.
 
@@ -226,7 +250,7 @@ Hub §6 · `SQUAD-01`…`SQUAD-04`. Independent from enemy SM (`D16`).
 Close the “one more run” loop.
 
 - [ ] RunState + score/kills; `RankingManager` + `LocalRankingAdapter` · `RNK-01` (§2.10)
-- [ ] HUD: Integrity / Shield / Energy (+ radio slot stub); mode high-score strip · ranking-plan §5
+- [ ] HUD: Integrity / Shield / Energy (+ radio slot stub); mode high-score strip · `HUD-01`–`04` ([`hud.spec.MD`](./plans/hud.spec.MD))
 - [ ] Title → Run → Result → Rankings flow · `SCENE-03` / `SCENE-04` Rankings canvas · `RNK-04`
 - [ ] Player DEAD → Result with summary → `submitRun` when valid · `RNK-01`
 - [ ] UTC period buckets W/M/Y/E on client · `RNK-02`
@@ -239,12 +263,12 @@ Close the “one more run” loop.
 
 ## Theme 11 — Weapon & ordnance variety
 
-Widen the gun fantasy after the loop is honest.
+Widen the gun fantasy after the loop is honest. Hub [`weapons.spec.MD`](./plans/weapons.spec.MD) · `WPN-03`–`06`.
 
-- [ ] Secondary weapon slot + switch
-- [ ] Plasma / Beam / Mjolnir (distinct profiles; Summary-fed)
-- [ ] Special Ordnance (Bomb slot): Pulse Nova · Swarm · Star Killer (charges)
-- [ ] Energy costs distinct per weapon
+- [ ] Secondary weapon slot + switch · `WPN-03`
+- [ ] Plasma / Beam / Mjolnir (distinct profiles; Summary-fed) · `WPN-04`
+- [ ] Special Ordnance (Bomb slot): Pulse Nova · Swarm · Star Killer (charges) · `WPN-06`
+- [ ] Energy costs distinct per weapon · `WPN-05`
 
 **Done when:** cycling weapons changes play pattern; bomb has limited charges.
 
@@ -284,7 +308,7 @@ Hub [`builds.spec.MD`](./plans/builds.spec.MD) · [`architecture.spec.MD`](./pla
 - [ ] Manual deploy: rsync `dist-demo/` + restart Node · Litestream/cron backup · `ARCH-06`/`ARCH-15` · `Q33`
 - [ ] Steam shell (**Tauri**) + `@tauri-apps/plugin-fs` JSON saves + Cloud · `BLD-11` · `ARCH-09` · `D39`
 - [ ] Itch zip `dist-itch/` · Poki `dist-poki/` (Poki SDK cloud save) · Steam `dist-steam/` · `BLD-03` · `BLD-09`/`BLD-10`
-- [ ] Production strip Dev rail + debug camera · `BLD-05`
+- [ ] Production strip Dev rail + DEV debug camera · `BLD-05` (keep Graphics **Free Cam**)
 - [ ] Worst-case frame stability (Mega + full wave)
 - [ ] (defer) GitHub Action SSH deploy · `ARCH-07`
 

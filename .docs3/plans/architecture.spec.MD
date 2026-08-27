@@ -5,7 +5,7 @@ RESUME: Demo-first stack — Sim-first Core/View (`D40`); per-platform SDK persi
 
 **Hub index:** [`planning.spec.MD`](./planning.spec.MD) · **Hub version:** 0.3.12
 
-**Related:** [`builds.spec.MD`](./builds.spec.MD) (`D37`) · [`store.spec.MD`](./store.spec.MD) (`D36`/`D38`/`D39`) · [`rankings.spec.MD`](./rankings.spec.MD) (`D30`/`D38`) · [`scenes.spec.MD`](./scenes.spec.MD) (`SCENE-01`) · [`input.spec.MD`](./input.spec.MD) (`D27`/`D40`) · [`decisions.spec.MD`](./decisions.spec.MD) (`D38`–`D40`)
+**Related:** [`builds.spec.MD`](./builds.spec.MD) (`D37`) · [`login.spec.MD`](./login.spec.MD) (`D41`) · [`store.spec.MD`](./store.spec.MD) (`D36`/`D38`/`D39`) · [`rankings.spec.MD`](./rankings.spec.MD) (`D30`/`D38`) · [`scenes.spec.MD`](./scenes.spec.MD) (`SCENE-01`) · [`input.spec.MD`](./input.spec.MD) (`D27`/`D40`) · [`decisions.spec.MD`](./decisions.spec.MD) (`D38`–`D41`)
 
 ---
 
@@ -70,7 +70,7 @@ RESUME: Default dev rule — pure fixed-tick Core owns all game truth; Presentat
 | `pools/` | Sim (+ View alloc) | Sim-side object pools; View mesh pools live under `render/` |
 | `render/` | View | Three.js meshes, `syncRender(snapshot, alpha)`, camera |
 | `scenes/` | Bridge | Scene lifecycle — mounts View, wires Core tick subscription; flow UI may use CSS2D |
-| `ui/` | View / shell | DOM store bridge, DEV chrome — not sim authority |
+| `ui/` | View / shell | DOM bridges (Login, Store, Result, Rankings) · **`/dev/*` CRUD** (DEV-only) — not sim authority |
 | `platform/` | Boot | PlatformKit — outside hot tick |
 | `persist/` | I/O | Dexie / adapters — never on sim hot path (`D39`) |
 
@@ -302,7 +302,7 @@ poc3/
     persist/
 ```
 
-Dev rail / Balancer / debug camera compile out when `import.meta.env.PROD` (`BLD-05`).
+Dev rail / Balancer / DEV-only debug camera (IJKL with Free Cam **off**) compile out when `import.meta.env.PROD` (`BLD-05`). Product **Free Cam** (`CAM-06`) is a Graphics option and **is not** stripped.
 
 ---
 

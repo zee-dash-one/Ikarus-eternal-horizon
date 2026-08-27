@@ -50,7 +50,8 @@ No other symbols exist at the gameplay boundary (`D27`).
 
 - **One scheme active at a time** (`D27`). Player picks scheme on Pause → **Controls** tab (`D21`).
 - **Remap** edits `BALANCE.controls.{keyboard,mix,gamepad,touch}` — tables map **physical → virtual** tokens only.
-- **Debug camera** (IJKL/UO) stays a dev-only path outside the virtual pad (does not ship in production builds).
+- **Free Cam** (`CAM-06`): when Pause → Graphics → **Free Cam** is on, physical **IJKL/UO** fly the camera (outside the virtual pad). Ship still uses pad tokens. Keys do nothing when the option is off in PROD.
+- **DEV debug camera** without the option stays DEV-only and is stripped in production (`BLD-05`) — do not confuse with product Free Cam.
 
 #### `InputManager` contract (sketch)
 

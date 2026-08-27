@@ -150,16 +150,16 @@ setPlatformAdapter(adapter)  // boot only — D30 / D37
 dispose()
 ```
 
-#### Rankings scene (`SCENE-04` partial)
+#### Rankings panel (`SCENE-04` partial · `D42`)
 
-Canvas UI (`D23`): **Normal | Survivor** tabs → **Weekly | Monthly | Annual | Eternal**. Shows local bests first; Steam Global/Friends/Around when `SteamRankingAdapter` active. Period rollover → brief reset notice. Top ranks may grant **cosmetic** title/badge only — no combat power (`RNK-09`).
+**DOM shell** (`#rankings-root`) — same HTML/CSS + JS Bridge stack as Login/Store. **Not** a canvas scene. `RankingsUIBridge` ↔ `RankingManager`. **Normal | Survivor** tabs → **Weekly | Monthly | Annual | Eternal**. Shows local bests first; Steam Global/Friends/Around when `SteamRankingAdapter` active. Period rollover → brief reset notice. Top ranks may grant **cosmetic** title/badge only — no combat power (`RNK-09`).
 
 ---
 
 ## Requirements & Survivor (`RNK-`)
 
 tag_g_rankings tag_s_rankings_board_matrix tag_s_rankings_survivor_mode
-RESUME: Eight UTC leaderboards (Normal/Survivor × W/M/Y/E), Local persistence, platform upload adapters, Rankings canvas scene.
+RESUME: Eight UTC leaderboards (Normal/Survivor × W/M/Y/E), Local persistence, platform upload adapters, Rankings DOM panel.
 
 Source satellite: `[../../.docs2/plans-later/ranking-plan.spec.MD](../../.docs2/plans-later/ranking-plan.spec.MD)`.
 
@@ -195,7 +195,7 @@ Source satellite: `[../../.docs2/plans-later/ranking-plan.spec.MD](../../.docs2/
 | `RNK-01` | must | Local bests — Normal Eternal minimum (`LocalRankingAdapter`) | Survives reload |
 | `RNK-02` | should | UTC window calc W/M/Y on client | Weekly board resets on Monday UTC |
 | `RNK-03` | defer | Survivor mode playable per table above | Zero loadout, laser only, one-shot |
-| `RNK-04` | should | Rankings canvas UI: 2 modes × 4 periods | Tabs show separated local bests |
+| `RNK-04` | should | Rankings **DOM** UI: 2 modes × 4 periods (`#rankings-root`, `D42`) | Tabs show separated local bests |
 | `RNK-05` | must | Modes never mix on a board | Survivor score never listed under Normal |
 | `RNK-06` | defer | `SteamRankingAdapter` — 8 boards, KeepBest | Score on correct `LB_*` board |
 | `RNK-07` | defer | Offline upload queue + sync | Queued score uploads on reconnect |

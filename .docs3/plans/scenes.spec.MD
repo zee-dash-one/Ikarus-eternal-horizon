@@ -1,9 +1,9 @@
 # Ikarus Eternal Horizon — Scenes & Boot Flow
 
 tag_g_scene_flow tag_s_scene_canvas_render tag_g_assets tag_g_audio tag_g_run_meta
-RESUME: Canvas-rendered Login → Start → Title → Run → Result → Rankings; Pause overlay on Run; SCENE-01/02/05 detail.
+RESUME: HTML Login → canvas Start/Title/Run; HTML Result/Rankings; Pause overlay on Run; SCENE-01/02/03/04/05 detail.
 
-**Hub index:** [`planning.spec.MD`](./planning.spec.MD) · **Hub version:** 0.3.0
+**Hub index:** [`planning.spec.MD`](./planning.spec.MD) · **Hub version:** 0.3.14
 
 ---
 
@@ -15,46 +15,39 @@ RESUME: Canvas-rendered Login → Start → Title → Run → Result → Ranking
 | ---------- | ------ | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
 | `SCENE-01` | must   | Login scene; skip when `AuthSession` exists; Google new-tab; mock password always succeeds            | Auth → **Start**; skip path boots straight to Start                |
 | `SCENE-02` | must   | Start: cockpit art + centered Start; preload; on critical ready fire `welcome_screen_ready` (mock OK) | Cue fires once at ready; Start unlocks audio if needed; then Title |
-| `SCENE-03` | should | Title scene (main menu)                                                                               | Deferred detail — entered from Start                               |
-| `SCENE-04` | should | Run / Result / Rankings                                                                               | Run deferred · **Rankings** [`rankings.spec.MD`](./rankings.spec.MD) (`RNK-04`)                      |
+| `SCENE-03` | should | Title scene (main menu)                                                                               | Canvas hub — entered from Start; Store tab is DOM (`D34`)                          |
+| `SCENE-04` | should | **Title → Run** (canvas) · **Result → Rankings** (DOM)                                                  | Run on canvas · Result/Rankings HTML/CSS + JS Bridge — [`rankings.spec.MD`](./rankings.spec.MD) (`RNK-04`) |
 | `SCENE-05` | must   | Pause overlay: freeze time; run panel + Controls / Audio / Graphics / Dev tabs                        | Opens once Run shows player ship + parallax; sim frozen while open |
 
 
-## Login scene (`SCENE-01`)
+## Login gate (`SCENE-01`)
 
-tag_s_scene_login_auth tag_s_scene_canvas_render
+tag_s_scene_login_auth tag_s_scene_login_ui
+RESUME: Auth gate before canvas Start — HTML/CSS shell + JS Bridge; detail in [`login.spec.MD`](./login.spec.MD).
 
-**Kind:** **Canvas** scene (`D23`). Shared Three.js / WebGL view — no full-page HTML shell.
+**Kind:** **DOM shell panel** (`D41`) — same HTML/CSS + JS Bridge stack as the Store tab (`D34`). **Not** a canvas scene.
 
 #### Boot
 
-- If a valid `AuthSession` exists → **do not show Login**; `SceneManager` mounts **Start** (`D19`).
-- Otherwise Login is the first user-facing scene.
+- If a valid `AuthSession` exists → **hide** `#login-root`; `SceneManager` mounts **Start** (`D19`).
+- Otherwise `#login-root` is the first user-facing chrome (canvas hidden or idle backdrop).
 
-#### UI
+#### Flow (summary)
 
+| Step | Behaviour |
+| --- | --- |
+| Probe | `AuthManager.probeSession()` on boot |
+| Skip | Session ok → Start directly (Login flash ≤1 frame) |
+| Show | No session → `#login-root` visible |
+| Sign in | Mock password or Google OAuth → **Start** on success |
 
-| Control                         | Behaviour                                                                                                                          |
-| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| **Username** field              | Text input; required for password path                                                                                             |
-| **Password** field              | Masked input; required for password path                                                                                           |
-| **Sign in** (username/password) | Mock auth (`D19`) — **always succeeds** when both fields are non-empty. On success → **Start**                                     |
-| **Continue with Google**        | Opens Google login / OAuth URL in a **new browser tab**. Game tab stays on Login until session is marked authenticated → **Start** |
-
-
-#### Rules
-
-- Failed UI validation stays on Login.
-- Password path never talks to a real backend this phase.
-- Google path must not replace the game document in the same tab.
-- Persist or restore `AuthSession { provider: 'password' \| 'google', displayName }` so the next cold boot can skip Login (`Q06`).
-- `dispose()` removes listeners and DOM owned by the scene.
+Full UI controls, adapter matrix, bridge contract, and `AUTH-*` requirements: [`login.spec.MD`](./login.spec.MD).
 
 #### Acceptance
 
 - Cold boot with session → Start (Login never flashes, or flashes ≤1 frame).
-- Cold boot without session → Login; mock Sign in → Start.
-- Google button opens a new tab; game tab stays put until authenticated.
+- Cold boot without session → Login DOM; mock Sign in → Start.
+- Google button opens a new tab; game shell stays on Login until session probe succeeds.
 
 ## Start scene (`SCENE-02`)
 
@@ -122,6 +115,69 @@ When `criticalReady` becomes true **once** per Start visit:
 - If audio was locked, Start click plays the queued welcome (still a single logical fire) then can go to Title.
 - Second boot with session skips Login and lands on Start with cache reuse when possible.
 
+## Title & Run (`SCENE-03` / `SCENE-04` — canvas)
+
+tag_g_scene_flow tag_s_scene_title_menu tag_s_scene_run_gameplay tag_s_scene_canvas_render
+RESUME: **Title** and **Run** are the only post-Start **canvas scene swaps** — shared WebGL view (`D23`).
+
+| Scene | Kind | Role |
+| --- | --- | --- |
+| **Title** | Canvas | Main menu / hub entry from Start (`SCENE-03`) — gameplay CTA mounts **Run** |
+| **Run** | Canvas | Active gameplay loop — player ship, combat, parallax (`SCENE-04`) |
+
+#### Rules
+
+- **Title** and **Run** mount/dispose via `SceneManager` on the shared canvas — same lifecycle as Start.
+- **Store** tab on Title is **DOM** (`#store-root`, `D34`) — not a canvas scene swap.
+- Leaving **Run** on player **DEAD** does **not** mount a canvas Result — hide canvas or dim it and show **`#result-root`** (DOM).
+- From Result, **Rankings** is **`#rankings-root`** (DOM) — not a canvas scene.
+- Returning to hub after Rankings remounts canvas **Title** (or Start on full cold boot per session rules).
+
+#### Acceptance (canvas portion)
+
+- Start → Title → Run transitions stay on the shared WebGL canvas without full-page reload.
+- Run dispose on death tears down gameplay graph; Result DOM takes focus without leaking Run listeners.
+
+## Result & Rankings (`SCENE-04` — DOM)
+
+tag_g_run_meta tag_s_run_result_screen tag_s_scene_result_ui tag_s_scene_rankings_ui
+RESUME: End-of-run **Result** and post-run **Rankings** are HTML/CSS shell panels — same JS Bridge pattern as Login/Store (`D34`/`D41`/`D42`).
+
+| Panel | Root id | Authority | Bridge |
+| --- | --- | --- | --- |
+| **Result** | `#result-root` | `RunResultManager` (run summary, scrap transfer hook) | `ResultUIBridge` |
+| **Rankings** | `#rankings-root` | `RankingManager` | `RankingsUIBridge` |
+
+Detail for Rankings tabs, boards, adapters: [`rankings.spec.MD`](./rankings.spec.MD) · `RNK-04`.
+
+#### Result flow (summary)
+
+```text
+Run (canvas) — player DEAD
+      │
+      ▼
+RunResultManager.finalizeRun() → submitRun when valid (RNK)
+      │
+      ▼
+show #result-root — elapsed · kills · score · scrap summary
+      │
+      ├─ Accept / Continue → hide Result → show #rankings-root OR Title
+      └─ Rankings CTA → #rankings-root
+```
+
+#### Rules
+
+- UI **never** calls platform SDKs or writes Local storage directly — bridges only.
+- `#result-root` and `#rankings-root` live in the game shell; **never** visible together with `#login-root`.
+- Canvas may show a static/dimmed last frame behind Result; authoritative UI is DOM.
+- Rankings **Normal | Survivor** × **W/M/Y/E** tabs are DOM — not canvas quads.
+
+#### Acceptance
+
+- DEAD ends Run canvas loop; Result DOM shows run summary without a canvas scene swap.
+- Rankings DOM shows 2 modes × 4 periods with separated local bests (`RNK-04`).
+- Rankings → Title remounts canvas hub without full reload.
+
 ## Pause overlay (`SCENE-05`)
 
 tag_g_scene_flow tag_g_input tag_g_run_meta tag_s_scene_pause_overlay tag_s_scene_canvas_render
@@ -168,15 +224,15 @@ Selecting a rail item opens a **panel/tab inside Pause** (same overlay; not `win
 | ------------ | ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Controls** | Controls tab                                         | Scheme picker + **physical→virtual** remap (`InputManager`, [`input.spec.MD`](./input.spec.MD)). Four schemes: Keyboard · Mix · Gamepad · Touch. |
 | **Audio**    | Audio tab                                            | Driven by `SoundManager`: Music volume · SFX volume · **Mute** · **Mute ship AI** · **Show Audio as Text Log**                                     |
-| **Graphics** | Graphics tab                                         | **Screen size** / viewport mode; further graphics toggles TBD (`Q10`)                                                                              |
-| **Dev**      | Dev tab (**DEV builds only** — hidden in production) | Live **Balancer** editors bound to the running game’s `BALANCE` / sheet data, split into **inner tabs** by domain (ship, weapons, spawn, squad, …) |
+| **Graphics** | Graphics tab                                         | **Screen size** / viewport mode · **Free Cam** (`CAM-06`, [`world.spec.MD`](./world.spec.MD)) — unlocks follow box in Pause **and** live Run. Further rows TBD (`Q10`) |
+| **Dev**      | Dev tab (**DEV builds only** — hidden in production) | Live **Balancer** editors bound to the running game’s `BALANCE` / sheet data, split into **inner tabs** by domain (ship, weapons, spawn, squad, …). **Not** `/dev/*` content CRUD — see [`dev-tools.spec.MD`](./dev-tools.spec.MD) (`D43`). |
 
 
 #### Time freeze
 
 - On open: set loop / RunState to **paused**; world `update(dt)` does not advance; rAF may keep painting the frozen frame + overlay.
 - On close (Resume / pause toggle): clear pause; **no dt catch-up** burst.
-- Input: Esc / virtual **`Start`** / pause action toggles Pause while Run is active.
+- Input: Esc / virtual **`Start`** / pause action toggles Pause while Run is active. **IJKL/UO** are never pause keys — when Free Cam is on they fly the camera behind the overlay.
 
 #### Rules
 
@@ -192,3 +248,4 @@ Selecting a rail item opens a **panel/tab inside Pause** (same overlay; not `win
 - Right rail opens Controls, Audio, Graphics panels; Dev visible only in DEV.
 - Audio tab exposes music, SFX, mute, mute ship AI, text log toggle.
 - Unpause continues the same run pose with no teleport/catch-up.
+- Graphics **Free Cam** on: camera fly works while paused; after Resume the unlock **stays on** until toggled off.

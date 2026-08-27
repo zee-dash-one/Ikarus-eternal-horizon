@@ -5,7 +5,7 @@ RESUME: Four production outputs — Demo · Itch · Poki · Steam — one shared
 
 **Hub index:** [`planning.spec.MD`](./planning.spec.MD) · **Hub version:** 0.3.10
 
-**Related:** [`architecture.spec.MD`](./architecture.spec.MD) (`D38`/`D39`) · [`store.spec.MD`](./store.spec.MD) (`D36`) · [`achievements.spec.MD`](./achievements.spec.MD) (`D28`) · [`rankings.spec.MD`](./rankings.spec.MD) (`D30`) · [`nomenclature.spec.MD`](./nomenclature.spec.MD)
+**Related:** [`architecture.spec.MD`](./architecture.spec.MD) (`D38`/`D39`) · [`login.spec.MD`](./login.spec.MD) (`D41`) · [`store.spec.MD`](./store.spec.MD) (`D36`) · [`achievements.spec.MD`](./achievements.spec.MD) (`D28`) · [`rankings.spec.MD`](./rankings.spec.MD) (`D30`) · [`nomenclature.spec.MD`](./nomenclature.spec.MD)
 
 ---
 
@@ -32,11 +32,13 @@ RESUME: What every build ships vs what each host replaces.
 | Layer | All four builds | Per build |
 | --- | --- | --- |
 | Gameplay managers | Same (`PlayerManager`, `DamageManager`, …) | — |
-| Canvas scenes (`D23`) | Same Login→…→Pause | — |
+| Canvas scenes (`D23`) | Start → Title → Run → Result → Rankings → Pause | — |
+| Login HTML + `LoginUIBridge` (`D41`) | Same DOM contract | OAuth / session via auth adapter |
 | Store HTML + `StoreUIBridge` (`D34`) | Same DOM contract | Persist / ads / overlay via store adapter |
 | `BALANCE` catalog | Same shape | Optional host tweaks via env overlays only if documented |
 | Achievements / Rankings API names | Same `ACH_*` / `LB_*` | Platform publish adapter |
-| Dev rail / Balancer | **Compiled out** of production (`import.meta.env.PROD`) | — |
+| Dev rail / Balancer (Pause) | **Compiled out** of production (`import.meta.env.PROD`) | — |
+| **`/dev/*` content CRUD** (`D43`) | **Compiled out** of production | DevContentManager + Dexie dev store |
 | Debug camera | **Out** of production | — |
 
 ---
@@ -44,21 +46,24 @@ RESUME: What every build ships vs what each host replaces.
 ## Boot wire (all builds)
 
 tag_g_builds tag_s_builds_platform_wire
-RESUME: Single boot composition — create managers, inject the three adapter families from the build’s platform kit.
+RESUME: Single boot composition — create managers, inject adapter families from the build’s platform kit.
 
 ```text
 bootstrap(platformKit)
+  ├─ AuthManager.setPlatformAdapter(platformKit.auth)
+  ├─ LoginUIBridge.bind(#login-root)                                 // hide when session ok
   ├─ AchievementManager.setPublishAdapter(platformKit.achievements)  // + Local always
   ├─ RankingManager.setPlatformAdapter(platformKit.rankings)         // + Local always mirrors
   ├─ StoreManager.setPlatformAdapter(platformKit.store)
   ├─ LoginStreakManager.setPersistence(platformKit.store)            // same save snapshot
-  └─ mount scenes + StoreUIBridge
+  └─ mount canvas scenes + StoreUIBridge
 ```
 
 ```typescript
 // Build-time kit (sketch) — only ONE kit module is imported per output
 interface PlatformKit {
   readonly platform: 'demo' | 'itch' | 'poki' | 'steam';
+  readonly auth: AuthPlatformAdapter;
   readonly achievements: AchievementPublishAdapter; // or Local-only
   readonly rankings: RankingPlatformAdapter;
   readonly store: StorePlatformAdapter;
@@ -70,7 +75,7 @@ Factory files (suggested layout in `poc3/`):
 ```text
 src/platform/
   types.ts
-  kit-demo.ts      // Local ACH · Demo RNK · DemoStore (DemoHost /api)
+  kit-demo.ts      // DemoAuth · Local ACH · Demo RNK · DemoStore (DemoHost /api)
   kit-itch.ts
   kit-poki.ts
   kit-steam.ts
@@ -208,8 +213,8 @@ npm run build:steam   # IKARUS_PLATFORM=steam → dist-steam/ (+ native pack ste
 | `BLD-01` | must | Four production outputs from one core | `build:demo|itch|poki|steam` each emit a distinct artifact |
 | `BLD-02` | must | `IKARUS_PLATFORM` selects exactly one platform kit | Wrong kit never mixed at runtime |
 | `BLD-03` | must | Web builds contain no Steam SDK | Bundle audit / grep gate |
-| `BLD-04` | must | Boot wires ACH + RNK + Store adapters from the same kit | Single `PlatformKit` per boot |
-| `BLD-05` | should | Production builds strip Dev rail + debug camera | No Balancer tab in prod |
+| `BLD-04` | must | Boot wires Auth + ACH + RNK + Store adapters from the same kit | Single `PlatformKit` per boot |
+| `BLD-05` | should | Production builds strip Dev rail + DEV debug camera; **Free Cam (`CAM-06`) stays** | No Balancer tab in prod; Graphics Free Cam still present |
 | `BLD-06` | should | Demo assets relative under HTTPS origin | Works behind Caddy + DemoHost (`D38`) |
 | `BLD-07` | defer | Automated Steam depot upload | Manual Partner upload OK v1 |
 | `BLD-08` | must | Demo kit uses DemoHost adapters | `DemoStoreAdapter` + `DemoRankingAdapter` call `/api` |

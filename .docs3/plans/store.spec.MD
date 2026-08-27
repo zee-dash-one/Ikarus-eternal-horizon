@@ -3,9 +3,9 @@
 tag_g_progression tag_s_store_manager tag_s_store_ui_bridge tag_s_login_streak
 RESUME: StoreManager + LoginStreakManager — HTML hub shop; BUD wallet; weekly login streak rewards; profile-bound purchases.
 
-**Hub index:** [`planning.spec.MD`](./planning.spec.MD) · **Hub version:** 0.3.10
+**Hub index:** [`planning.spec.MD`](./planning.spec.MD) · **Hub version:** 0.3.14
 
-**Related:** [`crafting.spec.MD`](./crafting.spec.MD) (inventory / caps) · [`drops.spec.MD`](./drops.spec.MD) (`ResourceId`) · [`scenes.spec.MD`](./scenes.spec.MD) (Title / hub access) · [`builds.spec.MD`](./builds.spec.MD) (4 production outputs · `D37`) · [`architecture.spec.MD`](./architecture.spec.MD) (`D38` DemoHost · `D39` Dexie/Steam FS) · [`achievements.spec.MD`](./achievements.spec.MD) / [`rankings.spec.MD`](./rankings.spec.MD) (same adapter pattern) · [`nomenclature.spec.MD`](./nomenclature.spec.MD) (`StoreManager`)
+**Related:** [`crafting.spec.MD`](./crafting.spec.MD) (inventory / caps) · [`drops.spec.MD`](./drops.spec.MD) (`ResourceId`) · [`login.spec.MD`](./login.spec.MD) (auth before hub) · [`scenes.spec.MD`](./scenes.spec.MD) (Title / hub access) · [`builds.spec.MD`](./builds.spec.MD) (4 production outputs · `D37`) · [`architecture.spec.MD`](./architecture.spec.MD) (`D38` DemoHost · `D39` Dexie/Steam FS) · [`achievements.spec.MD`](./achievements.spec.MD) / [`rankings.spec.MD`](./rankings.spec.MD) (same adapter pattern) · [`nomenclature.spec.MD`](./nomenclature.spec.MD) (`StoreManager`)
 
 ---
 
@@ -23,7 +23,7 @@ The progression store is a **dedicated HTML/CSS tab** inside the game shell layo
 | **Authority** | `StoreManager` | Catalog, afford/own, atomic commit — **platform-blind** |
 | **Platform** | `StorePlatformAdapter` (`D36`) | Persist / cloud / ads / overlay — **one concrete class per build** |
 
-**`D23` exception (locked):** flow scenes (Login → Pause) stay **canvas**. The Store is **not** a full-page HTML scene route — it is a **shell overlay / Title hub tab** whose chrome is DOM. The canvas may remain visible behind, paused; OAuth still uses an external tab.
+**`D23` exception (locked):** **Login** (`D41`), **Store** (`D34`), **Result**, and **Rankings** (`D42`) are **DOM shell chrome** — not canvas scenes. **Start · Title · Run · Pause** stay on the shared WebGL canvas. Store is a **Title hub tab**; Login is pre-Start; Result/Rankings are post-run panels. OAuth still uses an external browser tab when required.
 
 ### Communication lock (`D34`) — JS Bridge, not WebSocket
 

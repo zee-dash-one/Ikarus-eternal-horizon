@@ -40,6 +40,8 @@ RESUME: D01–D30 locked design decisions and open questions Q01–Q14.
 | **D28** | **Achievement publish adapters:** gameplay calls `apiName` only via `AchievementManager`. **Local** adapter always persists; **one** platform adapter per boot (Itch · Poki · Steam) when host/build detects SDK. See [`achievements.spec.MD`](./achievements.spec.MD) · `ACH-01` | meta · Theme 14 |
 | **D29** | **Equip items** contribute only through registered **`*_mod` / `*_mul` grants** ([`equipment.spec.MD`](./equipment.spec.MD)) — including craft/lab fields and **contextual** bundles (`when: dashing`, …). No ad-hoc stat literals on items. Recalc rules unchanged (`CHAR-05`). | `EQP-01` · `CHAR-02` |
 | **D30** | **Ranking publish adapters:** `RankingManager.submitRun` only at gameplay boundary. **Local** adapter always stores 8-board UTC bests; **one** upload adapter per boot (Itch · Poki · Steam). Modes never mix. See [`rankings.spec.MD`](./rankings.spec.MD) · `RNK-01` | meta · Theme 10/14 · `SCENE-04` |
+| **D31** | **Craft economy:** recipes chosen **only on Pause → Lab**; **one** real-time CraftSlot (`CraftManager`); cost = materials + Summary **`ENE`** + time (× `lab_craft_time_*`). **Survivor v1 craft off** (`Q11`). See [`crafting.spec.MD`](./crafting.spec.MD) · `EQP-04` | Theme 12 · `SCENE-05` |
+| **D32** | **`DropManager` sole owner** of world-space loot: loot tables, pooled `Drop` fragments, magnet pull, collect → `InventoryPort.tryAdd`. Killers call `onSourceKilled` / `onMeteorDestroyed` only. See [`drops.spec.MD`](./drops.spec.MD) · `RES-01`–`04` | Theme 7 · `D14` layer Drop |
 
 
 ## Open (tune later — do not block this hub)
@@ -61,5 +63,10 @@ RESUME: D01–D30 locked design decisions and open questions Q01–Q14.
 | Q12 | Rankings top-N displayed (10 / 100 / 1000)                                       | defer platform UI polish                                                                    |
 | Q13 | Cosmetic title/badge rewards by rank tier                                        | defer · no combat power (`RNK-09`)                                                            |
 | Q14 | Daily shared Survivor seed (post-1.0)                                            | out of scope v1                                                                             |
+| Q15 | Numeric drop rates per source                                                    | stubs in `BALANCE.drops` ([`drops.spec.MD`](./drops.spec.MD))                               |
+| Q16 | Inventory cap values + Engineering expansion                                     | flat caps until skill tree                                                                  |
+| Q17 | Overflow at cap: discard vs convert                                              | discard (`RES-05`)                                                                          |
+| Q18 | Craft cancel refund policy                                                       | no refund v1                                                                                |
+| Q19 | Meteor fragment geometry vs loot spawn split                                     | MeteorManager signals destroy; DropManager rolls loot                                       |
 
 

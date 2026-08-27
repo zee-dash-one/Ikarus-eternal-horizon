@@ -116,7 +116,8 @@ Runtime owners that drive a domain use the `…Manager` suffix. Do **not** use `
 | `EnemyManager`      | Enemy population spawn / pool / despawn                          |
 | `SquadManager`      | Squad sheets, formations, squad SM                               |
 | `MeteorManager`     | Asteroid population                                              |
-| `DropManager`       | Drops, magnet, collection                                        |
+| `DropManager`       | World loot — tables, pool, magnet, collect (`D32`)                   |
+| `CraftManager`      | CraftSlot timer, recipe pay/complete (`D31`)                         |
 | `DifficultyManager` | Kill-based scaling                                               |
 | `VfxManager`        | Pooled feedback FX                                               |
 | `InputManager`      | Virtual pad owner; scheme adapters; binds ([`input.spec.MD`](./input.spec.MD))                     |
@@ -176,6 +177,9 @@ RESUME: Hit path, shield-first absorption, and collision layers for every craft.
 | `tag_g_run_meta` | `tag_s_run_stats_panel` · `tag_s_run_inventory_actions` · `tag_s_run_lab_craft` · `tag_s_run_result_screen` · `tag_s_run_rankings_screen` |
 | `tag_g_achievements` | `tag_s_achievements_catalog` · `tag_s_achievements_virtual_api` · `tag_s_achievements_local_adapter` · `tag_s_achievements_itch_adapter` · `tag_s_achievements_poki_adapter` · `tag_s_achievements_steam_adapter` |
 | `tag_g_rankings` | `tag_s_rankings_board_matrix` · `tag_s_rankings_local_adapter` · `tag_s_rankings_itch_adapter` · `tag_s_rankings_poki_adapter` · `tag_s_rankings_steam_adapter` · `tag_s_rankings_survivor_mode` · `tag_s_rankings_submit_pipeline` |
+| `tag_g_resources` | `tag_s_resources_material_types` · `tag_s_resources_drop_table` · `tag_s_resources_magnet_collect` · `tag_s_resources_inventory_caps` · `tag_s_resources_fragment_pool` |
+| `tag_g_drops` | `tag_s_drops_manager` · `tag_s_drops_loot_table` · `tag_s_drops_fragment_pool` · `tag_s_drops_magnet_pull` · `tag_s_drops_collect_handoff` |
+| `tag_g_crafting` | `tag_s_crafting_craft_slot` · `tag_s_crafting_recipe_schema` · `tag_s_crafting_repair_recipes` · `tag_s_crafting_energy_cost` |
 | `tag_g_system` | `tag_s_system_manager_classes` |
 | `tag_g_docs` | `tag_s_docs_requirement_ids` · `tag_s_docs_decisions_locked` · `tag_s_docs_coverage_matrix` · `tag_s_docs_tag_registry` |
 

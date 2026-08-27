@@ -174,14 +174,15 @@ Obstacles before smart enemies.
 
 ## Theme 7 — Resources & collection
 
-Feed the repair/craft fantasy later; keep magnet simple now.
+Hub [`drops.spec.MD`](./plans/drops.spec.MD) · `RES-01`–`03` · `D32`.
 
-- [ ] Drop tables on meteor/enemy kill (Metal Scrap first) · `DropManager`
-- [ ] Drop objects, layer `Drop`, magnet radius · `DropManager`
-- [ ] Inventory counts on craft (Generic/Collector seam)
-- [ ] Collection feedback (SFX cue stub OK)
+- [ ] `DropManager` + loot tables on meteor/enemy kill (Metal Scrap first) · `RES-01`
+- [ ] Pooled `Drop` fragments + magnet radius · `RES-02` · `RES-03`
+- [ ] Collect → `InventoryPort.tryAdd` + SFX/UI tick
+- [ ] Run inventory stacks (Metal Scrap cap stub) · `RES-05` ([`crafting.spec.MD`](./plans/crafting.spec.MD))
+- [ ] Full five-type loot table · `RES-04` (defer until Theme 12)
 
-**Done when:** wreckage magnet-pulls in and inventory ticks.
+**Done when:** wreckage magnet-pulls in, inventory ticks, pool stays bounded.
 
 ---
 
@@ -246,18 +247,21 @@ Widen the gun fantasy after the loop is honest.
 
 ## Theme 12 — Equipment, craft, progression
 
-Longer session systems (hub deferred prefixes).
+Hub [`equipment.spec.MD`](./plans/equipment.spec.MD) + [`crafting.spec.MD`](./plans/crafting.spec.MD) · `D31`.
 
-- [ ] Equip item schema: grants any registered `*_mod`/`*_mul` (`EQP-01` §4.7)
+- [ ] Equip item schema: grants any registered `*_mod`/`*_mul` (`EQP-01`)
 - [ ] Contextual grants — e.g. `when: dashing` → `deflection_mod` (`EQP-02`)
 - [ ] `lab_craft_time_mod` / `lab_craft_time_mul` reduce craft duration (`EQP-03`)
-- [ ] Equipment items in Generic/Special slots (Reactive Panels, Deflectors, Dash coils, …)
-- [ ] CraftSlot (Lab Special): pause to choose, real-time build, 1 slot (`EQP-04`)
-- [ ] Repair consuming Metal Scrap
+- [ ] `CraftManager` + exclusive CraftSlot · Pause Lab UI · `EQP-04`
+- [ ] Repair recipe (Metal Scrap → Integrity) · `EQP-05` G1
+- [ ] G2 recipe stubs (shield recharge, Reactive Panels, ordnance crafts)
+- [ ] Equipment items in Generic/Special slots (Quantum Deflectors, Dash coils, …)
+- [ ] `EnergyManager`: craft + weapons + dash share Summary `ENE`
 - [ ] Skill / tech tree branches (Engineering · Power Flow · Weaponry)
 - [ ] Difficulty ramp + milestones 50 / 100 / 500
+- [ ] Epic Equipment drop as inventory item · `RES-06`
 
-**Done when:** a mid-run craft choice matters and milestones change pressure.
+**Done when:** a mid-run repair or craft choice matters and milestones change pressure.
 
 ---
 

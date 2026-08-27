@@ -9,7 +9,7 @@ RESUME: Docs2 prefix/stage coverage matrix — what docs3 owns vs defers; naming
 
 ## Deferred requirement prefixes (named for coverage; not detailed here)
 
-`WPN-` · `RES-` · `RUL-` · `LORE-` · remaining `META-` (HUD) — appear in this document as checklist rows. Detail arrives in later docs3 revisions or satellite plans.
+`WPN-` · `RUL-` · `LORE-` · remaining `META-` (HUD) — appear in this document as checklist rows. Detail arrives in later docs3 revisions or satellite plans.
 
 
 ## Docs2 coverage checklist
@@ -26,8 +26,8 @@ Legend: **Covered** = owned by a docs3 ID above · **Deferred** = acknowledged, 
 | `SHIP-03` laser fire               | Deferred               | `WPN-` later; Summary `S_D`/`S_R`/`ENE` feed it                 |
 | `SHIP-04` pointer / schemes        | **Covered**            | `CTRL-01` · [`input.spec.MD`](./input.spec.MD) (Mix scheme; no pointer-steer)                 |
 | `SHIP-05` shield first             | **Covered**            | `CHAR-06`                                                       |
-| `SHIP-06` inventory scrap          | Deferred               | RES / META                                                      |
-| `SHIP-07` craft repair             | Deferred               | Lab / Converter Special slots reserved in `CHAR-01`             |
+| `SHIP-06` inventory scrap          | **Partial**            | Caps [`crafting.spec.MD`](./crafting.spec.MD) · spawn [`drops.spec.MD`](./drops.spec.MD) |
+| `SHIP-07` craft repair             | **Partial**            | Repair recipe · `EQP-04` [`crafting.spec.MD`](./crafting.spec.MD) |
 | `SHIP-08` jet reserve              | Deferred               | Dash Special slot reserved; economy later                       |
 | `SHIP-09` energy economy           | **Covered** (sheet)    | `ENE`/`REG` on Summary; full economy Deferred                   |
 | `SHIP-10` equipment effects        | **Covered**            | `CHAR-01`–`CHAR-05` · `EQP-01` modifier grants                  |
@@ -44,12 +44,12 @@ Legend: **Covered** = owned by a docs3 ID above · **Deferred** = acknowledged, 
 | `ENM-07` Mega Asteroid             | Deferred               |                                                                 |
 | `ENM-08` Boss General              | Deferred               | Special class seam                                              |
 | `ENM-09` post-500 patterns         | Deferred               |                                                                 |
-| `RES-01..06`                       | Deferred               |                                                                 |
+| `RES-01..06`                       | **Partial**            | Drop path [`drops.spec.MD`](./drops.spec.MD) · caps [`crafting.spec.MD`](./crafting.spec.MD) |
 | `RUL-01` game loop                 | Deferred               |                                                                 |
 | `RUL-02` bounds/despawn            | Deferred               |                                                                 |
 | `RUL-03` score / game over         | Deferred (hook)        | Player DEAD → run over (Q04)                                    |
 | `RUL-04` pause                     | Deferred               |                                                                 |
-| `RUL-05` CraftSlot                 | Deferred               | Lab slot reserved                                               |
+| `RUL-05` CraftSlot                 | **Partial**            | `EQP-04` [`crafting.spec.MD`](./crafting.spec.MD)                |
 | `RUL-06` / `RUL-09` difficulty     | Deferred               |                                                                 |
 | `RUL-07` local best                | **Partial**            | `RNK-01` Local adapter · full boards `RNK-02`–`05`              |
 | `RUL-08` Itch package              | Deferred               |                                                                 |
@@ -58,7 +58,7 @@ Legend: **Covered** = owned by a docs3 ID above · **Deferred** = acknowledged, 
 | `RUL-12` single balancer           | Deferred               | numbers still must not live in prose forever                    |
 | `RUL-13` worst-case perf           | **Covered** (rule)     | `D07` Summary-only frame reads                                  |
 | `RUL-14` settings persistence      | Deferred               |                                                                 |
-| `EQP-`                     | **Partial**            | `EQP-01`–`03` [`equipment.spec.MD`](./equipment.spec.MD) · recipes `EQP-04`–`05` deferred           |
+| `EQP-`                     | **Partial**            | Grants `EQP-01`–`03` [`equipment.spec.MD`](./equipment.spec.MD) · craft `EQP-04`–`06` [`crafting.spec.MD`](./crafting.spec.MD) |
 | `RNK-`                     | **Partial**            | [`rankings.spec.MD`](./rankings.spec.MD) + [`rankings.spec.MD`](./rankings.spec.MD) · Local/Itch/Poki `RNK-01`–`05`/`10`–`11` · Steam defer |
 | `LORE-`                    | Deferred               |                                                                 |
 | `ACH-`                     | **Partial**            | [`achievements.spec.MD`](./achievements.spec.MD) + [`achievements.spec.MD`](./achievements.spec.MD) · Local + Itch/Poki/Steam adapters (`D28`)         |
@@ -79,7 +79,7 @@ Legend: **Covered** = owned by a docs3 ID above · **Deferred** = acknowledged, 
 | E05 EnemyManager + squad follow-ons | **Covered** (squad design) | `SQUAD-`*; spawn cadence Deferred                                                                 |
 | E07 FiringManager                   | Deferred                   |                                                                                                   |
 | F01 layers                          | **Covered** (design set)   | `D14`                                                                                             |
-| F02–F05 drops/diff/damage/vfx       | Deferred                   | `DropManager` · `DifficultyManager` · `DamageManager` · `VfxManager`; damage *rules* in `CHAR-06` |
+| F02–F05 drops/diff/damage/vfx       | **Partial** (F02)      | `DropManager` [`drops.spec.MD`](./drops.spec.MD); F03–F05 Deferred |
 | G01–G12 scenes/UI                   | **Partial**                | Login · Start · **Pause** (`SCENE-01`/`02`/`05`); Touch/nipple via `CTRL-01`; Title/Run/Result still Deferred |
 | §6.3 multi-agent SDD / DoD          | N/A                        | returns when a code target + specs exist                                                          |
 | §5.0 POC-1 port map                 | N/A                        | docs3 is not a port                                                                               |

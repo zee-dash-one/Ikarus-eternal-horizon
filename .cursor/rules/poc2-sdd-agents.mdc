@@ -12,7 +12,7 @@ POC-1 (`poc/`) and POC-2 (`poc2/`) are **frozen**. Do not edit them. Do not open
 
 Docs2 (`.docs2/`) is a **coverage checklist only** — not inherited architecture.
 
-## Hub summary (docs3 v0.3.0)
+## Hub summary (docs3 v0.3.2)
 
 English design source of truth — **index:** `.docs3/plans/planning.spec.MD` · **theme specs:** sibling `*.spec.MD` files in the same folder. Key locks:
 
@@ -26,13 +26,15 @@ English design source of truth — **index:** `.docs3/plans/planning.spec.MD` ·
 | **Enemy SM** | `EnterGate` · `FindGroup` · `LoopBack` · `Flee` · `Fury` (`ENEMY-02`). |
 | **Squad** | 1–8 · formations `V`/`Circle`/`CircleII–IV`/`LineDivers` · independent squad SM (`SQUAD-*`). |
 | **Boot** | All flow scenes on the **shared canvas** (`D23`): Login → Start → Title → Run; Pause is a canvas UI layer (`SCENE-05`). |
-| **IDs** | `CHAR-` · `ENEMY-` · `SQUAD-` · `SCENE-` · `CTRL-` · `RNK-` (stable). System classes: `*Manager` only (`D22`, hub §2.6). |
-| **Input** | Sim reads **virtual pad only** (`D27`, `CTRL-01`); four input scheme adapters (§2.8). |
-| **Achievements** | Gameplay calls **apiName only** via `AchievementManager`; **Local** always + one platform adapter (Itch · Poki · Steam) per boot (`D28`, §2.9). |
-| **Equipment** | Items grant only registered **`*_mod`/`*_mul`** (+ optional `when` context); includes lab craft time (`D29`, §4.7). |
-| **Rankings** | `RankingManager.submitRun` only; **Local** 8-board UTC bests always + one upload adapter (Itch · Poki · Steam) per boot (`D30`, §2.10). Modes never mix. |
+| **IDs** | `CHAR-` · `ENEMY-` · `SQUAD-` · `SCENE-` · `CTRL-` · `RES-` · `RNK-` (stable). System classes: `*Manager` only (`D22`). |
+| **Input** | Sim reads **virtual pad only** (`D27`, `CTRL-01`); four scheme adapters ([`input.spec.MD`](.docs3/plans/input.spec.MD)). |
+| **Achievements** | Gameplay calls **apiName only** via `AchievementManager`; **Local** always + one platform adapter per boot (`D28`). |
+| **Equipment** | Items grant only registered **`*_mod`/`*_mul`** (+ optional `when` context); lab craft time modifiers (`D29`). |
+| **Crafting** | Pause-only CraftSlot; materials + `ENE` + time (`D31`, [`crafting.spec.MD`](.docs3/plans/crafting.spec.MD)). |
+| **Drops** | `DropManager` sole owner of world loot — tables, pool, magnet, collect (`D32`, [`drops.spec.MD`](.docs3/plans/drops.spec.MD)). |
+| **Rankings** | `RankingManager.submitRun` only; Local 8-board bests + one upload adapter per boot (`D30`). Modes never mix. |
 
-Full decisions: [`decisions.spec.MD`](.docs3/plans/decisions.spec.MD) (`D01`–`D30`). Requirement IDs: theme files under `.docs3/plans/`.
+Full decisions: [`decisions.spec.MD`](.docs3/plans/decisions.spec.MD) (`D01`–`D32`). Requirement IDs: theme files under `.docs3/plans/`.
 
 ## Grep tags (`D25`/`D26`, hub §2.7)
 

@@ -86,11 +86,11 @@ Effect-slot timed buffs remain the channel for **temporary** non-equip modifiers
 
 For each field, sum all applicable `*_mod` grants, multiply all applicable `*_mul` grants (contextual included when active), then run family op order from [`char-sheet.spec.MD`](./char-sheet.spec.MD) (Full Sheet families). Equip change → Full Sheet recalc → new Summary including `MIT`.
 
-#### Craft recipes (stub)
+#### Craft output link
 
-Craft outputs are equip items or consumables. Recipe shape from docs2 satellite: `materials + energy + time → item`. **`lab_craft_time_*` modifiers** apply to the `time` leg only. One **CraftSlot** at a time (Pause Lab). Numeric recipes live in `BALANCE` — not in this hub.
+Crafted equips must obey the modifier registry above (`D29`). **Recipes / CraftSlot / inventory** → [`crafting.spec.MD`](./crafting.spec.MD) (`D31`). **World drops** → [`drops.spec.MD`](./drops.spec.MD) (`D32`).
 
-## Requirements (`EQP-`)
+## Requirements (`EQP-` — modifier grants)
 
 
 
@@ -99,5 +99,3 @@ Craft outputs are equip items or consumables. Recipe shape from docs2 satellite:
 | `EQP-01` | must   | Equip items grant only registered `*_mod` / `*_mul` fields; recalc publishes Summary | Equip swap changes `SPD`/`DEF`/… predictably; no orphan stat keys on items |
 | `EQP-02` | must   | Contextual grants (`when: dashing`, …) patch Summary on context toggle | Dash item can raise deflection only while dashing; revert on dash end |
 | `EQP-03` | should | `lab_craft_time_mod` / `lab_craft_time_mul` on Full Sheet; read at craft start | Equipped lab module reduces craft timer |
-| `EQP-04` | should | CraftSlot: one active craft; recipes in `BALANCE` | Second craft blocked while slot busy |
-| `EQP-05` | defer  | Full recipe catalog (repair, ordnance, weapon upgrades per docs2 satellite) | Craft consumes materials + energy + time |

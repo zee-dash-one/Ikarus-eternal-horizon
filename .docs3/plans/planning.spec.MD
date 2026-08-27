@@ -3,7 +3,7 @@
 tag_g_docs tag_s_docs_tag_registry
 RESUME: Design hub authority — requirement IDs, locked decisions, coverage matrix, and grep-tag matrix for docs3 / poc3.
 
-**Version:** 0.3.0 · **Status:** active (design hub · implementation in `poc3/`)
+**Version:** 0.3.2 · **Status:** active (design hub · implementation in `poc3/`)
 **Purpose:** the **design hub index** — theme specs live as sibling files in this folder for the next model of the game. It is written **from scratch**. Canonical rules for ship sheets, individual enemies, and squads come from `[.docs3/consider/](../consider/)` (historical drafts). Runtime systems read only the **Summary Sheet**; the **Full Sheet** exists for equip/effect recalculation — not per-frame math. Code and tasks: `poc3/` + `[.docs3/todo.md](../todo.md)`.
 **Sources:** `[../consider/char_sheet.MD](../consider/char_sheet.MD)` · `[../consider/enemy_sheet.MD](../consider/enemy_sheet.MD)` · `[../consider/squad_sheet.MD](../consider/squad_sheet.MD)` · public GDD `[README.md](../../README.md)`
 **Docs2 role:** `[.docs2/plans/planning.spec.MD](../../.docs2/plans/planning.spec.MD)` is a **coverage checklist only** — not inherited architecture, not a workstream, not a port map. See [`coverage.spec.MD`](./coverage.spec.MD).
@@ -21,7 +21,7 @@ RESUME: Design hub authority — requirement IDs, locked decisions, coverage mat
 | A docs2 **coverage matrix** so no topic is silently dropped   | A copy or “thin inherit” of docs2 §0–§10        |
 
 
-**Implementation workstream:** code lives in `poc3/`; backlog is `[.docs3/todo.md](../todo.md)`. This hub stays the design authority (`D01`–`D30` in [`decisions.spec.MD`](./decisions.spec.MD); domain detail in theme files below).
+**Implementation workstream:** code lives in `poc3/`; backlog is `[.docs3/todo.md](../todo.md)`. This hub stays the design authority (`D01`–`D32` in [`decisions.spec.MD`](./decisions.spec.MD); domain detail in theme files below).
 
 **Runtime cost rule (hard):** every frame, combat/AI/render may read **Summary Sheet fields only** (`ENE`, `SHD`, `DEF`, `MIT`, `SPD`, `S_D`, `S_R`, `REG`, `LVL`, `HP`, integrity state). Full Sheet recalculation runs **only** on equip change, effect activate/expire, or the LVL triggers defined in `CHAR-05`. Hit resolution must **not** recompute `DEF / 10` — it reads precomputed `MIT`.
 
@@ -52,9 +52,11 @@ Each file is self-contained English design authority for its domain. **This inde
 | Spec | Primary tags | Super-summary |
 | --- | --- | --- |
 | [`nomenclature.spec.MD`](./nomenclature.spec.MD) | tag_g_system · tag_g_docs | Sheet layers, Summary codes, enemy/squad vocabulary, canvas scene boot order, *Manager table, grep tag rules and matrix snapshot. |
-| [`decisions.spec.MD`](./decisions.spec.MD) | tag_g_docs | Locked decisions D01–D30 and open questions Q01–Q14. |
+| [`decisions.spec.MD`](./decisions.spec.MD) | tag_g_docs | Locked decisions D01–D32 and open questions Q01–Q19. |
 | [`char-sheet.spec.MD`](./char-sheet.spec.MD) | tag_g_char_sheet · tag_g_combat | CHAR-01–06: 54 slots, Full/Summary math, DRIFTING→DEAD, recalc triggers, MIT damage path. |
-| [`equipment.spec.MD`](./equipment.spec.MD) | tag_g_equipment | EQP-01–05: *_mod/*_mul grants, contextual when-bundles, lab craft time, CraftSlot stub. |
+| [`equipment.spec.MD`](./equipment.spec.MD) | tag_g_equipment | EQP-01–03: *_mod/*_mul grants, contextual when-bundles, lab craft time modifiers. |
+| [`crafting.spec.MD`](./crafting.spec.MD) | tag_g_resources · tag_g_crafting | RES-05 · EQP-04–06: inventory caps, CraftSlot, recipes, energy tension. |
+| [`drops.spec.MD`](./drops.spec.MD) | tag_g_drops · tag_g_resources | RES-01–04 · RES-06: DropManager, loot tables, magnet, pool, collect handoff. |
 | [`enemy.spec.MD`](./enemy.spec.MD) | tag_g_enemy | ENEMY-01–03: Enemy Base, five-state SM, Tanker/Warrior/Rogue (+ Special). |
 | [`squad.spec.MD`](./squad.spec.MD) | tag_g_squad | SQUAD-01–04: squad sheet, formations, squad SM, OnBreakGroup/PatrolGrouping triggers. |
 | [`scenes.spec.MD`](./scenes.spec.MD) | tag_g_scene_flow · tag_g_assets · tag_g_audio · tag_g_run_meta | SCENE-01–05: canvas Login/Start/Pause detail, Title/Run/Result/Rankings requirements. |
@@ -74,9 +76,11 @@ Each file is self-contained English design authority for its domain. **This inde
 | Virtual input pad (`D27`) | [`input.spec.MD`](./input.spec.MD) |
 | Achievement adapters (`D28`) | [`achievements.spec.MD`](./achievements.spec.MD) |
 | Equip grants (`D29`) | [`equipment.spec.MD`](./equipment.spec.MD) |
+| Craft / resources (`D31`) | [`crafting.spec.MD`](./crafting.spec.MD) |
+| Drops / collection (`D32`) | [`drops.spec.MD`](./drops.spec.MD) |
 | Ranking adapters (`D30`) | [`rankings.spec.MD`](./rankings.spec.MD) |
 
-Requirement IDs (`CHAR-` · `ENEMY-` · `SQUAD-` · `SCENE-` · `CTRL-` · `ACH-` · `EQP-` · `RNK-`) live in the theme files above. Deferred prefixes (`WPN-` · `RES-` · `RUL-` · `LORE-` · `META-`) → [`coverage.spec.MD`](./coverage.spec.MD).
+Requirement IDs (`CHAR-` · `ENEMY-` · `SQUAD-` · `SCENE-` · `CTRL-` · `ACH-` · `EQP-` · `RES-` · `RNK-`) live in the theme files above. Deferred prefixes (`WPN-` · `RUL-` · `LORE-` · `META-`) → [`coverage.spec.MD`](./coverage.spec.MD).
 
 ---
 
@@ -111,6 +115,9 @@ Creation rules (`D25`, `D26`): see [`nomenclature.spec.MD`](./nomenclature.spec.
 | `tag_g_run_meta` | Run meta — elapsed, kills, score, inventory use/drop, lab/craft, Result/Rankings. | `tag_s_run_stats_panel` · `tag_s_run_inventory_actions` · `tag_s_run_lab_craft` · `tag_s_run_result_screen` · `tag_s_run_rankings_screen` |
 | `tag_g_achievements` | Achievement catalog and publish — gameplay uses apiName only; Local always on; one platform adapter per boot (Itch, Poki, Steam). | `tag_s_achievements_catalog` · `tag_s_achievements_virtual_api` · `tag_s_achievements_local_adapter` · `tag_s_achievements_itch_adapter` · `tag_s_achievements_poki_adapter` · `tag_s_achievements_steam_adapter` |
 | `tag_g_rankings` | Leaderboards — 2 modes x 4 UTC periods; Local always on; platform upload adapters (Itch, Poki, Steam). | `tag_s_rankings_board_matrix` · `tag_s_rankings_local_adapter` · `tag_s_rankings_itch_adapter` · `tag_s_rankings_poki_adapter` · `tag_s_rankings_steam_adapter` · `tag_s_rankings_survivor_mode` · `tag_s_rankings_submit_pipeline` |
+| `tag_g_resources` | Run materials — five resource types, inventory caps, craft inputs (drop spawn owned by tag_g_drops). | `tag_s_resources_material_types` · `tag_s_resources_drop_table` · `tag_s_resources_magnet_collect` · `tag_s_resources_inventory_caps` · `tag_s_resources_fragment_pool` |
+| `tag_g_drops` | DropManager — loot tables, pooled Drop fragments, magnet pull, collect handoff, layer Drop. | `tag_s_drops_manager` · `tag_s_drops_loot_table` · `tag_s_drops_fragment_pool` · `tag_s_drops_magnet_pull` · `tag_s_drops_collect_handoff` |
+| `tag_g_crafting` | Pause Lab crafting — CraftSlot, recipe schema, material+energy+time costs, repair and equip outputs. | `tag_s_crafting_craft_slot` · `tag_s_crafting_recipe_schema` · `tag_s_crafting_repair_recipes` · `tag_s_crafting_energy_cost` |
 | `tag_g_system` | Runtime system naming and *Manager ownership (D22). | `tag_s_system_manager_classes` |
 | `tag_g_docs` | Documentation — hub authority, requirement IDs, SDD+TDD process, tag matrix. | `tag_s_docs_requirement_ids` · `tag_s_docs_decisions_locked` · `tag_s_docs_coverage_matrix` · `tag_s_docs_tag_registry` |
 
@@ -118,7 +125,7 @@ Creation rules (`D25`, `D26`): see [`nomenclature.spec.MD`](./nomenclature.spec.
 
 ## 4. Decisions index
 
-Full tables: [`decisions.spec.MD`](./decisions.spec.MD). Locked **D01–D30**; open **Q01–Q14**.
+Full tables: [`decisions.spec.MD`](./decisions.spec.MD). Locked **D01–D32**; open **Q01–Q19**.
 
 | Decision | One-line |
 | --- | --- |
@@ -133,6 +140,8 @@ Full tables: [`decisions.spec.MD`](./decisions.spec.MD). Locked **D01–D30**; o
 | **D28** | Achievement publish adapters |
 | **D29** | Equip `*_mod`/`*_mul` grants only |
 | **D30** | Ranking publish adapters — 8 boards, modes never mix |
+| **D31** | Craft on Pause only · one CraftSlot · materials + ENE + time; Survivor craft off |
+| **D32** | `DropManager` sole owner of world loot fragments — tables, pool, magnet, collect |
 
 ---
 
@@ -148,6 +157,8 @@ Full tables: [`decisions.spec.MD`](./decisions.spec.MD). Locked **D01–D30**; o
 | [`../consider/enemy_sheet.MD`](../consider/enemy_sheet.MD) | Historical ENEMY draft |
 | [`../consider/squad_sheet.MD`](../consider/squad_sheet.MD) | Historical SQUAD draft |
 | [`../../.docs2/plans/planning.spec.MD`](../../.docs2/plans/planning.spec.MD) | Docs2 coverage checklist only |
+| [`../../.docs2/plans-later/resources-plan.spec.MD`](../../.docs2/plans-later/resources-plan.spec.MD) | Satellite source for [`drops.spec.MD`](./drops.spec.MD) · [`crafting.spec.MD`](./crafting.spec.MD) |
+| [`../../.docs2/plans-later/equipments-plan.spec.MD`](../../.docs2/plans-later/equipments-plan.spec.MD) | Satellite source for equip recipes / craft outputs |
 | [`../../README.md`](../../README.md) | Public GDD |
 
 ---
@@ -156,8 +167,10 @@ Full tables: [`decisions.spec.MD`](./decisions.spec.MD). Locked **D01–D30**; o
 
 | Field | Value |
 | --- | --- |
-| Hub version | **0.3.0** (split index + theme specs) |
-| Structure | Index + 11 theme files in `.docs3/plans/` |
+| Hub version | **0.3.2** (split index + theme specs) |
+| Structure | Index + 13 theme files in `.docs3/plans/` |
+| Crafting | Inventory + CraftSlot (`D31`, [`crafting.spec.MD`](./crafting.spec.MD)) |
+| Drops | DropManager loot / magnet / pool (`D32`, [`drops.spec.MD`](./drops.spec.MD)) |
 | Code target | `poc3/` |
 | Backlog | [`../todo.md`](../todo.md) |
 | Canonical model | CHAR · ENEMY · SQUAD · SCENE · `*Manager` naming |

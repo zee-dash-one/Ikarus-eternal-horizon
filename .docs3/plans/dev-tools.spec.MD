@@ -108,25 +108,32 @@ Maps 1:1 to `EffectItem` in [`equipment.spec.MD`](./equipment.spec.MD) (`EQP-01`
 
 ### Enemy (`DevEnemyRecord`)
 
+Maps 1:1 to `EnemyTemplate` in [`enemy.spec.MD`](./enemy.spec.MD).
+
 | Field | Rule |
 | --- | --- |
-| `id` | Unique — maps to Enemy Base `Id` |
+| `id` | Unique — maps to Enemy Base `id` |
 | `displayName` | UI label |
 | `class` | `Tanker` · `Warrior` · `Rogue` · `Special` (`ENEMY-03`) |
+| `race` | `Maldroids` · `Hollows` · `Orcs` · `Prismari` |
+| `rank` | `{ kind, droneBand? }` — drone band 1–12 |
 | `charTemplateId` | Reference to CHAR sheet template / default equip loadout |
-| `strategyDefaults` | Optional initial `Strategy` + `Ticks` (`ENEMY-01`) |
+| `defaultStrategy` · `defaultTicks` | Enemy Base defaults (`ENEMY-01`) |
 | `tags` | Spawn pool filters |
 
 ### Squad (`DevSquadRecord`)
 
+Maps 1:1 to `SquadTemplate` in [`squad.spec.MD`](./squad.spec.MD).
+
 | Field | Rule |
 | --- | --- |
-| `id` | Unique — squad sheet `Id` |
+| `id` | Unique — squad sheet `id` |
 | `displayName` | UI label |
 | `defaultFormation` | `V` · `Circle` · … · `LineDivers` (`SQUAD-03`) |
 | `memberCount` | 1–8 (`SQUAD-01`) |
-| `memberTemplateIds` | Ordered enemy template refs (class mix must satisfy formation recipe when enforced) |
-| `strategyDefaults` | Optional squad `Strategy` + `Ticks` |
+| `memberTemplateIds` | Ordered enemy template refs (class mix must satisfy `FORMATION_RECIPES`) |
+| `defaultStrategy` · `defaultTicks` | Squad SM defaults |
+| `tags` | Optional |
 
 ---
 

@@ -3,7 +3,7 @@
 tag_g_docs tag_s_docs_tag_registry
 RESUME: Design hub authority — requirement IDs, locked decisions, coverage matrix, and grep-tag matrix for docs3 / poc3.
 
-**Version:** 0.3.19 · **Status:** active (design hub · implementation in `poc3/`)
+**Version:** 0.3.20 · **Status:** active (design hub · implementation in `poc3/`)
 **Purpose:** the **design hub index** — theme specs live as sibling files in this folder for the next model of the game. It is written **from scratch**. Canonical rules for ship sheets, individual enemies, and squads come from `[.docs3/consider/](../consider/)` (historical drafts). Runtime systems read only the **Summary Sheet**; the **Full Sheet** exists for equip/effect recalculation — not per-frame math. Code and tasks: `poc3/` + `[.docs3/todo.md](../todo.md)`.
 **Sources:** `[../consider/char_sheet.MD](../consider/char_sheet.MD)` · `[../consider/enemy_sheet.MD](../consider/enemy_sheet.MD)` · `[../consider/squad_sheet.MD](../consider/squad_sheet.MD)` · public GDD `[README.md](../../README.md)`
 **Docs2 role:** `[.docs2/plans/planning.spec.MD](../../.docs2/plans/planning.spec.MD)` is a **coverage checklist only** — not inherited architecture, not a workstream, not a port map. See [`coverage.spec.MD`](./coverage.spec.MD).
@@ -62,8 +62,8 @@ Each file is self-contained English design authority for its domain. **This inde
 | [`store.spec.MD`](./store.spec.MD) | tag_g_progression | STR-01–16: StoreManager, BUD, streak, JS Bridge, per-platform persist adapters. |
 | [`builds.spec.MD`](./builds.spec.MD) | tag_g_builds | BLD-01–11: Demo · Itch · Poki · Steam production outputs + PlatformKit wire. |
 | [`architecture.spec.MD`](./architecture.spec.MD) | tag_g_builds · tag_g_engine | ARCH-01–20 · D38–D40: stack, DemoHost, persist, Core/View + ESLint guardrails. |
-| [`enemy.spec.MD`](./enemy.spec.MD) | tag_g_enemy | ENEMY-01–03: Enemy Base, five-state SM, Tanker/Warrior/Rogue (+ Special). |
-| [`squad.spec.MD`](./squad.spec.MD) | tag_g_squad | SQUAD-01–04: squad sheet, formations, squad SM, OnBreakGroup/PatrolGrouping triggers. |
+| [`enemy.spec.MD`](./enemy.spec.MD) | tag_g_enemy | ENEMY-01–03: data contract (base + class/race/rank) + five-state SM, Tanker/Warrior/Rogue (+ Special). |
+| [`squad.spec.MD`](./squad.spec.MD) | tag_g_squad | SQUAD-01–04: data contract (1–8 + recipes + triggers) + formations, squad SM. |
 | [`scenes.spec.MD`](./scenes.spec.MD) | tag_g_scene_flow · tag_g_assets · tag_g_audio · tag_g_run_meta | SCENE-01–05: DOM Login/Result/Rankings + canvas Start/Title/Run/Pause. |
 | [`world.spec.MD`](./world.spec.MD) | tag_g_world | CAM-01–06 · RUL-02: landscape letterbox, camera, follow box, **Free Cam**, parallax, despawn. |
 | [`weapons.spec.MD`](./weapons.spec.MD) | tag_g_combat | WPN-01–08: Laser slice (Theme 5) · full catalog + ordnance (Theme 11). |
@@ -214,7 +214,7 @@ Full tables: [`decisions.spec.MD`](./decisions.spec.MD). Locked **D01–D45**; o
 
 | Field | Value |
 | --- | --- |
-| Hub version | **0.3.19** (CHAR + EQP data contracts) |
+| Hub version | **0.3.20** (CHAR + EQP + ENEMY + SQUAD data contracts) |
 | Structure | Index + 22 theme files in `.docs3/plans/` |
 | Crafting | Inventory + CraftSlot (`D31`, [`crafting.spec.MD`](./crafting.spec.MD)) |
 | Drops | DropManager loot / magnet / pool (`D32`, [`drops.spec.MD`](./drops.spec.MD)) |

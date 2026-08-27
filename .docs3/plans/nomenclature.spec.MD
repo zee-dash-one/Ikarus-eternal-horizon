@@ -3,7 +3,7 @@
 tag_g_docs tag_s_docs_tag_registry tag_g_system tag_s_system_manager_classes
 RESUME: Shared vocabulary — sheet layers, Summary codes, enemy/squad identity, scene boot order, *Manager naming, grep tag rules.
 
-**Hub index:** [`planning.spec.MD`](./planning.spec.MD) · **Hub version:** 0.3.18
+**Hub index:** [`planning.spec.MD`](./planning.spec.MD) · **Hub version:** 0.3.20
 
 ---
 
@@ -54,7 +54,7 @@ English only. All gameplay terms in this hub use the names below.
 | Squad            | 1–8 coordinated enemies                                               |
 | Strategy (Squad) | `PatrolGrouping` · `PatrolAround` · `LoopBack` · `Approach` · `Break` |
 | Formation        | `V` · `Circle` · `CircleII` · `CircleIII` · `CircleIV` · `LineDivers` |
-| Roles            | Leader · Center · InnerCircle · OuterCircle                           |
+| Roles            | Leader · Center · InnerCircle · OuterCircle · **Front** (CircleII Tanker line only) |
 
 
 ## Scene flow (boot)

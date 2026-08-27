@@ -476,7 +476,7 @@ Depende de `CHAR-03` (Summary) e `CTRL-01` (pad). Sem novos IDs formais além de
 
 | ID | Prio | Fonte | Aceite | Teste sugerido |
 | --- | --- | --- | --- | --- |
-| `ENEMY-01` | must | enemy | Todo inimigo expõe `Id`/`Strategy`/`Ticks` | `enemy/ENEMY-01.spec.ts` |
+| `ENEMY-01` | must | enemy | Todo inimigo expõe `id`/`strategy`/`ticks` + CHAR sheet | `enemy/ENEMY-01.spec.ts` |
 | `ENEMY-02` | must | enemy | SM de 5 estados; Flee pode reingressar | `enemy/ENEMY-02.spec.ts` |
 | `ENEMY-03` | must | enemy | Tanker/Warrior/Rogue (+Special); silhueta <0.3s | `enemy/ENEMY-03.spec.ts` |
 

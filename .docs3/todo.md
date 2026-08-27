@@ -218,7 +218,8 @@ Hub [`drops.spec.MD`](./plans/drops.spec.MD) · `RES-01`–`03` · `D32`.
 
 ## Theme 8 — Enemies (individual)
 
-Hub §5 · `ENEMY-01`…`ENEMY-03`.
+Hub [`enemy.spec.MD`](./plans/enemy.spec.MD) · `ENEMY-01`…`ENEMY-03`.
+**Spec opened:** data contract (Enemy Base · class/race/rank · craft = CHAR + base) + SDD files `.docs3/specs/enemy/ENEMY-01.spec.ts` · `ENEMY-02` · `ENEMY-03` (red until `poc3/` implements). Do not tick until `npm run verify` green.
 
 - [ ] Enemy craft = CHAR sheet + Enemy Base (`Id`, `Strategy`, `Ticks`) · `ENEMY-01`
 - [ ] Class kits: Tanker / Warrior / Rogue (+ Special stub) · `ENEMY-03` · `D18`
@@ -233,7 +234,8 @@ Hub §5 · `ENEMY-01`…`ENEMY-03`.
 
 ## Theme 9 — Squads (coordination)
 
-Hub §6 · `SQUAD-01`…`SQUAD-04`. Independent from enemy SM (`D16`).
+Hub [`squad.spec.MD`](./plans/squad.spec.MD) · `SQUAD-01`…`SQUAD-04`. Independent from enemy SM (`D16`).
+**Spec opened:** data contract (1–8 · recipes · triggers) + SDD files `.docs3/specs/squad/SQUAD-01.spec.ts` … `SQUAD-04` (red until `poc3/` implements). Do not tick until `npm run verify` green.
 
 - [ ] `SquadManager`: squad sheet 1–8 · roles Leader/Center/Inner/Outer · `SQUAD-01`
 - [ ] Squad SM: `PatrolGrouping` · `PatrolAround` · `LoopBack` · `Approach` · `Break` · `SQUAD-02`

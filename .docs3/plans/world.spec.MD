@@ -178,6 +178,8 @@ Run scene constructs one `CameraManager` + `ParallaxField` (View) for the lifeti
 
 ## BALANCE keys (feel stubs — Game Design owns numbers)
 
+All keys live on the single `BALANCE` object (`D46` · [`balance.spec.MD`](./balance.spec.MD) · `RUL-12`). Camera/letterbox numbers are presentation — View must not hardcode them.
+
 | Key | Intent |
 | --- | --- |
 | `layout.aspect` | `16/9` until `Q43` |

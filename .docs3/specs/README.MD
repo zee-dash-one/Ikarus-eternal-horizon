@@ -1,6 +1,6 @@
 # Ikarus Eternal Horizon — Índice Mestre de SDD
 
-> Gerado a partir de `planning.spec.MD` (hub), `decisions.spec.MD`, `todo.md` e dos arquivos de tema em `plans/` (`char-sheet`, `equipment`, `crafting`, `drops`, `enemy`, `squad`, `input`, `scenes`, `world`, `weapons`, `meteors`, `hud`, `nomenclature`, `achievements`, `rankings`, `builds`, `store`, `architecture`, `coverage`, `dev-tools`, `login`).
+> Gerado a partir de `planning.spec.MD` (hub), `decisions.spec.MD`, `todo.md` e dos arquivos de tema em `plans/` (`char-sheet`, `equipment`, `crafting`, `drops`, `enemy`, `squad`, `input`, `scenes`, `world`, `weapons`, `meteors`, `hud`, `nomenclature`, `achievements`, `rankings`, `builds`, `store`, `architecture`, `balance`, `coverage`, `dev-tools`, `login`).
 > Objetivo deste documento: **não reescrever nada** do que vocês já têm (está bem maduro), e sim **acoplar o SDD por cima** — 1 spec de teste por Requirement ID, rastreável até o Theme do `todo.md`.
 
 ---
@@ -11,8 +11,8 @@ O hub já tem quase tudo que um processo SDD sério precisa:
 
 | Peça do SDD | Onde já existe |
 | --- | --- |
-| IDs de requisito estáveis, com prioridade e critério de aceite | Tabelas `Requirements` em cada spec (`CHAR-`, `AUTH-`, `EQP-`, `RES-`, `ENEMY-`, `SQUAD-`, `CTRL-`, `SCENE-`, `CAM-`, `WPN-`, `MET-`, `HUD-`, `ACH-`, `RNK-`, `BLD-`, `STR-`, `ARCH-`, `RUL-02`) |
-| Decisões travadas (evita re-litigar arquitetura) | `decisions.spec.MD` (`D01`–`D42`) |
+| IDs de requisito estáveis, com prioridade e critério de aceite | Tabelas `Requirements` em cada spec (`CHAR-`, `AUTH-`, `EQP-`, `RES-`, `ENEMY-`, `SQUAD-`, `CTRL-`, `SCENE-`, `CAM-`, `WPN-`, `MET-`, `HUD-`, `ACH-`, `RNK-`, `BLD-`, `STR-`, `ARCH-`, `RUL-02`, `RUL-12`) |
+| Decisões travadas (evita re-litigar arquitetura) | `decisions.spec.MD` (`D01`–`D46`) |
 | Vocabulário único (evita ambiguidade nos testes) | `nomenclature.spec.MD` |
 | Backlog ordenado em fatias verticais | `todo.md` (Theme 0 → 14) com regra de DoD: *spec (quando existir) → teste falhando primeiro → `npm run verify` verde* |
 | Matriz de cobertura (nada é esquecido silenciosamente) | `coverage.spec.MD` |
@@ -67,12 +67,13 @@ O hub já tem quase tudo que um processo SDD sério precisa:
 │   └── …
 │
 ├── dev/                               # plans/dev-tools.spec.MD
-│   ├── DEV-01.spec.ts                  # Theme 0d · five /dev/* routes (DEV-only)
+│   ├── DEV-01.spec.ts                  # Theme 0d · four /dev/* routes (equips unified)
 │   ├── DEV-02.spec.ts                  # Theme 0d · DevCrudBridge ↔ DevContentManager
 │   ├── DEV-03.spec.ts                  # Theme 0d · CRUD ops all entity types
 │   ├── DEV-04.spec.ts                  # Theme 0d · Dexie dev store (not profile)
 │   ├── DEV-05.spec.ts                  # Theme 0d · PROD excludes /dev (BLD-05)
-│   └── DEV-06.spec.ts                  # Theme 0d · exportAll → content JSON
+│   ├── DEV-06.spec.ts                  # Theme 0d · exportAll → content JSON
+│   └── DEV-07.spec.ts                  # Theme 0d · equipType required on /dev/equips
 │
 ├── scenes/                            # plans/scenes.spec.MD
 │   ├── SCENE-01.spec.ts                # Theme 0b · fluxo Login → Start (DOM gate; ver auth/)
@@ -85,6 +86,9 @@ O hub já tem quase tudo que um processo SDD sério precisa:
 │
 ├── input/                             # plans/input.spec.MD
 │   └── CTRL-01.spec.ts                 # Theme 1  · pad virtual + 4 schemes exclusivos
+│
+├── balance/                           # plans/balance.spec.MD
+│   └── RUL-12.spec.ts                  # Theme 1  · BALANCE único (Core + canvas View)
 │
 ├── char/                              # plans/char-sheet.spec.MD
 │   ├── CHAR-01.spec.ts                 # Theme 3  · 54 slots (12+21+21)
@@ -379,11 +383,12 @@ Convenção de colunas: **Theme** = fatia vertical do `todo.md` · **Prio** = mu
 
 | ID | Prio | Fonte | Aceite | Teste sugerido |
 | --- | --- | --- | --- | --- |
-| `DEV-01` | must | dev-tools | Cinco rotas `/dev/*` só em DEV | `dev/DEV-01.spec.ts` |
+| `DEV-01` | must | dev-tools | Quatro rotas `/dev/*` só em DEV (`/dev/equips` unificado) | `dev/DEV-01.spec.ts` |
 | `DEV-02` | must | dev-tools | HTML + DevCrudBridge ↔ DevContentManager | `dev/DEV-02.spec.ts` |
 | `DEV-03` | must | dev-tools | Filter/list/create/edit/delete por entidade | `dev/DEV-03.spec.ts` |
 | `DEV-04` | must | dev-tools | Dexie dev store separado do profile | `dev/DEV-04.spec.ts` |
 | `DEV-05` | must | dev-tools | PROD sem `/dev` (`BLD-05`) | `dev/DEV-05.spec.ts` |
+| `DEV-07` | must | dev-tools | `/dev/equips` exige `equipType` (`generic` + 12 Special) | `dev/DEV-07.spec.ts` |
 
 ### Theme 0c — Start
 
@@ -396,8 +401,7 @@ Convenção de colunas: **Theme** = fatia vertical do `todo.md` · **Prio** = mu
 | ID | Prio | Fonte | Aceite | Teste sugerido |
 | --- | --- | --- | --- | --- |
 | `CTRL-01` | must | input | 4 esquemas exclusivos; zero import de hardware em `PlayerManager`/`FiringManager` | `input/CTRL-01.spec.ts` |
-
-*(`RUL-12` — balancer único — fica **Deferred**; não crie teste ainda, só not-drop no coverage.)*
+| `RUL-12` | must | balance | Core e canvas View leem valores authored só de `BALANCE`; `render/` sem literais de apresentação | `balance/RUL-12.spec.ts` |
 
 ### Theme 2 — World presentation
 
@@ -596,7 +600,7 @@ Theme 0 (scaffold + Golden Rule)
 | Asteroides (README antigo dizia `RUL-04`) | **Fechada** como `MET-*` | [`meteors.spec.MD`](../plans/meteors.spec.MD). Docs2 **`RUL-04` = pause** = já `SCENE-05` |
 | Theme 2 sem Requirement ID | **Fechada** | `CAM-01`–`05` · `RUL-02` em [`world.spec.MD`](../plans/world.spec.MD) |
 | `LORE-` inteiramente Deferred | **Sem ação** | Até Theme 14 se aproximar |
-| `META-` (HUD) sem spec | **Fechada** | [`hud.spec.MD`](../plans/hud.spec.MD) · `HUD-01`–`04` |
+| `RUL-12` single balancer (docs2 A01) | **Fechada** | [`balance.spec.MD`](../plans/balance.spec.MD) · `D46` — Core + canvas View |
 
 Ainda Deferred de propósito (não bloqueiam Theme 0–4, nem o slice de Theme 5 Laser): `LORE-*` · `RUL-06`/`09` (dificuldade) · `RUL-11` (score multipliers) · `RUL-14` (settings persist) · `WPN-08` · `ENM-07` Mega Asteroid.
 
@@ -606,9 +610,16 @@ Ainda Deferred de propósito (não bloqueiam Theme 0–4, nem o slice de Theme 5
 
 1. Copiar [`_templete-spec.spec.MD`](./_templete-spec.spec.MD) (template em **§3.1**) para o primeiro ID do Theme atual.
 2. Criar as pastas de domínio listadas em **§2 Folder Structure** (começar por `arch/` · `auth/` · `scenes/` no Theme 0).
-3. **Scenes SDD mínimo (Themes 0b/0c/4b/10):** `SCENE-01` · `SCENE-02` · `SCENE-04` · `SCENE-05` + `auth/AUTH-01` + `run-meta/SCENE-04-result` + `rankings/RNK-04`.
-4. Para o Theme em curso, copiar linhas da **§4** e criar um `.spec.ts` por ID — vermelho antes de código de produção.
-5. Lacunas da **§6** (WPN / CAM / MET / HUD / `RUL-02`) estão fechadas no hub 0.3.16 — copiar template quando o Theme correspondente abrir. `LORE-*` continua parked.
-6. Regenerar este README quando IDs ou pastas mudarem nos `plans/*.spec.MD`.
+3. **Theme 0 SDD (aberto):** `arch/ARCH-01` · `ARCH-02` · `ARCH-08` · `ARCH-16` · `ARCH-17` · `ARCH-18` · `ARCH-19` · `ARCH-20` — vermelhos até o scaffold `poc3/` + `demo-host/`.
+4. **Theme 0b SDD (aberto):** `auth/AUTH-01`–`10` · `scenes/SCENE-01` · `arch/ARCH-05`.
+5. **Theme 0c SDD (aberto):** `scenes/SCENE-02`.
+6. **Theme 0d SDD (aberto):** `dev/DEV-01`–`05` · `DEV-07` (`DEV-06`/`08`–`11` não abertos). `/dev/equips` único + `equipType` obrigatório.
+7. **Theme 1 SDD (aberto):** `input/CTRL-01` · `balance/RUL-12` (`GameLoop` = `ARCH-17`).
+8. **Theme 2 SDD (aberto):** `world/CAM-01`–`06` · `world/RUL-02`.
+9. **Theme 3 SDD (aberto):** `char/CHAR-01`–`06` (`CHAR-06-combat` = Theme 5).
+10. **Themes 4–13 SDD (aberto):** ver notas `**SDD opened:**` em cada Theme em [`todo.md`](../todo.md) — **45** novos `.spec.ts` neste batch (Themes 4/8/9 só reuso/anotação).
+11. **Próximo passo:** Theme 14 (ACH/STR/RNK adapters) ou scaffold `poc3/` (Theme 0) até `npm run verify` verde.
+12. Lacunas `LORE-*` e IDs defer (`BLD-07`, `ARCH-07`/`15`, `EQP-06`, `RES-04`/`06`, `WPN-08`, `RNK-03`/`05`/`06`–`09`) continuam parked.
+13. Regenerar este README quando IDs ou pastas mudarem nos `plans/*.spec.MD`.
 
 *Fonte de verdade: `plans/*.spec.MD` + `decisions.spec.MD` + `todo.md`. Este documento é mapa derivado para o SDD.*

@@ -3,13 +3,13 @@
 tag_g_docs tag_s_docs_coverage_matrix
 RESUME: Docs2 prefix/stage coverage matrix — what docs3 owns vs defers; naming deltas vs docs2/GDD.
 
-**Hub index:** [`planning.spec.MD`](./planning.spec.MD) · **Hub version:** 0.3.16
+**Hub index:** [`planning.spec.MD`](./planning.spec.MD) · **Hub version:** 0.3.21
 
 ---
 
 ## Deferred requirement prefixes (named for coverage; not detailed here)
 
-`LORE-` · remaining `RUL-` (`RUL-06` / `RUL-09` difficulty · `RUL-11` score multipliers · `RUL-14` settings persist) — checklist rows only. `WPN-` · `RUL-02` · `CAM-` · `MET-` · `HUD-` now have theme specs.
+`LORE-` · remaining `RUL-` (`RUL-06` / `RUL-09` difficulty · `RUL-11` score multipliers · `RUL-14` settings persist) — checklist rows only. `WPN-` · `RUL-02` · `RUL-12` · `CAM-` · `MET-` · `HUD-` now have theme specs.
 
 
 ## Docs2 coverage checklist
@@ -57,7 +57,7 @@ Legend: **Covered** = owned by a docs3 ID above · **Deferred** = acknowledged, 
 | `RUL-08` Itch package              | **Partial**            | `BLD-06`/`BLD-09` [`builds.spec.MD`](./builds.spec.MD)           |
 | `RUL-10` hull levels               | **Covered**            | via `CHAR-04`                                                   |
 | `RUL-11` score multipliers         | Deferred               |                                                                 |
-| `RUL-12` single balancer           | Deferred               | numbers still must not live in prose forever                    |
+| `RUL-12` single balancer           | **Covered**            | [`balance.spec.MD`](./balance.spec.MD) · `D46` — Core sim **and** canvas View paint |
 | `RUL-13` worst-case perf           | **Covered** (rule)     | `D07` Summary-only frame reads                                  |
 | `RUL-14` settings persistence      | Deferred               |                                                                 |
 | `EQP-`                     | **Partial**            | Grants `EQP-01`–`03` [`equipment.spec.MD`](./equipment.spec.MD) · craft `EQP-04`–`06` [`crafting.spec.MD`](./crafting.spec.MD) |
@@ -72,7 +72,7 @@ Legend: **Covered** = owned by a docs3 ID above · **Deferred** = acknowledged, 
 
 | Docs2 cards                         | Docs3 status               | Notes                                                                                             |
 | ----------------------------------- | -------------------------- | ------------------------------------------------------------------------------------------------- |
-| A01–A05 core/pools                  | N/A → Deferred             | Implementation concern · **A02 input** → **Covered** as `CTRL-01` / `InputManager` ([`input.spec.MD`](./input.spec.MD))        |
+| A01–A05 core/pools                  | **Partial**                | **A01 balancer** → **Covered** as `RUL-12` / `D46` ([`balance.spec.MD`](./balance.spec.MD)) · **A02 input** → **Covered** as `CTRL-01` · A03–A05 pools/loop still implementation |
 | B01–B04 camera/world                | **Covered**                | `CAM-01`–`05` · `RUL-02` [`world.spec.MD`](./world.spec.MD)                                   |
 | C01 Ship / C03 ShipHealth           | **Covered** (replaced)     | by `CHAR-`*                                                                                       |
 | C02 Controller                      | **Covered** (renamed)      | → `PlayerManager` reads virtual pad (`D22`, `D27`)                                                |

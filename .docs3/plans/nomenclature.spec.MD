@@ -3,7 +3,7 @@
 tag_g_docs tag_s_docs_tag_registry tag_g_system tag_s_system_manager_classes
 RESUME: Shared vocabulary — sheet layers, Summary codes, enemy/squad identity, scene boot order, *Manager naming, grep tag rules.
 
-**Hub index:** [`planning.spec.MD`](./planning.spec.MD) · **Hub version:** 0.3.20
+**Hub index:** [`planning.spec.MD`](./planning.spec.MD) · **Hub version:** 0.3.21
 
 ---
 
@@ -134,6 +134,8 @@ Runtime owners that drive a domain use the `…Manager` suffix. Do **not** use `
 
 
 Pause right-rail label for bind UI is **Controls** (settings), not a `*Controller` class.
+
+**`BALANCE`** is a frozen authored-config object exported from `core/balancer.ts` — **not** a `*Manager`. Pause **Dev Balancer** (`SCENE-05`) binds that object ([`balance.spec.MD`](./balance.spec.MD) · `D46` · `RUL-12`).
 
 ## Grep tags (matrix registry)
 

@@ -5,7 +5,7 @@ RESUME: Demo-first stack — Sim-first Core/View (`D40`); per-platform SDK persi
 
 **Hub index:** [`planning.spec.MD`](./planning.spec.MD) · **Hub version:** 0.3.12
 
-**Related:** [`builds.spec.MD`](./builds.spec.MD) (`D37`) · [`login.spec.MD`](./login.spec.MD) (`D41`) · [`store.spec.MD`](./store.spec.MD) (`D36`/`D38`/`D39`) · [`rankings.spec.MD`](./rankings.spec.MD) (`D30`/`D38`) · [`scenes.spec.MD`](./scenes.spec.MD) (`SCENE-01`) · [`input.spec.MD`](./input.spec.MD) (`D27`/`D40`) · [`decisions.spec.MD`](./decisions.spec.MD) (`D38`–`D41`)
+**Related:** [`builds.spec.MD`](./builds.spec.MD) (`D37`) · [`login.spec.MD`](./login.spec.MD) (`D41`) · [`store.spec.MD`](./store.spec.MD) (`D36`/`D38`/`D39`) · [`rankings.spec.MD`](./rankings.spec.MD) (`D30`/`D38`) · [`scenes.spec.MD`](./scenes.spec.MD) (`SCENE-01`) · [`input.spec.MD`](./input.spec.MD) (`D27`/`D40`) · [`balance.spec.MD`](./balance.spec.MD) (`D46`/`RUL-12`) · [`decisions.spec.MD`](./decisions.spec.MD) (`D38`–`D41` · `D46`)
 
 ---
 
@@ -78,7 +78,7 @@ RESUME: Default dev rule — pure fixed-tick Core owns all game truth; Presentat
 
 1. **Orchestrator / TDD:** define Command + Event + Snapshot fields in spec.
 2. **Programming (Sim):** implement Core tick + failing unit tests (**no Three.js**).
-3. **Game Design:** tune `BALANCE` numbers consumed by Core only.
+3. **Game Design:** tune `BALANCE` numbers consumed by Core (sim / catalog) **and** canvas View (presentation) (`D46` · `RUL-12`).
 4. **Programming (View):** subscribe to events/snapshot; implement `syncRender` + audio/VFX.
 5. **TDD:** integration tests mock snapshot; View tests optional/visual.
 
@@ -470,6 +470,7 @@ RESUME: DemoHost security — secrets, session, CSRF, schema validation, ranking
 | Path | Role |
 | --- | --- |
 | This file | Architecture / tech stack / DemoHost / persist (`D38`/`D39`, `ARCH-*`) |
+| [`balance.spec.MD`](./balance.spec.MD) | Authored-value source · `BALANCE` · `RUL-12` · `D46` |
 | [`builds.spec.MD`](./builds.spec.MD) | Four outputs, PlatformKit, artifacts (`D37`, `BLD-*`) |
 | [`store.spec.MD`](./store.spec.MD) | Store adapters including DemoHost |
 | [`rankings.spec.MD`](./rankings.spec.MD) | Ranking adapters including DemoHost |

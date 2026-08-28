@@ -12,7 +12,7 @@ POC-1 (`poc/`) and POC-2 (`poc2/`) are **frozen**. Do not edit them. Do not open
 
 Docs2 (`.docs2/`) is a **coverage checklist only** — not inherited architecture.
 
-## Hub summary (docs3 v0.3.20)
+## Hub summary (docs3 v0.3.21)
 
 English design source of truth — **index:** `.docs3/plans/planning.spec.MD` · **theme specs:** sibling `*.spec.MD` files in the same folder. Key locks:
 
@@ -20,6 +20,7 @@ English design source of truth — **index:** `.docs3/plans/planning.spec.MD` ·
 |---|---|
 | **Summary Sheet only** | Frame systems read `ENE` `SHD` `DEF` `MIT` `SPD` `S_D` `S_R` `REG` `LVL` `HP` + integrity state. Full Sheet recalc is event-driven (`CHAR-05`). Hits use precomputed `MIT` (`D24`). |
 | **Sim first (`D40`)** | **Core** = pure TS fixed tick (60 Hz) · Commands in → Events + **WorldSnapshot** out. **View** = Three.js/audio/VFX on rAF. **Golden Rule:** ESLint blocks `three`/DOM in `core/` · `systems/` · `gameobjects/` (`ARCH-16`). |
+| **BALANCE (`D46`)** | Authored values for Core sim **and** canvas paint live on `BALANCE` only. View = snapshot + `BALANCE`. Live HP/pose stay off it (`RUL-12`, [`balance.spec.MD`](.docs3/plans/balance.spec.MD)). |
 | **Death** | Integrity 0 = **DRIFTING**; next hit = **DEAD** → run over (`CHAR-04`). |
 | **Slots** | 12 Special (incl. Primary/Secondary weapon) + 21 Generic + 21 Effect (`CHAR-01`). |
 | **Damage** | Mitigate by `DEF/10` → Shield → Integrity; ship–ship = other `HP/2` (`CHAR-06`). |
@@ -27,7 +28,7 @@ English design source of truth — **index:** `.docs3/plans/planning.spec.MD` ·
 | **Enemy SM** | `EnterGate` · `FindGroup` · `LoopBack` · `Flee` · `Fury` (`ENEMY-02`). |
 | **Squad** | 1–8 · formations `V`/`Circle`/`CircleII–IV`/`LineDivers` · roles incl. **Front** (CircleII) · independent squad SM (`SQUAD-*`). |
 | **Boot** | HTML **Login** → canvas **Start/Title/Run**; HTML **Result/Rankings** post-run; Pause canvas overlay; Store DOM tab |
-| **IDs** | `CHAR-` · `ENEMY-` · `SQUAD-` · `SCENE-` · `CAM-` · `WPN-` · `MET-` · `HUD-` · `AUTH-` · `DEV-` · `CTRL-` · `RES-` · `RNK-` · `STR-` · `BLD-` · `ARCH-` · `RUL-02` (stable). System classes: `*Manager` only (`D22`) — sheet owner `CharSheetManager`. |
+| **IDs** | `CHAR-` · `ENEMY-` · `SQUAD-` · `SCENE-` · `CAM-` · `WPN-` · `MET-` · `HUD-` · `AUTH-` · `DEV-` · `CTRL-` · `RES-` · `RNK-` · `STR-` · `BLD-` · `ARCH-` · `RUL-02` · `RUL-12` (stable). System classes: `*Manager` only (`D22`) — sheet owner `CharSheetManager`. |
 | **World** | Landscape 16:9 + letterbox (`D44`); follow box + **Free Cam** (`CAM-06`) + 3-layer parallax; off-field despawn (`RUL-02`, [`world.spec.MD`](.docs3/plans/world.spec.MD)). |
 | **Weapons** | Theme 5 Laser pool (`WPN-01`/`02`/`05`); Theme 11 catalog + ordnance (`WPN-03`/`04`/`06`, [`weapons.spec.MD`](.docs3/plans/weapons.spec.MD)). |
 | **Meteors** | Pooled S/M/L through `MeteorManager` (`MET-*`, [`meteors.spec.MD`](.docs3/plans/meteors.spec.MD)). Docs2 `RUL-04` = pause (`SCENE-05`), not asteroids. |
@@ -43,7 +44,7 @@ English design source of truth — **index:** `.docs3/plans/planning.spec.MD` ·
 | **DemoHost** | Caddy → Node (`demo-host/`) static + `/api` + SQLite; Google OAuth; CSRF + Zod validation (`D38`, [`architecture.spec.MD`](.docs3/plans/architecture.spec.MD)). |
 | **Rankings** | `RankingManager` platform-blind; **one** `RankingPlatformAdapter` per build; Demo = `DemoRankingAdapter` (`D30`/`D38`); Local always mirrors (Dexie / disk). |
 
-Full decisions: [`decisions.spec.MD`](.docs3/plans/decisions.spec.MD) (`D01`–`D45`). Requirement IDs: theme files under `.docs3/plans/`.
+Full decisions: [`decisions.spec.MD`](.docs3/plans/decisions.spec.MD) (`D01`–`D46`). Requirement IDs: theme files under `.docs3/plans/`.
 
 ## Grep tags (`D25`/`D26`, hub §2.7)
 
@@ -90,7 +91,7 @@ A spec with an empty agent section is incomplete. `N/A` is allowed; blank is not
 - `updateSim(tick)` = Core logic (`D40`); `syncRender()` = View transforms/opacity/material only.
 - Core (`core/` · `systems/` · `gameobjects/`) **must not** import Three.js or DOM APIs — ESLint Golden Rule (`ARCH-16`/`ARCH-20`).
 - `npm run verify` in `poc3/` must include sim-boundary lint (merge `.docs3/templates/eslint-sim-boundary.snippet.js`).
-- Gameplay numbers only in `BALANCE`. Frame code must not recompute Full Sheet math.
+- Gameplay numbers **and** canvas presentation constants only in `BALANCE` (`D46`). Frame code must not recompute Full Sheet math.
 - Zero per-frame allocation on hot paths.
 - Audio is always `SoundManager` (volumes, mute, AI VO, cue log).
 - `npm run verify` in `poc3/` must be green before Orchestrator marks done.

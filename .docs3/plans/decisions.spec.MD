@@ -1,9 +1,9 @@
 # Ikarus Eternal Horizon — Locked Decisions
 
 tag_g_docs tag_s_docs_decisions_locked
-RESUME: D01–D45 locked design decisions and open questions Q01–Q49.
+RESUME: D01–D46 locked design decisions and open questions Q01–Q49.
 
-**Hub index:** [`planning.spec.MD`](./planning.spec.MD) · **Hub version:** 0.3.17
+**Hub index:** [`planning.spec.MD`](./planning.spec.MD) · **Hub version:** 0.3.21
 
 ---
 
@@ -52,9 +52,10 @@ RESUME: D01–D45 locked design decisions and open questions Q01–Q49.
 | **D40** | **Sim first, View second:** Core / Sim = pure TypeScript **fixed tick** (60 Hz); owns all game truth via Commands in → Events + immutable **WorldSnapshot** out. View / Presentation = Three.js + audio + VFX on **rAF**; **never** holds authoritative state. **Golden Rule:** ESLint + `npm run verify` block `three`/DOM/`render/` imports in `core/` · `systems/` · `gameobjects/`. See [`architecture.spec.MD`](./architecture.spec.MD) · `ARCH-16`–`20` | Theme 0+ · all gameplay |
 | **D41** | **Login UI bridge:** HTML/CSS auth panel (`#login-root`) in the game shell — same-document **JS Bridge** (`LoginUIBridge` ↔ `AuthManager`) — **no** WebSocket. **One** `AuthPlatformAdapter` per build (mirror `D36`). Demo = `DemoAuthAdapter` → DemoHost OAuth (`D38`). Password path mock on web (`D19`). Success → **Start**; valid session skips Login. See [`login.spec.MD`](./login.spec.MD) · `AUTH-*` | Theme 0b · `SCENE-01` |
 | **D42** | **Result + Rankings UI bridge:** HTML/CSS panels `#result-root` / `#rankings-root` — same-document **JS Bridge** (`ResultUIBridge` ↔ `RunResultManager` · `RankingsUIBridge` ↔ `RankingManager`) — **no** WebSocket. Post-run only; canvas **Run** disposes before Result shows. See [`scenes.spec.MD`](./scenes.spec.MD) · [`rankings.spec.MD`](./rankings.spec.MD) · `RNK-04` | Theme 10 · `SCENE-04` |
-| **D43** | **Dev content CRUD:** HTML/CSS routes **`/dev/*`** (special/generic equips, buffs, enemies, squads) — **DEV builds only** (`BLD-05`). Same-document **JS Bridge** (`DevCrudBridge` ↔ `DevContentManager`) → **Dexie** dev content store (separate from profile save `D39`). Export to content JSON for boot. **Not** the Pause Balancer tab. See [`dev-tools.spec.MD`](./dev-tools.spec.MD) · `DEV-*` | Theme 0d · tooling |
+| **D43** | **Dev content CRUD:** HTML/CSS routes **`/dev/*`** (**one** `/dev/equips` page with required `equipType`, plus buffs, enemies, squads) — **DEV builds only** (`BLD-05`). Same-document **JS Bridge** (`DevCrudBridge` ↔ `DevContentManager`) → **Dexie** dev content store (separate from profile save `D39`). Export to content JSON for boot. **Not** the Pause Balancer tab. See [`dev-tools.spec.MD`](./dev-tools.spec.MD) · `DEV-*` | Theme 0d · tooling |
 | **D44** | **Playfield aspect:** **landscape 16:9** with letterbox/pillarbox (never stretch). Docs2 portrait `540×960` is **not** used in `poc3/`. Relative asset URLs. Exact CSS size in `BALANCE.layout`. See [`world.spec.MD`](./world.spec.MD) · `CAM-01` · `Q43` | Theme 2 · View |
 | **D45** | **Combat HUD** is a **canvas overlay on Run** (`D23`) — `HudManager` is View-only. Reads `WorldSnapshot` / Summary Sheet (`D07`); never mutates Core; never lives in `core/` · `systems/` · `gameobjects/`. Pause run-panel (`SCENE-05`) is a different surface. See [`hud.spec.MD`](./hud.spec.MD) · `HUD-01`–`04` | Theme 10 · View |
+| **D46** | **`BALANCE` is the sole authored-value source** for Core (sim / catalogs / feel) **and** canvas View (layout, camera, palette, HUD chrome, VFX params). View paints from **WorldSnapshot + `BALANCE` only** — no presentation literals in `render/`. Live instance state (pose, Summary HP, integrity) never lives on `BALANCE`. Domain tables may *define* rows; only `core/balancer.ts` *exports* `BALANCE`. Pause → Dev Balancer binds that same object (`SCENE-05`). `/dev` export JSON hydrates catalogs at boot — not a second runtime source. See [`balance.spec.MD`](./balance.spec.MD) · `RUL-12` | Theme 1 · Core+View |
 
 
 ## Open (tune later — do not block this hub)

@@ -3,7 +3,7 @@
 tag_g_dev tag_s_dev_crud tag_s_dev_content_manager
 RESUME: DEV-only `/dev/*` HTML CRUD routes — filter, list, create, edit, delete game content; DevContentManager + JS Bridge; compiled out of production.
 
-**Hub index:** [`planning.spec.MD`](./planning.spec.MD) · **Hub version:** 0.3.15
+**Hub index:** [`planning.spec.MD`](./planning.spec.MD) · **Hub version:** 0.3.20
 
 **Related:** [`architecture.spec.MD`](./architecture.spec.MD) (`ui/` · `D40`) · [`builds.spec.MD`](./builds.spec.MD) (`BLD-05`) · [`equipment.spec.MD`](./equipment.spec.MD) (`EQP-01` · Special/Generic) · [`char-sheet.spec.MD`](./char-sheet.spec.MD) (`CHAR-01` · Effect slots) · [`enemy.spec.MD`](./enemy.spec.MD) · [`squad.spec.MD`](./squad.spec.MD) · [`scenes.spec.MD`](./scenes.spec.MD) (Pause **Dev** tab = live Balancer — different tool) · [`login.spec.MD`](./login.spec.MD) / [`store.spec.MD`](./store.spec.MD) (same DOM + JS Bridge pattern)
 
@@ -40,15 +40,18 @@ Dev CRUD screens live under client routes **`/dev/*`** (Vite SPA — same shell 
 
 ### Routes (locked v1)
 
+**Four** entity modules. Special and Generic equips share **one** page; slot kind is a **required** form field, not a route.
+
 | Route | Entity | Design anchor |
 | --- | --- | --- |
-| `/dev/special-equips` | **Special equips** — Primary/Secondary weapon, Dash, Bomb, Wings, Shield, Armor, Rockets, Engine, Collector, Converter, Lab | `CHAR-01` Special slots · [`equipment.spec.MD`](./equipment.spec.MD) |
-| `/dev/generic-equips` | **Generic equips** — any generic-slot item (`*_mod`/`*_mul` grants) | `CHAR-01` Generic slots · `EQP-01` |
+| `/dev/equips` | **Equips** (Special + Generic) — required `equipType` | `CHAR-01` · [`equipment.spec.MD`](./equipment.spec.MD) `EQP-01` |
 | `/dev/buffs` | **Buffs / Effects** — temporary Summary patches (Effect slots) | `CHAR-01` Effect slots · contextual `when` (`EQP-02`) |
 | `/dev/enemies` | **Enemies** — Enemy Base + class + CHAR sheet binding | `ENEMY-01`–`03` · [`consider/enemy_sheet.MD`](../consider/enemy_sheet.MD) |
 | `/dev/squads` | **Squads** — squad sheet + formation defaults | `SQUAD-01`–`03` · [`consider/squad_sheet.MD`](../consider/squad_sheet.MD) |
 
-Optional hub: `/dev` → index linking all five CRUD modules.
+Optional hub: `/dev` → index linking all **four** CRUD modules.
+
+**`equipType` (required on create/update):** `generic` **or** one of the 12 Special ids (`Primary_Weapon`, `Secondary_Weapon`, `Dash`, `Bomb`, `Wings`, `Shield`, `Armor`, `Rockets`, `Engine`, `Collector`, `Converter`, `Lab`). Missing / unknown type → validation error; save blocked. Export still splits rows into `EquipCatalog.special` vs `.generic` (`kind` + `specialSlot` on Special).
 
 ```text
 [HTML /dev/enemies] --save--> DevCrudBridge.save(record)
@@ -71,26 +74,24 @@ Gameplay Core **never** reads Dexie directly at runtime — boot loads exported 
 tag_g_dev tag_s_dev_entities
 RESUME: CRUD records mirror EQP-01 catalog types; enemy/squad sketches remain Theme 0d.
 
-Equip / buff rows **are** `SpecialEquipItem` / `GenericEquipItem` / `EffectItem` ([`equipment.spec.MD`](./equipment.spec.MD)). Fields below are the form mapping.
+Equip / buff rows **are** `SpecialEquipItem` / `GenericEquipItem` / `EffectItem` ([`equipment.spec.MD`](./equipment.spec.MD)). The **form** is one `DevEquipRecord`; persist/export maps `equipType` → catalog `kind`.
 
-### Special equip (`DevSpecialEquipRecord`)
+### Equip (`DevEquipRecord`) — single `/dev/equips` form
 
 | Field | Rule |
 | --- | --- |
 | `id` | Stable kebab/snake id — unique |
 | `displayName` | UI label |
-| `specialSlot` | One of 12 Special types (`Primary_Weapon`, `Secondary_Weapon`, `Dash`, …) |
+| `equipType` | **Required.** `generic` \| `Primary_Weapon` \| `Secondary_Weapon` \| `Dash` \| `Bomb` \| `Wings` \| `Shield` \| `Armor` \| `Rockets` \| `Engine` \| `Collector` \| `Converter` \| `Lab` |
 | `grants` | `EQP-01` grant list `{ field, value, when? }[]` |
 | `tags` | Optional filter tags for list view |
 
-### Generic equip (`DevGenericEquipRecord`)
-
-| Field | Rule |
+| `equipType` | Catalog row |
 | --- | --- |
-| `id` | Unique |
-| `displayName` | UI label |
-| `grants` | `EQP-01` grants only — no special slot type gate |
-| `tags` | Optional |
+| `generic` | `GenericEquipItem` (`kind: 'generic'`; no `specialSlot`) |
+| any Special id | `SpecialEquipItem` (`kind: 'special'`; `specialSlot === equipType`) |
+
+List toolbar may filter by `equipType`. There is **no** separate Special vs Generic route.
 
 ### Buff / Effect (`DevBuffRecord`)
 
@@ -222,13 +223,13 @@ RESUME: Shared CRUD chrome — entity-specific columns plug into data tables.
 
 | ID | Prio | Requirement | Acceptance |
 | --- | --- | --- | --- |
-| `DEV-01` | must | Five `/dev/*` CRUD routes exist in DEV builds only | `/dev/special-equips` · `generic-equips` · `buffs` · `enemies` · `squads` |
+| `DEV-01` | must | Four `/dev/*` CRUD routes exist in DEV builds only | `/dev/equips` · `buffs` · `enemies` · `squads` |
 | `DEV-02` | must | HTML/CSS + `DevCrudBridge` ↔ `DevContentManager` (`D43`) | Same bridge pattern as Store/Login |
-| `DEV-03` | must | Filter + list + create + edit + delete per entity | Uniform CRUD on all five modules |
+| `DEV-03` | must | Filter + list + create + edit + delete per entity | Uniform CRUD on all four modules |
 | `DEV-04` | must | Persist via `DevContentStore` (Dexie) separate from profile save | Reload restores dev records |
 | `DEV-05` | must | Production builds exclude `/dev` routes and bundle (`BLD-05`) | `PROD` → no dev CRUD reachable |
 | `DEV-06` | should | Export dev content to JSON for game boot | `exportAll()` produces loadable bundle |
-| `DEV-07` | should | Special equip form enforces `specialSlot` enum (12 types) | Invalid slot → validation error |
+| `DEV-07` | must | Equip form requires `equipType` (`generic` + 12 Special ids) | Missing/unknown type → validation error; no save |
 | `DEV-08` | should | Enemy form exposes class + strategy defaults | Matches `ENEMY-01`/`ENEMY-03` fields |
 | `DEV-09` | should | Squad form exposes formation + member count 1–8 | Invalid formation mix flagged (stub OK v1) |
 | `DEV-10` | defer | Generic equip + buff grant editors (full `EQP-01` UI) | Grant **types** locked; form chrome still stub JSON OK |

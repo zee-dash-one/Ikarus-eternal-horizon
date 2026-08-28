@@ -3,7 +3,7 @@
 tag_g_docs tag_s_docs_tag_registry
 RESUME: Design hub authority — requirement IDs, locked decisions, coverage matrix, and grep-tag matrix for docs3 / poc3.
 
-**Version:** 0.3.20 · **Status:** active (design hub · implementation in `poc3/`)
+**Version:** 0.3.21 · **Status:** active (design hub · implementation in `poc3/`)
 **Purpose:** the **design hub index** — theme specs live as sibling files in this folder for the next model of the game. It is written **from scratch**. Canonical rules for ship sheets, individual enemies, and squads come from `[.docs3/consider/](../consider/)` (historical drafts). Runtime systems read only the **Summary Sheet**; the **Full Sheet** exists for equip/effect recalculation — not per-frame math. Code and tasks: `poc3/` + `[.docs3/todo.md](../todo.md)`.
 **Sources:** `[../consider/char_sheet.MD](../consider/char_sheet.MD)` · `[../consider/enemy_sheet.MD](../consider/enemy_sheet.MD)` · `[../consider/squad_sheet.MD](../consider/squad_sheet.MD)` · public GDD `[README.md](../../README.md)`
 **Docs2 role:** `[.docs2/plans/planning.spec.MD](../../.docs2/plans/planning.spec.MD)` is a **coverage checklist only** — not inherited architecture, not a workstream, not a port map. See [`coverage.spec.MD`](./coverage.spec.MD).
@@ -21,7 +21,7 @@ RESUME: Design hub authority — requirement IDs, locked decisions, coverage mat
 | A docs2 **coverage matrix** so no topic is silently dropped   | A copy or “thin inherit” of docs2 §0–§10        |
 
 
-**Implementation workstream:** code lives in `poc3/`; backlog is `[.docs3/todo.md](../todo.md)`. This hub stays the design authority (`D01`–`D45` in [`decisions.spec.MD`](./decisions.spec.MD); domain detail in theme files below).
+**Implementation workstream:** code lives in `poc3/`; backlog is `[.docs3/todo.md](../todo.md)`. This hub stays the design authority (`D01`–`D46` in [`decisions.spec.MD`](./decisions.spec.MD); domain detail in theme files below).
 
 **Runtime cost rule (hard):** every frame, combat/AI/render may read **Summary Sheet fields only** (`ENE`, `SHD`, `DEF`, `MIT`, `SPD`, `S_D`, `S_R`, `REG`, `LVL`, `HP`, integrity state). Full Sheet recalculation runs **only** on equip change, effect activate/expire, or the LVL triggers defined in `CHAR-05`. Hit resolution must **not** recompute `DEF / 10` — it reads precomputed `MIT`.
 
@@ -52,7 +52,7 @@ Each file is self-contained English design authority for its domain. **This inde
 | Spec | Primary tags | Super-summary |
 | --- | --- | --- |
 | [`nomenclature.spec.MD`](./nomenclature.spec.MD) | tag_g_system · tag_g_docs | Sheet layers, Summary codes, enemy/squad vocabulary, canvas scene boot order, *Manager table, grep tag rules and matrix snapshot. |
-| [`decisions.spec.MD`](./decisions.spec.MD) | tag_g_docs | Locked decisions D01–D45 and open questions Q01–Q49. |
+| [`decisions.spec.MD`](./decisions.spec.MD) | tag_g_docs | Locked decisions D01–D46 and open questions Q01–Q49. |
 | [`char-sheet.spec.MD`](./char-sheet.spec.MD) | tag_g_char_sheet · tag_g_combat | CHAR-01–06: data contract (Core + Balancer) + 54 slots, Full/Summary math, DRIFTING→DEAD, recalc, MIT. |
 | [`equipment.spec.MD`](./equipment.spec.MD) | tag_g_equipment | EQP-01–03: data contract (registry + items) + *_mod/*_mul grants, when-bundles, lab craft time. |
 | [`crafting.spec.MD`](./crafting.spec.MD) | tag_g_resources · tag_g_crafting | RES-05 · EQP-04–06: inventory caps, CraftSlot, recipes, energy tension. |
@@ -62,6 +62,7 @@ Each file is self-contained English design authority for its domain. **This inde
 | [`store.spec.MD`](./store.spec.MD) | tag_g_progression | STR-01–16: StoreManager, BUD, streak, JS Bridge, per-platform persist adapters. |
 | [`builds.spec.MD`](./builds.spec.MD) | tag_g_builds | BLD-01–11: Demo · Itch · Poki · Steam production outputs + PlatformKit wire. |
 | [`architecture.spec.MD`](./architecture.spec.MD) | tag_g_builds · tag_g_engine | ARCH-01–20 · D38–D40: stack, DemoHost, persist, Core/View + ESLint guardrails. |
+| [`balance.spec.MD`](./balance.spec.MD) | tag_g_engine | RUL-12 · D46: single `BALANCE` for Core sim **and** canvas View paint. |
 | [`enemy.spec.MD`](./enemy.spec.MD) | tag_g_enemy | ENEMY-01–03: data contract (base + class/race/rank) + five-state SM, Tanker/Warrior/Rogue (+ Special). |
 | [`squad.spec.MD`](./squad.spec.MD) | tag_g_squad | SQUAD-01–04: data contract (1–8 + recipes + triggers) + formations, squad SM. |
 | [`scenes.spec.MD`](./scenes.spec.MD) | tag_g_scene_flow · tag_g_assets · tag_g_audio · tag_g_run_meta | SCENE-01–05: DOM Login/Result/Rankings + canvas Start/Title/Run/Pause. |
@@ -97,13 +98,14 @@ Each file is self-contained English design authority for its domain. **This inde
 | DemoHost architecture (`D38`) | [`architecture.spec.MD`](./architecture.spec.MD) |
 | Client persistence (`D39`) | [`architecture.spec.MD`](./architecture.spec.MD) · Itch Dexie · Poki SDK · Steam Tauri FS |
 | Sim-first Core/View (`D40`) | [`architecture.spec.MD`](./architecture.spec.MD) · fixed tick · Commands/Events |
+| Authored values (`D46` · `RUL-12`) | [`balance.spec.MD`](./balance.spec.MD) — Core + canvas View read `BALANCE` only |
 | Ranking adapters (`D30`) | [`rankings.spec.MD`](./rankings.spec.MD) |
 | World / despawn (`D44` · `RUL-02`) | [`world.spec.MD`](./world.spec.MD) |
 | Weapons / ordnance | [`weapons.spec.MD`](./weapons.spec.MD) |
 | Meteors | [`meteors.spec.MD`](./meteors.spec.MD) |
 | Combat HUD (`D45`) | [`hud.spec.MD`](./hud.spec.MD) |
 
-Requirement IDs (`CHAR-` · `ENEMY-` · `SQUAD-` · `SCENE-` · `CAM-` · `WPN-` · `MET-` · `HUD-` · `AUTH-` · `DEV-` · `CTRL-` · `ACH-` · `EQP-` · `RES-` · `RNK-` · `STR-` · `BLD-` · `ARCH-` · `RUL-02`) live in the theme files above. Deferred prefixes (`LORE-` · remaining `RUL-06`/`09`/`11`/`14`) → [`coverage.spec.MD`](./coverage.spec.MD).
+Requirement IDs (`CHAR-` · `ENEMY-` · `SQUAD-` · `SCENE-` · `CAM-` · `WPN-` · `MET-` · `HUD-` · `AUTH-` · `DEV-` · `CTRL-` · `ACH-` · `EQP-` · `RES-` · `RNK-` · `STR-` · `BLD-` · `ARCH-` · `RUL-02` · `RUL-12`) live in the theme files above. Deferred prefixes (`LORE-` · remaining `RUL-06`/`09`/`11`/`14`) → [`coverage.spec.MD`](./coverage.spec.MD).
 
 ---
 
@@ -154,7 +156,7 @@ Creation rules (`D25`, `D26`): see [`nomenclature.spec.MD`](./nomenclature.spec.
 
 ## 4. Decisions index
 
-Full tables: [`decisions.spec.MD`](./decisions.spec.MD). Locked **D01–D45**; open **Q01–Q49**.
+Full tables: [`decisions.spec.MD`](./decisions.spec.MD). Locked **D01–D46**; open **Q01–Q49**.
 
 | Decision | One-line |
 | --- | --- |
@@ -181,9 +183,10 @@ Full tables: [`decisions.spec.MD`](./decisions.spec.MD). Locked **D01–D45**; o
 | **D40** | Sim first / View second — fixed-tick Core · Commands → Events/Snapshot → rAF View |
 | **D41** | Login HTML panel via JS Bridge + one `AuthPlatformAdapter` per build |
 | **D42** | Result + Rankings HTML panels via JS Bridge (`ResultUIBridge` / `RankingsUIBridge`) |
-| **D43** | `/dev/*` content CRUD (DEV-only) · `DevContentManager` · Dexie dev store |
+| **D43** | `/dev/*` content CRUD (DEV-only) — one `/dev/equips` + `equipType` |
 | **D44** | Landscape **16:9** playfield + letterbox — docs2 portrait retired |
 | **D45** | Combat HUD is canvas overlay on Run — Summary/snapshot only |
+| **D46** | `BALANCE` sole authored-value source — Core sim **and** canvas View paint (`RUL-12`) |
 
 ---
 
@@ -202,6 +205,7 @@ Full tables: [`decisions.spec.MD`](./decisions.spec.MD). Locked **D01–D45**; o
 | [`../../.docs2/plans-later/resources-plan.spec.MD`](../../.docs2/plans-later/resources-plan.spec.MD) | Satellite source for [`drops.spec.MD`](./drops.spec.MD) · [`crafting.spec.MD`](./crafting.spec.MD) |
 | [`../../.docs2/plans-later/equipments-plan.spec.MD`](../../.docs2/plans-later/equipments-plan.spec.MD) | Satellite source for equip recipes / craft outputs |
 | [`architecture.spec.MD`](./architecture.spec.MD) | Tech stack · DemoHost · `D38` · `ARCH-*` |
+| [`balance.spec.MD`](./balance.spec.MD) | `BALANCE` authored-value source · `RUL-12` · `D46` |
 | [`world.spec.MD`](./world.spec.MD) | Camera · parallax · `RUL-02` despawn · `CAM-*` |
 | [`weapons.spec.MD`](./weapons.spec.MD) | Laser slice · catalog · ordnance · `WPN-*` |
 | [`meteors.spec.MD`](./meteors.spec.MD) | Asteroids · `MET-*` |
@@ -214,8 +218,8 @@ Full tables: [`decisions.spec.MD`](./decisions.spec.MD). Locked **D01–D45**; o
 
 | Field | Value |
 | --- | --- |
-| Hub version | **0.3.20** (CHAR + EQP + ENEMY + SQUAD data contracts) |
-| Structure | Index + 22 theme files in `.docs3/plans/` |
+| Hub version | **0.3.21** (`BALANCE` / `RUL-12` · `D46` — Core + canvas View) |
+| Structure | Index + sibling theme files in `.docs3/plans/` (incl. [`balance.spec.MD`](./balance.spec.MD)) |
 | Crafting | Inventory + CraftSlot (`D31`, [`crafting.spec.MD`](./crafting.spec.MD)) |
 | Drops | DropManager loot / magnet / pool (`D32`, [`drops.spec.MD`](./drops.spec.MD)) |
 | Store | Hub shop + BUD + streak + adapters (`D33`–`D36`/`D38`, [`store.spec.MD`](./store.spec.MD)) |

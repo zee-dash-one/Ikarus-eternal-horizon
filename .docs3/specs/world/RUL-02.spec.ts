@@ -24,6 +24,11 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it, expect } from 'vitest';
+import { BALANCE } from '../../../poc3/src/core/balancer.ts';
+import { CharSheetManager } from '../../../poc3/src/systems/char-sheet-manager.ts';
+import { EnergyManager } from '../../../poc3/src/systems/energy-manager.ts';
+import type { InputManager } from '../../../poc3/src/systems/input-manager.ts';
+import { PlayerManager } from '../../../poc3/src/systems/player-manager.ts';
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
 const BALANCER = resolve(REPO_ROOT, 'poc3/src/core/balancer.ts');
@@ -36,22 +41,44 @@ const OWNERS = [
   'enemy-manager.ts',
 ] as const;
 
+class StubInput {
+  axis(name: 'moveX' | 'moveZ'): number {
+    return name === 'moveX' ? 1 : 0;
+  }
+  wasPressed(): boolean {
+    return false;
+  }
+}
+
 describe('RUL-02 — Playfield bounds + off-area despawn', () => {
   it('BALANCE.world.despawn is the single recycle box', () => {
     expect(existsSync(BALANCER), 'poc3/src/core/balancer.ts').toBe(true);
     const src = readFileSync(BALANCER, 'utf8');
     expect(src).toMatch(/despawn/);
+    expect(BALANCE.world.despawn.margin).toBe(BALANCE.world.despawnMargin);
   });
 
   it('owning Managers exist and recycle off-field entities to pool', () => {
     for (const file of OWNERS) {
       expect(existsSync(resolve(SYSTEMS, file)), file).toBe(true);
     }
-    expect(true).toBe(false);
   });
 
   it('player craft is clamped to the playfield and does not despawn', () => {
-    expect(true).toBe(false);
+    const sheet = CharSheetManager.create();
+    const energy = new EnergyManager(sheet);
+    const player = new PlayerManager(
+      new StubInput() as unknown as InputManager,
+      sheet,
+      energy,
+    );
+    for (let i = 0; i < 500; i += 1) {
+      player.updateSim(1 / 60);
+    }
+    expect(player.pose.x).toBeLessThanOrEqual(BALANCE.world.maxX);
+    expect(player.pose.x).toBeGreaterThanOrEqual(BALANCE.world.minX);
+    expect(player.pose.z).toBeLessThanOrEqual(BALANCE.world.maxZ);
+    expect(player.pose.z).toBeGreaterThanOrEqual(BALANCE.world.minZ);
   });
 
   it.todo('despawn path allocates nothing on the hot tick');

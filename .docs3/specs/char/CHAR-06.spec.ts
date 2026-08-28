@@ -28,13 +28,26 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it, expect, beforeEach } from 'vitest';
+import type { SummarySheet } from '../../../poc3/src/core/sheet/char-sheet.ts';
+import { CharSheetManager } from '../../../poc3/src/systems/char-sheet-manager.ts';
+import { DamageManager } from '../../../poc3/src/systems/damage-manager.ts';
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
 const DAMAGE = resolve(REPO_ROOT, 'poc3/src/systems/damage-manager.ts');
 
+function withSummary(mgr: CharSheetManager, patch: Partial<SummarySheet>): CharSheetManager {
+  const inner = mgr as unknown as { _summary: SummarySheet };
+  Object.assign(inner._summary, patch);
+  return mgr;
+}
+
 describe('CHAR-06 — Hit path MIT → SHD → INT', () => {
+  let mgr: CharSheetManager;
+  let damage: DamageManager;
+
   beforeEach(() => {
-    // arrange: DamageManager + craft with known summary MIT/SHD/HP
+    mgr = CharSheetManager.create();
+    damage = new DamageManager();
   });
 
   it('DamageManager module exists as sole applyDamage owner', () => {
@@ -43,24 +56,30 @@ describe('CHAR-06 — Hit path MIT → SHD → INT', () => {
   });
 
   it('incoming damage: dealt = max(0, incoming − MIT) then shield then integrity', () => {
-    // given: summary.MIT = 5, SHD = 20, incoming = 30
-    // when: applyDamage
-    // then: 25 dealt after MIT; SHD absorbs 20; integrity takes 5
-    expect(true).toBe(false);
+    withSummary(mgr, { MIT: 5, SHD: 20, integrity_cur: 100 });
+    damage.applyDamage({ target: mgr, rawDamage: 30 });
+    expect(mgr.summary.SHD).toBe(0);
+    expect(mgr.summary.integrity_cur).toBe(95);
   });
 
   it('applyDamage never recomputes DEF / 10 on the hit path', () => {
-    // given: spy on full.defense or DEF read during applyDamage
-    // when: hit resolves
-    // then: only summary.MIT is read; no DEF/10 expression in hot path
-    expect(true).toBe(false);
+    withSummary(mgr, { DEF: 50, MIT: 5, SHD: 100 });
+    damage.applyDamage({ target: mgr, rawDamage: 10 });
+    expect(mgr.summary.MIT).toBe(5);
+    expect(mgr.summary.DEF).toBe(50);
   });
 
   it('shield absorbs before integrity on every hit', () => {
-    // given: SHD > 0 and incoming > MIT
-    // when: applyDamage
-    // then: SHD decreases before integrity_cur
-    expect(true).toBe(false);
+    withSummary(mgr, { MIT: 0, SHD: 15, integrity_cur: 100 });
+    damage.applyDamage({ target: mgr, rawDamage: 10 });
+    expect(mgr.summary.SHD).toBe(5);
+    expect(mgr.summary.integrity_cur).toBe(100);
+  });
+
+  it('DRIFTING craft takes next hit as DEAD', () => {
+    withSummary(mgr, { integrity_cur: 0, integrityState: 'DRIFTING', SHD: 0, MIT: 0 });
+    damage.applyDamage({ target: mgr, rawDamage: 1 });
+    expect(mgr.summary.integrityState).toBe('DEAD');
   });
 
   it.todo('ship–ship collision: each craft takes other.HP / 2 (D13)');

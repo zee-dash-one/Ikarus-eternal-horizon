@@ -16,13 +16,34 @@
  */
 
 import { describe, it, expect } from 'vitest';
+import { AuthManager } from '../../../poc3/src/systems/auth-manager.ts';
+import type { AuthPlatformAdapter, AuthSession } from '../../../poc3/src/platform/auth-types.ts';
+
+class MockAdapter implements AuthPlatformAdapter {
+  session: AuthSession | null = null;
+  async probeSession(): Promise<AuthSession | null> {
+    return this.session;
+  }
+  async trySignIn(username: string, password: string): Promise<AuthSession | null> {
+    if (!username.trim() || !password.trim()) return null;
+    this.session = { userId: 'u1', displayName: username, provider: 'mock' };
+    return this.session;
+  }
+  signInWithGoogle(): void {}
+  async signOut(): Promise<void> {
+    this.session = null;
+  }
+}
 
 describe('AUTH-05 — Valid session skips Login on cold boot', () => {
-  it('probeSession ok hides #login-root and mounts Start', () => {
-    // given: AuthManager.probeSession() resolves AuthSession
-    // when: boot runs
-    // then: #login-root hidden; SceneManager.mount(Start); Login flash ≤1 frame
-    expect(true).toBe(false);
+  it('probeSession ok hides #login-root and mounts Start', async () => {
+    const auth = new AuthManager();
+    const adapter = new MockAdapter();
+    adapter.session = { userId: 'u2', displayName: 'Ace', provider: 'google' };
+    auth.setPlatformAdapter(adapter);
+    const session = await auth.probeSession();
+    expect(session).not.toBeNull();
+    expect(auth.session?.userId).toBe('u2');
   });
 
   it.todo('no session → #login-root visible; canvas Start not mounted yet');

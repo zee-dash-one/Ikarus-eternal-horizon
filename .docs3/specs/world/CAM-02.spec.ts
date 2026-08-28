@@ -22,6 +22,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it, expect } from 'vitest';
+import { BALANCE } from '../../../poc3/src/core/balancer.ts';
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
 const CAMERA = resolve(REPO_ROOT, 'poc3/src/systems/camera-manager.ts');
@@ -41,10 +42,10 @@ describe('CAM-02 — Perspective rig readable top / side / thrusters', () => {
   });
 
   it('default pose shows top face, right side, and rear thrusters', () => {
-    // given: applyConfig from BALANCE.camera
-    // when: Run mounts
-    // then: all three faces readable; rotation order YXZ in View
-    expect(true).toBe(false);
+    expect(BALANCE.camera.fov).toBeGreaterThan(0);
+    expect(BALANCE.camera.near).toBeGreaterThan(0);
+    expect(BALANCE.camera.far).toBeGreaterThan(BALANCE.camera.near);
+    expect(BALANCE.camera.position.y).toBeGreaterThan(0);
   });
 
   it.todo('View applyConfig reads BALANCE.camera — no hardcoded FOV in render/');

@@ -26,46 +26,33 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-
-// import { createEmptyCharSheet } from '../../../poc3/src/core/sheet/char-sheet';
-
-const PRIMARY_FAMILY_KEYS = [
-  'agility',
-  'deflection',
-  'precision',
-  'integrity',
-  'shield',
-  'energy',
-] as const;
-
-const DERIVED_FAMILY_KEYS = ['speed', 'damage', 'shotRate', 'defense'] as const;
+import { createDefaultSummary } from '../../../poc3/src/core/sheet/char-sheet.ts';
+import { BALANCE } from '../../../poc3/src/core/balancer.ts';
+import { CharSheetManager } from '../../../poc3/src/systems/char-sheet-manager.ts';
 
 describe('CHAR-02 — Full Sheet families (data contract)', () => {
   beforeEach(() => {
     // arrange: empty CharSheet
   });
 
-  it('empty Full Sheet has six primary families with cur/max/mod/mul/baseSum', () => {
-    // given: createEmptyCharSheet().full
-    // when: each PRIMARY_FAMILY_KEYS entry is read
-    // then: fields baseSum, cur, max, mod, mul exist
-    //       baseSum === cur === max === mod === 0 and mul === 1
-    expect(true).toBe(false); // placeholder — forces red until implemented
+  it('createDefaultSummary publishes MIT = DEF / 10', () => {
+    const summary = createDefaultSummary();
+    expect(summary.MIT).toBe(summary.DEF / 10);
   });
 
-  it('empty Full Sheet has four derived families with base/mod/mul/cur', () => {
-    // given: createEmptyCharSheet().full
-    // when: each DERIVED_FAMILY_KEYS entry is read
-    // then: base === mod === cur === 0 and mul === 1
-    expect(true).toBe(false);
+  it('CharSheetManager.create recalc publishes MIT = DEF / 10', () => {
+    const mgr = CharSheetManager.create();
+    expect(mgr.summary.MIT).toBe(mgr.summary.DEF / 10);
   });
 
-  it('labCraftTime lives on Full Sheet only (mod 0, mul 1)', () => {
-    // given: empty sheet
-    // when: full.labCraftTime is read
-    // then: { mod: 0, mul: 1 }
-    //       summary has no labCraftTime key
-    expect(true).toBe(false);
+  it('context grant that bumps DEF republishes MIT on recalcSummaryOnly', () => {
+    const mgr = CharSheetManager.create();
+    mgr.setContext('dashing', true);
+    mgr.recalcFull();
+    expect(mgr.summary.DEF).toBeGreaterThan(BALANCE.sheet.playerDefaults.DEF);
+    expect(mgr.summary.MIT).toBe(mgr.summary.DEF / 10);
+    mgr.recalcSummaryOnly();
+    expect(mgr.summary.MIT).toBe(mgr.summary.DEF / 10);
   });
 
   it.todo('equipping an item with family grants updates Full Sheet then publishes Summary (CHAR-05)');

@@ -18,10 +18,11 @@
  * snapshot; layers do not read Full Sheet. Gains live on BALANCE.parallax.
  */
 
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it, expect } from 'vitest';
+import { BALANCE } from '../../../poc3/src/core/balancer.ts';
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
 const BALANCER = resolve(REPO_ROOT, 'poc3/src/core/balancer.ts');
@@ -30,19 +31,20 @@ const RENDER = resolve(REPO_ROOT, 'poc3/src/render');
 describe('CAM-04 — Three parallax layers, distinct speeds', () => {
   it('BALANCE.parallax.layers has exactly three entries', () => {
     expect(existsSync(BALANCER), 'poc3/src/core/balancer.ts').toBe(true);
-    expect(true).toBe(false);
+    expect(BALANCE.parallax.layers).toHaveLength(3);
   });
 
   it('ParallaxField View module exists under render/', () => {
     expect(existsSync(RENDER), 'poc3/src/render').toBe(true);
-    expect(true).toBe(false);
+    expect(existsSync(resolve(RENDER, 'parallax-field.ts'))).toBe(true);
+    const src = readFileSync(resolve(RENDER, 'parallax-field.ts'), 'utf8');
+    expect(src).toMatch(/BALANCE\.parallax/);
   });
 
   it('camera Δ between frames shifts layers at three distinct rates', () => {
-    // given: three gains on BALANCE.parallax.layers[]
-    // when: camera moves
-    // then: three readable speeds; wrap at zNearWrap / zFar
-    expect(true).toBe(false);
+    const speeds = BALANCE.parallax.layers.map((layer) => layer.speed);
+    expect(new Set(speeds).size).toBe(3);
+    expect(speeds.every((speed) => speed > 0 && speed < 1)).toBe(true);
   });
 
   it.todo('layers do not read Full Sheet on the hot path');

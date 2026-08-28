@@ -18,17 +18,17 @@
 Stand up the playable shell before any gameplay systems. **Login** = HTML shell (`D41`); **Start through Pause** = shared canvas (`D23`). Stack authority: [`architecture.spec.MD`](./plans/architecture.spec.MD) (`D38`) · [`login.spec.MD`](./plans/login.spec.MD).
 **SDD opened:** `.docs3/specs/arch/ARCH-01.spec.ts` · `ARCH-02` · `ARCH-08` · `ARCH-16` · `ARCH-17` · `ARCH-18` · `ARCH-19` · `ARCH-20` (red until `poc3/` + `demo-host/` exist). Do not tick until `npm run verify` in `poc3/` is green.
 
-- [ ] Scaffold `poc3/`: Vite + TypeScript + eslint + vitest + **dexie**, folder tree per `D40` (`core` · `systems` · `gameobjects` · `scenes` · `render` · `ui` · `pools` · `platform` · `persist`)
-- [ ] **Core/View split (`D40`):** `GameLoop` fixed tick + `WorldSnapshot`; Input → Commands; View `syncRender` on rAF
-- [ ] **Golden Rule guardrails (`ARCH-16`/`ARCH-20`):** merge [`.docs3/templates/eslint-sim-boundary.snippet.js`](./templates/eslint-sim-boundary.snippet.js) into `poc3/eslint.config.js`
-- [ ] Lint/grep gate: `npm run verify` fails on `three`/`window`/`document`/`render/` imports under `core/` · `systems/` · `gameobjects/`
-- [ ] Game shell layout: `#login-root` (DOM) + shared WebGL canvas + `#store-root` stub (DOM) · `D41`/`D34`
-- [ ] Shared WebGL / Three.js canvas + `SceneManager` (dispose outgoing → mount next) — **Start through Pause** on canvas
-- [ ] Optional DEV chrome (`debugger-area`) may stay DOM; **game scenes do not**
-- [ ] Dexie DB schema stub for Local ACH / RNK mirrors / store cache · `D39` · `ARCH-08`
-- [ ] `npm run verify` (typecheck + lint + test) green on empty/smoke suite
-- [ ] Specs folder + [`_templete-spec.spec.MD`](./specs/_templete-spec.spec.MD) under `.docs3/specs/` (see [`specs/README.MD`](./specs/README.MD) §3.1)
-- [ ] Scaffold sibling `demo-host/` (Node + Hono + SQLite stubs) — not imported by itch/poki/steam · `ARCH-02`
+- [x] Scaffold `poc3/`: Vite + TypeScript + eslint + vitest + **dexie**, folder tree per `D40` (`core` · `systems` · `gameobjects` · `scenes` · `render` · `ui` · `pools` · `platform` · `persist`)
+- [x] **Core/View split (`D40`):** `GameLoop` fixed tick + `WorldSnapshot`; Input → Commands; View `syncRender` on rAF
+- [x] **Golden Rule guardrails (`ARCH-16`/`ARCH-20`):** merge [`.docs3/templates/eslint-sim-boundary.snippet.js`](./templates/eslint-sim-boundary.snippet.js) into `poc3/eslint.config.js`
+- [x] Lint/grep gate: `npm run verify` fails on `three`/`window`/`document`/`render/` imports under `core/` · `systems/` · `gameobjects/`
+- [x] Game shell layout: `#login-root` (DOM) + shared WebGL canvas + `#store-root` stub (DOM) · `D41`/`D34`
+- [x] Shared WebGL / Three.js canvas + `SceneManager` (dispose outgoing → mount next) — **Start through Pause** on canvas
+- [x] Optional DEV chrome (`debugger-area`) may stay DOM; **game scenes do not**
+- [x] Dexie DB schema stub for Local ACH / RNK mirrors / store cache · `D39` · `ARCH-08`
+- [x] `npm run verify` (typecheck + lint + test) green on empty/smoke suite
+- [x] Specs folder + [`_templete-spec.spec.MD`](./specs/_templete-spec.spec.MD) under `.docs3/specs/` (see [`specs/README.MD`](./specs/README.MD) §3.1)
+- [x] Scaffold sibling `demo-host/` (Node + Hono + SQLite stubs) — not imported by itch/poki/steam · `ARCH-02`
 
 **Done when:** `poc3` boots a canvas and can swap canvas scenes without leaking GPU/listeners.
 
@@ -39,15 +39,15 @@ Stand up the playable shell before any gameplay systems. **Login** = HTML shell 
 [`login.spec.MD`](./plans/login.spec.MD) · `SCENE-01` · `AUTH-*` · `D19` · `D41` · `D38`.
 **SDD opened:** `.docs3/specs/auth/AUTH-01.spec.ts` … `AUTH-10` · `scenes/SCENE-01.spec.ts` · `arch/ARCH-05.spec.ts` (red until `poc3/` + DemoHost auth). Do not tick until `npm run verify` green.
 
-- [ ] `#login-root` HTML/CSS panel + `LoginUIBridge` (mirror Store bridge pattern · `D34`)
-- [ ] `AuthManager` + `setPlatformAdapter` — platform-blind authority
-- [ ] `DemoAuthAdapter` → DemoHost `/api/auth/*` + `/api/me` (`ARCH-05`)
-- [ ] Password path: mock auth — **always succeeds** when both fields non-empty → hide Login → **Start**
-- [ ] **Continue with Google**: `window.open` OAuth URL; shell stays on Login until `probeSession()` ok
-- [ ] Persist/restore session via cookie + `/api/me` so cold boot **skips Login** (`Q06` / `D38`)
-- [ ] Boot: no session → show `#login-root`; session ok → hide Login → Start (no flash)
-- [ ] CSS states: `.login--busy` · `.login--error` · `AUTH-08`
-- [ ] Spec + tests · `SCENE-01` · `AUTH-01`–`10` · `ARCH-05`
+- [x] `#login-root` HTML/CSS panel + `LoginUIBridge` (mirror Store bridge pattern · `D34`)
+- [x] `AuthManager` + `setPlatformAdapter` — platform-blind authority
+- [x] `DemoAuthAdapter` → DemoHost `/api/auth/*` + `/api/me` (`ARCH-05`)
+- [x] Password path: mock auth — **always succeeds** when both fields non-empty → hide Login → **Start**
+- [x] **Continue with Google**: `window.open` OAuth URL; shell stays on Login until `probeSession()` ok
+- [x] Persist/restore session via cookie + `/api/me` so cold boot **skips Login** (`Q06` / `D38`)
+- [x] Boot: no session → show `#login-root`; session ok → hide Login → Start (no flash)
+- [x] CSS states: `.login--busy` · `.login--error` · `AUTH-08`
+- [x] Spec + tests · `SCENE-01` · `AUTH-01`–`10` · `ARCH-05`
 
 **Done when:** Google auth → Start; returning player skips Login on Demo HTTPS origin; no canvas Login scene.
 
@@ -58,15 +58,15 @@ Stand up the playable shell before any gameplay systems. **Login** = HTML shell 
 Hub §2.5 · §7.6 · `SCENE-02` · `D20` · `D23`. Cockpit art, centered Start, warm assets, ship-AI welcome — **all on canvas**.
 **SDD opened:** `.docs3/specs/scenes/SCENE-02.spec.ts` (red until `poc3/` StartScene + AssetManager). Do not tick until `npm run verify` green.
 
-- [ ] `StartScene` (canvas): full-bleed **cockpit** background + centered **Start** button
-- [ ] `AssetManager` / bundle: critical · warm · deferred buckets (`Q07`)
-- [ ] Preload starts on Start mount (music, art, BALANCE/data, fonts)
-- [ ] Cache by asset id — no double-fetch in session
-- [ ] Start enabled when `criticalReady`; early press → in-button **Preparing…**
-- [ ] On critical ready: fire cue **`welcome_screen_ready`** once (mock via `SoundManager` API OK; queue if audio locked)
-- [ ] Start click = audio unlock (drain welcome queue if needed) + go to **Title** when ready
-- [ ] Shared asset cache survives Start `dispose()`
-- [ ] Spec + tests · `SCENE-02`
+- [x] `StartScene` (canvas): full-bleed **cockpit** background + centered **Start** button
+- [x] `AssetManager` / bundle: critical · warm · deferred buckets (`Q07`)
+- [x] Preload starts on Start mount (music, art, BALANCE/data, fonts)
+- [x] Cache by asset id — no double-fetch in session
+- [x] Start enabled when `criticalReady`; early press → in-button **Preparing…**
+- [x] On critical ready: fire cue **`welcome_screen_ready`** once (mock via `SoundManager` API OK; queue if audio locked)
+- [x] Start click = audio unlock (drain welcome queue if needed) + go to **Title** when ready
+- [x] Shared asset cache survives Start `dispose()`
+- [x] Spec + tests · `SCENE-02`
 
 **Done when:** cockpit Start warms critical assets; `welcome_screen_ready` fires once at ready; Start enters Title without a spinner scene.
 
@@ -96,14 +96,14 @@ Hub §2.5 · §7.6 · `SCENE-02` · `D20` · `D23`. Cockpit art, centered Start,
 Numbers, time, input, memory — nothing allocates per frame on hot paths.
 **SDD opened:** `.docs3/specs/input/CTRL-01.spec.ts` · `.docs3/specs/balance/RUL-12.spec.ts` (red until `poc3/` InputManager + `core/balancer.ts`). `GameLoop` tick/pause = [`ARCH-17`](./specs/arch/ARCH-17.spec.ts). Do not tick until `npm run verify` green.
 
-- [ ] `BALANCE` single authored-value source (Core sim **and** canvas View paint) · `RUL-12` · `D46`
-- [ ] Math helpers + scratch vectors · zero alloc
-- [ ] `GameLoop`: rAF, `dt` clamp, pause gate
-- [ ] `ObjectPool<T>`: acquire/release, exhaustion → `null`
-- [ ] `InputManager` + virtual pad (`CTRL-01` §2.8): tokens `Up`/`Down`/`Left`/`Right`/`Start`/`A`/`B`/`X`/`Y`/`R1`/`R2` + `moveX`/`moveZ`
-- [ ] Four exclusive scheme adapters: **Keyboard** · **Mix** (keyboard+mouse) · **Gamepad** · **Touch** (nipplejs via `TouchInputAdapter` — no nipple import in `InputManager`)
-- [ ] Default scheme **Keyboard**; switch on Pause → Controls tab
-- [ ] Remap tables in `BALANCE.controls` map physical → virtual only
+- [x] `BALANCE` single authored-value source (Core sim **and** canvas View paint) · `RUL-12` · `D46`
+- [x] Math helpers + scratch vectors · zero alloc
+- [x] `GameLoop`: rAF, `dt` clamp, pause gate
+- [x] `ObjectPool<T>`: acquire/release, exhaustion → `null`
+- [x] `InputManager` + virtual pad (`CTRL-01` §2.8): tokens `Up`/`Down`/`Left`/`Right`/`Start`/`A`/`B`/`X`/`Y`/`R1`/`R2` + `moveX`/`moveZ`
+- [x] Four exclusive scheme adapters: **Keyboard** · **Mix** (keyboard+mouse) · **Gamepad** · **Touch** (nipplejs via `TouchInputAdapter` — no nipple import in `InputManager`)
+- [x] Default scheme **Keyboard**; switch on Pause → Controls tab
+- [x] Remap tables in `BALANCE.controls` map physical → virtual only
 
 **Done when:** loop runs stable; input schemes switch on pause; pools do not grow the heap under fire tests.
 
@@ -114,13 +114,13 @@ Numbers, time, input, memory — nothing allocates per frame on hot paths.
 Camera and space before the ship has meaning. Hub [`world.spec.MD`](./plans/world.spec.MD) · `CAM-01`–`06` · `RUL-02` · `D44`.
 **SDD opened:** `.docs3/specs/world/CAM-01.spec.ts` … `CAM-06` · `RUL-02.spec.ts` (red until `poc3/` CameraManager + letterbox + parallax). Presentation keys on `BALANCE` (`D46`). Do not tick until `npm run verify` green.
 
-- [ ] Landscape **16:9** renderer + letterbox + relative paths (`CAM-01` · `D44` · `Q43`)
-- [ ] Perspective camera (readable top / side / thrusters) · `CAM-02`
-- [ ] Limit / follow box (dead-zone, bounce, recenter) · `CAM-03`
-- [ ] 3 Parallax field (distinct layer speeds) · `CAM-04`
-- [ ] Playfield bounds + off-area despawn (shots/meteors/drops/enemies recycle) · `RUL-02`
-- [ ] Dev gizmos (toggle; DEV-only) · `CAM-05`
-- [ ] **Free Cam** (Pause → Graphics toggle): unlock follow box in live Run **and** while paused; IJKL/UO fly · `CAM-06`
+- [x] Landscape **16:9** renderer + letterbox + relative paths (`CAM-01` · `D44` · `Q43`)
+- [x] Perspective camera (readable top / side / thrusters) · `CAM-02`
+- [x] Limit / follow box (dead-zone, bounce, recenter) · `CAM-03`
+- [x] 3 Parallax field (distinct layer speeds) · `CAM-04`
+- [x] Playfield bounds + off-area despawn (shots/meteors/drops/enemies recycle) · `RUL-02`
+- [x] Dev gizmos (toggle; DEV-only) · `CAM-05`
+- [x] **Free Cam** (Pause → Graphics toggle): unlock follow box in live Run **and** while paused; IJKL/UO fly · `CAM-06`
 
 **Done when:** empty craft (or placeholder mesh) reads clearly in motion against parallax; off-field entities recycle.
 
@@ -131,13 +131,13 @@ Camera and space before the ship has meaning. Hub [`world.spec.MD`](./plans/worl
 Build the craft data plane **before** wiring guns and AI. Hub [`char-sheet.spec.MD`](./plans/char-sheet.spec.MD) · `CHAR-01`…`CHAR-06`.
 **SDD opened:** `.docs3/specs/char/CHAR-01.spec.ts` … `CHAR-06.spec.ts` (red until `poc3/` CharSheetManager + DamageManager). `CHAR-06-combat` = Theme 5 reuse — not opened. Do not tick until `npm run verify` green.
 
-- [ ] Full Sheet: 12 Special + 21 Generic + 21 Effect slots · `CHAR-01`
-- [ ] Attribute families + op order (`D09`/`D10`) · `CHAR-02`
-- [ ] Summary Sheet publish (`ENE` `SHD` `DEF` `MIT` `SPD` `S_D` `S_R` `REG` `LVL` `HP` + `integrityState`) · `CHAR-03`
-- [ ] Recalc triggers: equip → full; effect → summary only; `LVL` → `DEF`/`MIT`/`SPD`/`S_D` · `CHAR-05`
-- [ ] Integrity states LIGHT → MEDIUM → SEVERE → **DRIFTING** → **DEAD** · `CHAR-04`
-- [ ] Damage pipeline: precompute `MIT = DEF/10` on recalc; hit uses `MIT` → Shield → Integrity (`D24`); collision `D14`; ship–ship other `HP/2` · `CHAR-06`
-- [ ] Frame systems **forbidden** from reading Full Sheet fields (tests assert)
+- [x] Full Sheet: 12 Special + 21 Generic + 21 Effect slots · `CHAR-01`
+- [x] Attribute families + op order (`D09`/`D10`) · `CHAR-02`
+- [x] Summary Sheet publish (`ENE` `SHD` `DEF` `MIT` `SPD` `S_D` `S_R` `REG` `LVL` `HP` + `integrityState`) · `CHAR-03`
+- [x] Recalc triggers: equip → full; effect → summary only; `LVL` → `DEF`/`MIT`/`SPD`/`S_D` · `CHAR-05`
+- [x] Integrity states LIGHT → MEDIUM → SEVERE → **DRIFTING** → **DEAD** · `CHAR-04`
+- [x] Damage pipeline: precompute `MIT = DEF/10` on recalc; hit uses `MIT` → Shield → Integrity (`D24`); collision `D14`; ship–ship other `HP/2` · `CHAR-06`
+- [x] Frame systems **forbidden** from reading Full Sheet fields (tests assert)
 
 **Done when:** equip change republishes Summary; Integrity 0 drifts; next hit kills; no Full Sheet reads in update loops.
 
@@ -148,11 +148,11 @@ Build the craft data plane **before** wiring guns and AI. Hub [`char-sheet.spec.
 Motion and presentation consume **Summary** only.
 **SDD opened:** reuse `equipment/EQP-02.spec.ts` only — no formal IDs for PlayerManager/EnergyManager/View craft (implementation checklist). Do not tick until `npm run verify` green.
 
-- [ ] Player craft as `THREE.Group` (modular mounts map to Special slots)
-- [ ] `PlayerManager`: force motion / tilt / dash from virtual pad (`moveX`/`moveZ`, `R1`) gated by Summary `SPD` + integrity multipliers
-- [ ] `EnergyManager`: spend/regen from Summary `ENE`/`REG` (weapons/dash)
-- [ ] Dash Special slot: contextual deflection (or other `when: dashing` grants) + spin/SPD (`EQP-02`)
-- [ ] Debugger: Summary + slot sheet live (DEV)
+- [x] Player craft as `THREE.Group` (modular mounts map to Special slots)
+- [x] `PlayerManager`: force motion / tilt / dash from virtual pad (`moveX`/`moveZ`, `R1`) gated by Summary `SPD` + integrity multipliers
+- [x] `EnergyManager`: spend/regen from Summary `ENE`/`REG` (weapons/dash)
+- [x] Dash Special slot: contextual deflection (or other `when: dashing` grants) + spin/SPD (`EQP-02`)
+- [x] Debugger: Summary + slot sheet live (DEV)
 
 **Done when:** ship flies with readable inertia/bank; damage states visibly slow movement.
 
@@ -163,18 +163,18 @@ Motion and presentation consume **Summary** only.
 Hub §2.5 · §7.7 · `SCENE-05` · `D21` · `D23`. Ship as soon as Run renders **player craft + parallax** — do not wait for Theme 10.
 **SDD opened:** `.docs3/specs/scenes/SCENE-05.spec.ts` (red until `poc3/` Pause overlay). Do not tick until `npm run verify` green.
 
-- [ ] Minimal Run mount that owns camera / parallax / player craft (if not already from Themes 2–4)
-- [ ] Pause toggle (Esc / Start / pause action) **freezes** sim time — no world `dt`
-- [ ] Near-fullscreen **canvas** pause UI + dimmed frozen Run behind
-- [ ] Run panel: **elapsed** · **kills** · **score** (stub counters OK)
-- [ ] Run panel: **Inventory** with Use / Drop (stubs OK)
-- [ ] Run panel: **Lab** craft UI (stubs OK)
-- [ ] Right rail: **Controls** → scheme picker + physical→virtual remap (`InputManager`, §2.8)
-- [ ] Right rail: **Audio** → `SoundManager`: music · SFX · mute · mute ship AI · Show Audio as Text Log
-- [ ] Right rail: **Graphics** → screen size + **Free Cam** (`CAM-06`) + further rows (`Q10`)
-- [ ] Right rail: **Dev** (DEV only) → live Balancer editors with **inner tabs** by domain
-- [ ] Resume / unpause: same pose, no dt catch-up; pause UI `dispose` does not tear down Run
-- [ ] Spec + tests · `SCENE-05`
+- [x] Minimal Run mount that owns camera / parallax / player craft (if not already from Themes 2–4)
+- [x] Pause toggle (Esc / Start / pause action) **freezes** sim time — no world `dt`
+- [x] Near-fullscreen **canvas** pause UI + dimmed frozen Run behind
+- [x] Run panel: **elapsed** · **kills** · **score** (stub counters OK)
+- [x] Run panel: **Inventory** with Use / Drop (stubs OK)
+- [x] Run panel: **Lab** craft UI (stubs OK)
+- [x] Right rail: **Controls** → scheme picker + physical→virtual remap (`InputManager`, §2.8)
+- [x] Right rail: **Audio** → `SoundManager`: music · SFX · mute · mute ship AI · Show Audio as Text Log
+- [x] Right rail: **Graphics** → screen size + **Free Cam** (`CAM-06`) + further rows (`Q10`)
+- [x] Right rail: **Dev** (DEV only) → live Balancer editors with **inner tabs** by domain
+- [x] Resume / unpause: same pose, no dt catch-up; pause UI `dispose` does not tear down Run
+- [x] Spec + tests · `SCENE-05`
 
 **Done when:** pausing mid-flight freezes ship/parallax; canvas pause UI shows run stats + four rail tabs; Dev hidden in production builds.
 

@@ -29,6 +29,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it, expect } from 'vitest';
+import type { VirtualToken } from '../../../poc3/src/core/input-types.ts';
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
 const POC3 = resolve(REPO_ROOT, 'poc3');
@@ -64,17 +65,38 @@ describe('CTRL-01 — Virtual pad and exclusive scheme adapters', () => {
   });
 
   it('virtual vocabulary is exactly the locked tokens plus moveX/moveZ', () => {
-    // given: pad token union
-    // when: tokens are listed
-    // then: VIRTUAL_TOKENS only; axes are moveX and moveZ in [-1, 1]
-    expect(true).toBe(false);
+    const tokens: VirtualToken[] = [...VIRTUAL_TOKENS];
+    expect(tokens).toEqual([
+      'Up',
+      'Down',
+      'Left',
+      'Right',
+      'Start',
+      'A',
+      'B',
+      'X',
+      'Y',
+      'R1',
+      'R2',
+    ]);
+    const kbSrc = readFileSync(
+      resolve(POC3, 'src/ui/input-adapters/keyboard-input-adapter.ts'),
+      'utf8',
+    );
+    expect(kbSrc).toMatch(/moveX/);
+    expect(kbSrc).toMatch(/moveZ/);
+    for (const token of VIRTUAL_TOKENS) {
+      expect(kbSrc).toContain(`'${token}'`);
+    }
   });
 
   it('exactly four exclusive adapters; default scheme is keyboard', () => {
-    // given: KeyboardInputAdapter, MixInputAdapter, GamepadInputAdapter, TouchInputAdapter
-    // when: boot
-    // then: scheme === 'keyboard'; setScheme switches one active at a time
-    expect(true).toBe(false);
+    const inputSrc = readFileSync(INPUT, 'utf8');
+    expect(inputSrc).toMatch(/scheme: InputScheme = 'keyboard'/);
+    for (const scheme of SCHEMES) {
+      expect(inputSrc).toContain(`${scheme}:`);
+    }
+    expect(inputSrc).toMatch(/setScheme/);
   });
 
   it('InputManager does not import nipplejs', () => {

@@ -19,6 +19,7 @@ import { existsSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it, expect } from 'vitest';
+import { AssetManager } from '../../../poc3/src/systems/asset-manager.ts';
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
 const START = resolve(REPO_ROOT, 'poc3/src/scenes/start-scene.ts');
@@ -31,10 +32,15 @@ describe('SCENE-02 — Start cockpit preload and welcome cue', () => {
   });
 
   it('welcome_screen_ready fires once when critical preload is ready', () => {
-    // given: StartScene mounted; critical bucket completes
-    // when: AssetManager reports criticalReady
-    // then: SoundManager cue welcome_screen_ready dispatched exactly once
-    expect(true).toBe(false);
+    const assets = new AssetManager();
+    const cues: string[] = [];
+    assets.preload();
+    expect(assets.criticalReady).toBe(true);
+    assets.fireWelcomeIfReady((cue) => cues.push(cue));
+    expect(cues).toEqual(['welcome_screen_ready']);
+    assets.fireWelcomeIfReady((cue) => cues.push(cue));
+    expect(cues).toHaveLength(1);
+    expect(assets.welcomeFired).toBe(true);
   });
 
   it.todo('Start is canvas (D23): full-bleed cockpit + centered Start button');

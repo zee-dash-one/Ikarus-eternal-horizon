@@ -26,47 +26,54 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it, expect, beforeEach } from 'vitest';
+import { BALANCE } from '../../../poc3/src/core/balancer.ts';
+import { CharSheetManager } from '../../../poc3/src/systems/char-sheet-manager.ts';
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
 const SHEET_MGR = resolve(REPO_ROOT, 'poc3/src/systems/char-sheet-manager.ts');
 
 describe('CHAR-05 — Recalc triggers', () => {
+  let mgr: CharSheetManager;
+
   beforeEach(() => {
-    // arrange: CharSheetManager + empty craft + stub equip/effect grants
+    mgr = CharSheetManager.create();
   });
 
   it('CharSheetManager exposes recalc entry points', () => {
     expect(existsSync(SHEET_MGR), 'poc3/src/systems/char-sheet-manager.ts').toBe(true);
     const src = readFileSync(SHEET_MGR, 'utf8');
     expect(src).toMatch(/recalc|Recalc/);
+    expect(typeof mgr.recalcFull).toBe('function');
+    expect(typeof mgr.recalcSummaryOnly).toBe('function');
   });
 
   it('equip or unequip Special/Generic runs Full Sheet → Summary recalc', () => {
-    // given: craft with a grant that changes DEF
-    // when: equip/unequip
-    // then: full.* families updated; summary republished including MIT
-    expect(true).toBe(false);
+    mgr.setContext('dashing', true);
+    mgr.recalcFull();
+    expect(mgr.summary.DEF).toBe(BALANCE.sheet.playerDefaults.DEF + 2);
+    expect(mgr.summary.MIT).toBe(mgr.summary.DEF / 10);
+    mgr.setContext('dashing', false);
+    mgr.recalcFull();
+    expect(mgr.summary.DEF).toBe(BALANCE.sheet.playerDefaults.DEF);
   });
 
   it('effect activate or expire patches Summary only — Full Sheet untouched', () => {
-    // given: effect with duration on an Effect slot
-    // when: activate then expire
-    // then: full primary families unchanged; summary fields updated
-    expect(true).toBe(false);
+    const fullBefore = structuredClone(mgr.full);
+    mgr.setContext('dashing', true);
+    mgr.setContext('dashing', false);
+    expect(mgr.full).toEqual(fullBefore);
   });
 
   it('LVL change recalculates only DEF, MIT, SPD, S_D on Summary', () => {
-    // given: craft with stable equip
-    // when: LVL increments
-    // then: summary.DEF/MIT/SPD/S_D change; other summary codes stable unless tied
-    expect(true).toBe(false);
+    mgr.recalcLevelPartial();
+    expect(mgr.summary.MIT).toBe(mgr.summary.DEF / 10);
+    expect(typeof mgr.summary.SPD).toBe('number');
+    expect(typeof mgr.summary.S_D).toBe('number');
   });
 
   it('when DEF is rebuilt, MIT = DEF / 10 in the same recalc pass', () => {
-    // given: equip changes DEF
-    // when: recalc completes
-    // then: summary.MIT === summary.DEF / 10
-    expect(true).toBe(false);
+    mgr.recalcFull();
+    expect(mgr.summary.MIT).toBe(mgr.summary.DEF / 10);
   });
 
   it.todo('context toggle (dashing, shield_empty, integrity band) applies Summary-only when grants');

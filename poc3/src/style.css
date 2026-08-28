@@ -1,0 +1,148 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: #020408;
+  color: #e8f0ff;
+  font-family: system-ui, sans-serif;
+}
+
+#game-shell {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.game-area {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+#game-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.debugger-area {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 10;
+  max-width: 320px;
+  max-height: 50vh;
+  overflow: auto;
+  font-size: 12px;
+  background: rgba(0, 0, 0, 0.65);
+  padding: 8px;
+}
+
+.login {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  background: #020408;
+}
+
+.login[hidden] {
+  display: none !important;
+}
+
+.login__form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 280px;
+  padding: 24px;
+  border: 1px solid #2a3a55;
+  border-radius: 8px;
+  background: #0a1020;
+}
+
+.login__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.login__field input {
+  padding: 8px;
+  border-radius: 4px;
+  border: 1px solid #334;
+  background: #111827;
+  color: inherit;
+}
+
+.login__submit,
+.login__google {
+  padding: 10px;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+}
+
+.login__submit {
+  background: #3b82f6;
+  color: #fff;
+}
+
+.login__google {
+  background: #1f2937;
+  color: #fff;
+}
+
+.login__error {
+  color: #f87171;
+  margin: 0;
+}
+
+.login--busy .login__submit,
+.login--busy .login__google {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.login--error .login__field input {
+  border-color: #f87171;
+}
+
+.pause-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  background: rgba(2, 4, 8, 0.75);
+}
+
+.pause-overlay[hidden] {
+  display: none !important;
+}
+
+.pause-overlay__panel {
+  min-width: 320px;
+  padding: 16px;
+  background: #0a1020;
+  border: 1px solid #2a3a55;
+  border-radius: 8px;
+}
+
+.pause-overlay__tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.pause-tab label {
+  display: block;
+  margin-bottom: 8px;
+}

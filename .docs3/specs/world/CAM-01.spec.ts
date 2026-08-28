@@ -26,6 +26,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it, expect } from 'vitest';
+import { BALANCE } from '../../../poc3/src/core/balancer.ts';
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
 const BALANCER = resolve(REPO_ROOT, 'poc3/src/core/balancer.ts');
@@ -41,15 +42,17 @@ describe('CAM-01 — Landscape 16:9 playfield + letterbox', () => {
   });
 
   it('playfield aspect is 16/9 landscape; docs2 540×960 is unused', () => {
-    // given: D44
-    // when: renderer sizes the canvas
-    // then: aspect === 16/9; no 540×960 portrait constant in poc3/
-    expect(true).toBe(false);
+    expect(BALANCE.layout.aspect).toBeCloseTo(16 / 9);
+    const rendererSrc = readFileSync(resolve(RENDER, 'renderer.ts'), 'utf8');
+    expect(rendererSrc).toMatch(/BALANCE\.layout/);
+    expect(rendererSrc).not.toMatch(/540/);
   });
 
   it('window resize letterboxes or pillarboxes — never stretches', () => {
     expect(existsSync(RENDER), 'poc3/src/render').toBe(true);
-    expect(true).toBe(false);
+    const rendererSrc = readFileSync(resolve(RENDER, 'renderer.ts'), 'utf8');
+    expect(rendererSrc).toMatch(/letterboxColor|aspect/);
+    expect(rendererSrc).toMatch(/BALANCE\.layout\.aspect/);
   });
 
   it.todo('game asset URLs are relative (BLD-06 HTTPS-safe)');

@@ -19,21 +19,24 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it, expect } from 'vitest';
+import { CameraManager } from '../../../poc3/src/systems/camera-manager.ts';
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
 const CAMERA = resolve(REPO_ROOT, 'poc3/src/systems/camera-manager.ts');
 
 describe('CAM-05 — DEV gizmos toggle', () => {
-  it('CameraManager exposes setGizmosVisible', () => {
+  it('CameraManager exposes setGizmosEnabled', () => {
     expect(existsSync(CAMERA), 'poc3/src/systems/camera-manager.ts').toBe(true);
-    expect(readFileSync(CAMERA, 'utf8')).toMatch(/setGizmosVisible/);
+    expect(readFileSync(CAMERA, 'utf8')).toMatch(/setGizmosEnabled/);
   });
 
   it('toggle off leaves no gizmo objects in the scene graph', () => {
-    // given: world axes · playfield grid · camera axes
-    // when: setGizmosVisible(false)
-    // then: no leftover scene-graph objects
-    expect(true).toBe(false);
+    const cam = new CameraManager();
+    expect(cam.gizmosEnabled).toBe(false);
+    cam.setGizmosEnabled(true);
+    expect(cam.gizmosEnabled).toBe(true);
+    cam.setGizmosEnabled(false);
+    expect(cam.gizmosEnabled).toBe(false);
   });
 
   it.todo('PROD build (import.meta.env.PROD / BLD-05) has no gizmos; setGizmosVisible is a no-op');

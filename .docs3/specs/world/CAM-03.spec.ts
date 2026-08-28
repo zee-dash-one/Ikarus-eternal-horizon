@@ -22,23 +22,30 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it, expect } from 'vitest';
+import { CameraManager } from '../../../poc3/src/systems/camera-manager.ts';
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
 const CAMERA = resolve(REPO_ROOT, 'poc3/src/systems/camera-manager.ts');
 
 describe('CAM-03 — Follow box: dead-zone, bounce, recenter', () => {
-  it('CameraManager.updateSim exists and is Core (no three)', () => {
+  it('CameraManager.updateFollow exists and is Core (no three)', () => {
     expect(existsSync(CAMERA), 'poc3/src/systems/camera-manager.ts').toBe(true);
     const src = readFileSync(CAMERA, 'utf8');
-    expect(src).toMatch(/updateSim/);
+    expect(src).toMatch(/updateFollow/);
     expect(src).not.toMatch(/from ['"]three['"]/);
+    expect(typeof new CameraManager().updateFollow).toBe('function');
   });
 
   it('ship inside halfX/halfZ does not move the camera', () => {
-    // given: follow box from BALANCE.followBox
-    // when: craft stays inside dead zone
-    // then: snapshot camera pose unchanged
-    expect(true).toBe(false);
+    const cam = new CameraManager();
+    const x0 = cam.state.x;
+    const z0 = cam.state.z;
+    cam.updateFollow(
+      { x: 1, y: 0, z: 1, rotY: 0, bank: 0, dashing: false },
+      1 / 60,
+    );
+    expect(cam.state.x).toBeCloseTo(x0);
+    expect(cam.state.z).toBeCloseTo(z0);
   });
 
   it.todo('crossing the box eases camera with bounce (BALANCE.followBox.bounceMs)');

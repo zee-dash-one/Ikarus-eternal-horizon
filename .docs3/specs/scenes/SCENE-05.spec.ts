@@ -26,6 +26,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it, expect } from 'vitest';
+import { GameLoop } from '../../../poc3/src/core/game-loop.ts';
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
 const CORE = resolve(REPO_ROOT, 'poc3/src/core/game-loop.ts');
@@ -37,10 +38,19 @@ describe('SCENE-05 — Pause overlay freezes sim', () => {
   });
 
   it('opens once Run shows player ship + parallax; sim frozen while open', () => {
-    // given: Run mounted with craft + parallax
-    // when: Pause opens (Esc / Start / pause action)
-    // then: Core updateSim does not advance; frozen frame visible behind overlay
-    expect(true).toBe(false);
+    let steps = 0;
+    const loop = new GameLoop({
+      step: () => {
+        steps += 1;
+      },
+    });
+    loop.pause();
+    loop.stepSim();
+    expect(loop.paused).toBe(true);
+    expect(steps).toBe(0);
+    loop.resume();
+    loop.stepSim();
+    expect(steps).toBe(1);
   });
 
   it.todo('right rail: Controls · Audio · Graphics · Dev (DEV-only)');

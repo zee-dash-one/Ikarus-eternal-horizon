@@ -25,7 +25,9 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { readdirSync } from 'node:fs';
 import { describe, it, expect } from 'vitest';
+import { BALANCE } from '../../../poc3/src/core/balancer.ts';
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
 const BALANCER = resolve(REPO_ROOT, 'poc3/src/core/balancer.ts');
@@ -45,20 +47,33 @@ describe('RUL-12 — Single BALANCE authored-value source', () => {
   });
 
   it('Theme 1 namespaces layout, render, controls, loop are present on BALANCE', () => {
-    // given: BalanceConfig
-    // when: boot reads BALANCE
-    // then: layout, render, controls, loop exist; camera/hud may be stubbed
-    expect(true).toBe(false);
+    expect(BALANCE.layout.aspect).toBeCloseTo(16 / 9);
+    expect(BALANCE.render.background).toBeDefined();
+    expect(BALANCE.controls.keyboard).toBeDefined();
+    expect(BALANCE.loop.dtClampSec).toBeGreaterThan(0);
   });
 
   it('systems/ and gameobjects/ do not import domain table files bypassing balancer.ts', () => {
     expect(existsSync(BALANCER), 'poc3/src/core/balancer.ts').toBe(true);
-    expect(true).toBe(false);
+    const systemsDir = resolve(REPO_ROOT, 'poc3/src/systems');
+    for (const file of readdirSync(systemsDir).filter((f) => f.endsWith('.ts'))) {
+      const src = readFileSync(resolve(systemsDir, file), 'utf8');
+      if (src.includes('BALANCE')) {
+        expect(src, file).toMatch(/balancer\.ts/);
+      }
+    }
   });
 
   it('render/ has no presentation literals (hex colour, fov, letterbox, bar size) — reads BALANCE', () => {
     expect(existsSync(RENDER), 'poc3/src/render').toBe(true);
-    expect(true).toBe(false);
+    for (const file of readdirSync(RENDER).filter((f) => f.endsWith('.ts'))) {
+      const src = readFileSync(resolve(RENDER, file), 'utf8');
+      const hexLines = src
+        .split('\n')
+        .filter((line) => /0x[0-9a-fA-F]+/.test(line) && !line.includes('BALANCE'));
+      expect(hexLines, file).toEqual([]);
+      expect(src, file).toMatch(/BALANCE/);
+    }
   });
 
   it.todo('WorldSnapshot / Summary hold live pose and HP; those fields are absent from BALANCE');

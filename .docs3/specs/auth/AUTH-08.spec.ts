@@ -28,6 +28,7 @@ describe('AUTH-08 — Busy / error CSS states on form', () => {
     const cssCandidates = [
       resolve(POC3, 'src/ui/login.css'),
       resolve(POC3, 'src/styles/login.css'),
+      resolve(POC3, 'src/style.css'),
       resolve(POC3, 'index.html'),
     ];
     const found = cssCandidates.find((p) => existsSync(p));

@@ -65,7 +65,7 @@ describe('CAM-06 — Free Cam unlocks the rig in Run and Pause', () => {
       { x: 10, y: 0, z: 0, rotY: 0, bank: 0, dashing: false },
       1,
     );
-    expect(cam.state.lookX).toBeDefined();
+    expect(cam.state.rotX).toBeDefined();
   });
 
   it('PlayerManager still reads the virtual pad; fly keys do not steal tokens', () => {

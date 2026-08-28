@@ -29,10 +29,46 @@ RESUME: HudManager is View-only — reads WorldSnapshot / Summary; never mutates
 
 ---
 
+## POC3 slice layout (v0 — corner modules first)
+
+tag_g_run_meta tag_s_run_hud_combat tag_s_run_hud_border
+RESUME: Four corner text modules on Run; monospaced cyan terminal chrome; center Integrity/Shield/Energy **rings deferred**.
+
+Reference mock (GDD intent):
+
+```
+┌─ TOP-LEFT: Status & Comms ─────────┐   ┌─ TOP-RIGHT: Gameplay Stats ─┐
+│ [PILOT STATUS: OPERATOR - IKARUS…] │   │ [SCORE: 0098450]            │
+│ [RADIO WAVEFORM ~~~]               │   │ [KILLS: 142]                │
+│ AI: "Corruption signatures…"       │   │ [HIGH: 250000]              │
+└────────────────────────────────────┘   └─────────────────────────────┘
+
+              (CENTER: Integrity · Shield · Energy — concentric rings on craft)
+
+┌─ BOTTOM-LEFT: Crafting ────────────┐   ┌─ BOTTOM-RIGHT: Loadout ─────┐
+│ [CRAFTING SLOT 1/1]                │   │ [PRIMARY: LASER L1]         │
+│ Build: [=----] 42% [Plasma…]       │   │ [SPECIAL: NOVA BOMB x3 [●●●]]│
+└────────────────────────────────────┘   └─────────────────────────────┘
+```
+
+| Corner | Maps to | POC3 |
+| --- | --- | --- |
+| Top-left | `HUD-03` radio + pilot + AI line | `BALANCE.hud.stubs` · rotating AI copy |
+| Top-right | `HUD-02` score / kills / high | `WorldSnapshot.score` · `kills` · local high |
+| Bottom-left | `HUD-03` craft slot | Hidden until Theme 12 craft active |
+| Bottom-right | `HUD-03` weapon + ordnance | `FiringManager.activeWeapon` · bomb stub |
+| **Center** | **`HUD-01` craft rings** | `CraftRingsView` — 3 SVG arcs follow ship via `hud-projector` |
+
+**Implementation:** `poc3/src/render/hud-manager.ts` + `craft-rings-view.ts` + `hud-projector.ts` — DOM/SVG overlay inside `#game-area`. Colors from `BALANCE.hud.rings` (`D46`).
+
+---
+
 ## Floating bars (`HUD-01`)
 
 tag_g_player_ship tag_s_player_hud_fields tag_g_char_sheet tag_s_char_summary_sheet
 RESUME: Integrity, Shield (Force Field), Energy — Summary Sheet only; integrity state recolors Integrity.
+
+> **POC3:** corner HUD + **center craft rings** (`CraftRingsView`). Rings track Summary fill; integrity tint follows `integrityState` (`CHAR-04`).
 
 | Widget | Reads | Rule |
 | --- | --- | --- |
@@ -126,10 +162,14 @@ dispose()
 
 | Key | Intent |
 | --- | --- |
-| `hud.barWidth` / `barHeight` | Floating widget size |
-| `hud.colors.integrity.*` | LIGHT → DRIFTING tints |
-| `hud.colors.shield` / `energy` | Bar fills |
-| `hud.flickerMs` | Hit flash duration |
+| `hud.fontFamily` / `fontSizePx` / `edgePaddingPx` | Terminal chrome |
+| `hud.colors.text` / `dim` / `accent` | Cyan palette |
+| `hud.stubs.pilotStatus` / `radioLabel` / `aiLines` | Top-left copy |
+| `hud.stubs.bombName` / `bombCharges` | Ordnance chip until `WPN-06` |
+| `hud.stubs.defaultHighScore` | Fallback until `RNK-01` local best |
+| `hud.barWidth` / `barHeight` | Floating widget size (**deferred**) |
+| `hud.colors.integrity.*` | LIGHT → DRIFTING tints (**deferred**) |
+| `hud.flickerMs` | Hit flash duration (**deferred**) |
 | `hud.edgeClamp` | Screen-edge padding |
 
 ---

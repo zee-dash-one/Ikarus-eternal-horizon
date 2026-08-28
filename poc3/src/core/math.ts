@@ -1,3 +1,5 @@
+export const DEG2RAD = Math.PI / 180
+
 export interface Vec3 {
   x: number
   y: number
@@ -13,6 +15,11 @@ export function clamp(value: number, min: number, max: number): number {
 
 export function lerp(a: number, b: number, t: number): number {
   return a + (b - a) * t
+}
+
+/** Exponential damp toward target (POC2 port). */
+export function damp(current: number, target: number, lambda: number, dt: number): number {
+  return current + (target - current) * (1 - Math.exp(-lambda * dt))
 }
 
 export function moveToward(current: number, target: number, maxDelta: number): number {

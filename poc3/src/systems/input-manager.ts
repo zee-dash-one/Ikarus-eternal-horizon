@@ -4,6 +4,7 @@ import { KeyboardInputAdapter } from '../ui/input-adapters/keyboard-input-adapte
 import { MixInputAdapter } from '../ui/input-adapters/mix-input-adapter.ts'
 import { GamepadInputAdapter } from '../ui/input-adapters/gamepad-input-adapter.ts'
 import { TouchInputAdapter } from '../ui/input-adapters/touch-input-adapter.ts'
+import { InputBindingsManager } from './input-bindings-manager.ts'
 
 export type { InputScheme, VirtualToken }
 
@@ -14,20 +15,26 @@ export interface InputAdapter {
   update(): void
   isDown(token: VirtualToken): boolean
   wasPressed(token: VirtualToken): boolean
+  clearPressed(token: VirtualToken): void
   axis(name: 'moveX' | 'moveZ'): number
 }
 
 export class InputManager {
+  readonly bindings = new InputBindingsManager()
   private _scheme: InputScheme = 'keyboard'
-  private _adapters: Record<InputScheme, InputAdapter>
+  private readonly _adapters: Record<InputScheme, InputAdapter>
   private _active: InputAdapter
   private readonly _commands: Command[] = []
 
   constructor(host?: HTMLElement) {
     this._adapters = {
-      keyboard: new KeyboardInputAdapter(),
-      mix: new MixInputAdapter(),
-      gamepad: new GamepadInputAdapter(),
+      keyboard: new KeyboardInputAdapter(() => this.bindings.bindings.keyboard),
+      mix: new MixInputAdapter(
+        () => this.bindings.bindings.keyboard,
+        () => this.bindings.bindings.mouse,
+        host,
+      ),
+      gamepad: new GamepadInputAdapter(() => this.bindings.bindings.gamepad),
       touch: new TouchInputAdapter(host),
     }
     this._active = this._adapters.keyboard
@@ -48,6 +55,10 @@ export class InputManager {
 
   wasPressed(token: VirtualToken): boolean {
     return this._active.wasPressed(token)
+  }
+
+  clearPressed(token: VirtualToken): void {
+    this._active.clearPressed(token)
   }
 
   axis(name: 'moveX' | 'moveZ'): number {

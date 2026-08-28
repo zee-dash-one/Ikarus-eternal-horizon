@@ -20,6 +20,9 @@ export interface SummarySnapshot {
   readonly REG: number
   readonly LVL: number
   readonly HP: number
+  readonly integrityMax: number
+  readonly eneMax: number
+  readonly shdMax: number
   readonly integrityState: IntegrityState
 }
 
@@ -49,6 +52,9 @@ export function createEmptyWorldSnapshot(): WorldSnapshot {
       REG: 5,
       LVL: 1,
       HP: 100,
+      integrityMax: 100,
+      eneMax: 100,
+      shdMax: 100,
       integrityState: 'LIGHT',
     },
     elapsedSec: 0,

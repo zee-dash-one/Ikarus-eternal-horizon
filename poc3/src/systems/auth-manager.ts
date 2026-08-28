@@ -1,4 +1,5 @@
 import type { AuthPlatformAdapter, AuthSession } from '../platform/auth-types.ts'
+import { BALANCE } from '../core/balancer.ts'
 
 export class AuthManager {
   private _adapter: AuthPlatformAdapter | null = null
@@ -19,6 +20,25 @@ export class AuthManager {
     const session = await this._adapter.probeSession()
     this._session = session
     return session
+  }
+
+  /** Boot path: probe adapter, else optional guest stub (`BALANCE.auth.guestStub`). */
+  async resolveBootSession(): Promise<AuthSession | null> {
+    const session = await this.probeSession()
+    if (session) {
+      return session
+    }
+    const stub = BALANCE.auth.guestStub
+    if (!stub.enabled) {
+      return null
+    }
+    const guest: AuthSession = {
+      userId: stub.userId,
+      displayName: stub.displayName,
+      provider: 'mock',
+    }
+    this._session = guest
+    return guest
   }
 
   async trySignIn(username: string, password: string): Promise<AuthSession | null> {

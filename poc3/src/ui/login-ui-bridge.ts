@@ -1,7 +1,4 @@
-export interface LoginUiState {
-  readonly busy: boolean
-  readonly error: string | null
-}
+import type { GameUiHost } from './game-ui-types.ts'
 
 export interface LoginUiBridge {
   show(): void
@@ -12,52 +9,24 @@ export interface LoginUiBridge {
   onGoogle(handler: () => void): void
 }
 
-export function createLoginUiBridge(root: HTMLElement): LoginUiBridge {
-  const form = root.querySelector<HTMLFormElement>('#login-form')
-  const usernameInput = root.querySelector<HTMLInputElement>('#login-username')
-  const passwordInput = root.querySelector<HTMLInputElement>('#login-password')
-  const googleBtn = root.querySelector<HTMLButtonElement>('#login-google')
-  const errorEl = root.querySelector<HTMLElement>('#login-error')
-
-  let submitHandler: ((username: string, password: string) => void) | null = null
-  let googleHandler: (() => void) | null = null
-
-  form?.addEventListener('submit', (e) => {
-    e.preventDefault()
-    submitHandler?.(usernameInput?.value ?? '', passwordInput?.value ?? '')
-  })
-
-  googleBtn?.addEventListener('click', () => {
-    googleHandler?.()
-  })
-
+/** AUTH-07 — same-document JS bridge; React LoginRoot is the view. */
+export function createLoginUiBridge(ui: GameUiHost): LoginUiBridge {
   return {
-    show(): void {
-      root.hidden = false
+    show: () => ui.setLoginVisible(true),
+    hide: () => ui.setLoginVisible(false),
+    setBusy: (busy) => ui.setLoginBusy(busy),
+    setError: (message) => ui.setLoginError(message),
+    onSubmit: (handler) => {
+      ui.setLoginHandlers({
+        onSubmit: handler,
+        onGoogle: () => undefined,
+      })
     },
-    hide(): void {
-      root.hidden = true
-    },
-    setBusy(busy: boolean): void {
-      root.classList.toggle('login--busy', busy)
-    },
-    setError(message: string | null): void {
-      root.classList.toggle('login--error', Boolean(message))
-      if (errorEl) {
-        if (message) {
-          errorEl.textContent = message
-          errorEl.hidden = false
-        } else {
-          errorEl.textContent = ''
-          errorEl.hidden = true
-        }
-      }
-    },
-    onSubmit(handler): void {
-      submitHandler = handler
-    },
-    onGoogle(handler): void {
-      googleHandler = handler
+    onGoogle: (handler) => {
+      ui.setLoginHandlers({
+        onSubmit: () => undefined,
+        onGoogle: handler,
+      })
     },
   }
 }

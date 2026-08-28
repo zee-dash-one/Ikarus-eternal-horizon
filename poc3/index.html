@@ -6,58 +6,17 @@
     <title>Ikarus: Eternal Horizon — POC3</title>
   </head>
   <body>
-    <div id="login-root" class="login" hidden>
-      <form id="login-form" class="login__form">
-        <h1 class="login__title">Ikarus</h1>
-        <label class="login__field">
-          <span>Username</span>
-          <input id="login-username" name="username" type="text" autocomplete="username" />
-        </label>
-        <label class="login__field">
-          <span>Password</span>
-          <input id="login-password" name="password" type="password" autocomplete="current-password" />
-        </label>
-        <button type="submit" class="login__submit">Sign in</button>
-        <button type="button" id="login-google" class="login__google">Continue with Google</button>
-        <p id="login-error" class="login__error" hidden></p>
-      </form>
-    </div>
+    <div id="login-root" class="login" hidden></div>
     <div id="game-shell">
       <aside class="debugger-area" id="debugger-area" aria-label="Debugger"></aside>
       <main class="game-area" id="game-area">
         <canvas id="game-canvas"></canvas>
       </main>
     </div>
+    <div id="start-hint" class="start-hint" hidden></div>
     <div id="store-root" hidden aria-label="Store"></div>
-    <div id="pause-overlay" class="pause-overlay" hidden>
-      <div class="pause-overlay__panel">
-        <h2>Paused</h2>
-        <nav class="pause-overlay__tabs" id="pause-tabs">
-          <button type="button" data-tab="controls">Controls</button>
-          <button type="button" data-tab="audio">Audio</button>
-          <button type="button" data-tab="graphics">Graphics</button>
-          <button type="button" data-tab="dev" id="pause-dev-tab">Dev</button>
-        </nav>
-        <div id="pause-tab-controls" class="pause-tab">
-          <label>Scheme
-            <select id="pause-scheme">
-              <option value="keyboard">Keyboard</option>
-              <option value="mix">Mix</option>
-              <option value="gamepad">Gamepad</option>
-              <option value="touch">Touch</option>
-            </select>
-          </label>
-        </div>
-        <div id="pause-tab-audio" class="pause-tab" hidden>
-          <label><input type="checkbox" id="pause-mute" /> Mute</label>
-        </div>
-        <div id="pause-tab-graphics" class="pause-tab" hidden>
-          <label><input type="checkbox" id="pause-free-cam" /> Free Cam</label>
-        </div>
-        <div id="pause-tab-dev" class="pause-tab" hidden></div>
-        <button type="button" id="pause-resume">Resume</button>
-      </div>
-    </div>
-    <script type="module" src="./src/main.ts"></script>
+    <div id="pause-overlay-mount"></div>
+    <div id="game-bootstrap" hidden></div>
+    <script type="module" src="./src/main.tsx"></script>
   </body>
 </html>

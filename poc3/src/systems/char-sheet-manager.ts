@@ -4,6 +4,7 @@ import {
   createEmptyCharSheet,
   integritySpeedMultiplier,
   integrityStateFromCur,
+  ShipStatusTracker,
   type FullCharSheet,
   type GrantContext,
   type SummarySheet,
@@ -16,6 +17,7 @@ export class CharSheetManager {
   private _summary: SummarySheet = createDefaultSummary()
   private readonly _context = new Set<GrantContext>()
   private _contextPatch: Partial<SummarySheet> = {}
+  readonly shipStatus = new ShipStatusTracker()
 
   get full(): FullCharSheet {
     return this._full
@@ -118,8 +120,8 @@ export class CharSheetManager {
     return true
   }
 
-  regenEnergy(dt: number): void {
+  addEnergy(amount: number): void {
     const max = BALANCE.sheet.playerDefaults.ENE_max
-    this._summary.ENE = Math.min(max, this._summary.ENE + this._summary.REG * dt)
+    this._summary.ENE = Math.min(max, this._summary.ENE + amount)
   }
 }

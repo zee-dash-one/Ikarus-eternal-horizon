@@ -5,6 +5,7 @@ import {
   WebGLRenderer,
 } from 'three'
 import { BALANCE } from '../core/balancer.ts'
+import { DEG2RAD } from '../core/math.ts'
 import type { CameraState } from '../systems/camera-manager.ts'
 import type { WorldSnapshot } from '../core/world-snapshot.ts'
 
@@ -15,6 +16,7 @@ export interface GameRendererOptions {
 export class GameRenderer {
   readonly scene: Scene
   readonly camera: PerspectiveCamera
+  readonly canvas: HTMLCanvasElement
   private readonly _renderer: WebGLRenderer
 
   constructor(options: GameRendererOptions) {
@@ -27,13 +29,19 @@ export class GameRenderer {
       cam.near,
       cam.far,
     )
+    this.camera.rotation.order = 'YXZ'
     this.camera.position.set(cam.position.x, cam.position.y, cam.position.z)
-    this.camera.rotation.set(cam.rotation.x, cam.rotation.y, cam.rotation.z)
+    this.camera.rotation.set(
+      cam.rotation.x * DEG2RAD,
+      cam.rotation.y * DEG2RAD,
+      cam.rotation.z * DEG2RAD,
+    )
 
     this._renderer = new WebGLRenderer({
       canvas: options.canvas,
       antialias: BALANCE.render.antialias,
     })
+    this.canvas = options.canvas
     this._renderer.setPixelRatio(
       Math.min(window.devicePixelRatio, BALANCE.render.pixelRatioCap),
     )
@@ -62,7 +70,7 @@ export class GameRenderer {
 
   syncCamera(state: CameraState): void {
     this.camera.position.set(state.x, state.y, state.z)
-    this.camera.lookAt(state.lookX, state.lookY, state.lookZ)
+    this.camera.rotation.set(state.rotX, state.rotY, state.rotZ)
   }
 
   render(): void {

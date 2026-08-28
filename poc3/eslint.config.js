@@ -48,7 +48,7 @@ export default tseslint.config(
   ...tseslint.configs.recommended,
   ...simBoundaryGuardrails,
   {
-    files: ['src/**/*.ts'],
+    files: ['src/**/*.ts', 'src/**/*.tsx'],
     rules: {
       'no-restricted-syntax': [
         'error',

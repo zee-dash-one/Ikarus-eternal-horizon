@@ -1,41 +1,37 @@
-import { Group, Mesh, MeshBasicMaterial, PlaneGeometry } from 'three'
+import type { PerspectiveCamera } from 'three'
+import { Group } from 'three'
 import { BALANCE } from '../core/balancer.ts'
+import { ParallaxLayer } from './parallax-layer.ts'
 
+/** POC2 ParallaxField — three dynamic view layers pinned to the camera. */
 export class ParallaxField {
   readonly root: Group
-  private readonly _layers: Group[] = []
+  readonly layers: readonly ParallaxLayer[]
 
   constructor() {
     this.root = new Group()
-    for (const layer of BALANCE.parallax.layers) {
-      const g = new Group()
-      const geo = new PlaneGeometry(2, 2)
-      const mat = new MeshBasicMaterial({ color: layer.color })
-      for (let i = 0; i < layer.count; i++) {
-        const m = new Mesh(geo, mat)
-        m.position.set(
-          (Math.random() - 0.5) * BALANCE.layout.playfieldWidth,
-          -5 - Math.random() * 3,
-          (Math.random() - 0.5) * BALANCE.layout.playfieldHeight,
-        )
-        g.add(m)
-      }
-      this._layers.push(g)
-      this.root.add(g)
+    this.layers = BALANCE.parallax.layers.map((config) => new ParallaxLayer(config))
+    for (const layer of this.layers) {
+      this.root.add(layer.group)
     }
   }
 
-  update(dt: number, playerZ: number): void {
-    for (let i = 0; i < BALANCE.parallax.layers.length; i++) {
-      const layer = BALANCE.parallax.layers[i]
-      const g = this._layers[i]
-      if (!layer || !g) continue
-      g.position.z = (playerZ * layer.speed) % 20
+  update(dt: number, camera: PerspectiveCamera): void {
+    for (const layer of this.layers) {
+      layer.update(dt, camera)
     }
-    void dt
+  }
+
+  syncRender(): void {
+    for (const layer of this.layers) {
+      layer.syncRender()
+    }
   }
 
   dispose(): void {
+    for (const layer of this.layers) {
+      layer.dispose()
+    }
     this.root.clear()
   }
 }

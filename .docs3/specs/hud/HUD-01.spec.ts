@@ -21,15 +21,17 @@ import { fileURLToPath } from 'node:url';
 import { describe, it, expect } from 'vitest';
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
-const HUD = resolve(REPO_ROOT, 'poc3/src/systems/hud-manager.ts');
+const HUD = resolve(REPO_ROOT, 'poc3/src/render/hud-manager.ts');
 
 describe('HUD-01 — Integrity Shield Energy bars', () => {
-  it('HudManager module exists', () => {
-    expect(existsSync(HUD), 'hud-manager.ts').toBe(true);
-    expect(readFileSync(HUD, 'utf8')).toMatch(/HudManager/);
+  it('HudManager and CraftRingsView exist (View layer)', () => {
+    expect(existsSync(HUD), 'render/hud-manager.ts').toBe(true);
+    const src = readFileSync(HUD, 'utf8');
+    expect(src).toMatch(/HudManager/);
+    expect(src).toMatch(/WorldSnapshot/);
+    expect(src).not.toMatch(/FullCharSheet/);
+    expect(existsSync(resolve(REPO_ROOT, 'poc3/src/render/craft-rings-view.ts'))).toBe(true);
   });
 
-  it('bars track snapshot; integrity state recolors Integrity; no Full Sheet reads', () => {
-    expect(true).toBe(false);
-  });
+  it.todo('bars track snapshot; integrity state recolors Integrity ring');
 });

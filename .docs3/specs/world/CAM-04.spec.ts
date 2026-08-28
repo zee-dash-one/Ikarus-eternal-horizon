@@ -42,9 +42,9 @@ describe('CAM-04 — Three parallax layers, distinct speeds', () => {
   });
 
   it('camera Δ between frames shifts layers at three distinct rates', () => {
-    const speeds = BALANCE.parallax.layers.map((layer) => layer.speed);
-    expect(new Set(speeds).size).toBe(3);
-    expect(speeds.every((speed) => speed > 0 && speed < 1)).toBe(true);
+    const gains = BALANCE.parallax.layers.map((layer) => layer.parallaxGain);
+    expect(new Set(gains).size).toBe(3);
+    expect(gains.every((gain) => gain > 0)).toBe(true);
   });
 
   it.todo('layers do not read Full Sheet on the hot path');

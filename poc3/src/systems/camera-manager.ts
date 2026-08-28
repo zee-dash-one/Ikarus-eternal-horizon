@@ -1,33 +1,36 @@
 import { BALANCE } from '../core/balancer.ts'
-import { clamp, lerp } from '../core/math.ts'
+import { DEG2RAD } from '../core/math.ts'
+import { FollowBoxSim } from '../core/follow-box.ts'
 import type { PlayerPose } from '../core/world-snapshot.ts'
 
 export interface CameraState {
   x: number
   y: number
   z: number
-  lookX: number
-  lookY: number
-  lookZ: number
+  rotX: number
+  rotY: number
+  rotZ: number
 }
 
 export class CameraManager {
-  private _targetX = 0
-  private _targetZ = 0
-  private _camX = 0
-  private _camZ = 0
+  private readonly _follow = new FollowBoxSim()
   private _freeCam = false
-  private _freeX = 0
-  private _freeY = 18
-  private _freeZ = 24
+  private _freePose = {
+    x: BALANCE.camera.position.x,
+    y: BALANCE.camera.position.y,
+    z: BALANCE.camera.position.z,
+    rotX: BALANCE.camera.rotation.x,
+    rotY: BALANCE.camera.rotation.y,
+    rotZ: BALANCE.camera.rotation.z,
+  }
   private _gizmosEnabled = false
   private readonly _state: CameraState = {
-    x: 0,
-    y: 18,
-    z: 24,
-    lookX: 0,
-    lookY: 0,
-    lookZ: 0,
+    x: BALANCE.camera.position.x,
+    y: BALANCE.camera.position.y,
+    z: BALANCE.camera.position.z,
+    rotX: BALANCE.camera.rotation.x * DEG2RAD,
+    rotY: BALANCE.camera.rotation.y * DEG2RAD,
+    rotZ: BALANCE.camera.rotation.z * DEG2RAD,
   }
 
   get state(): Readonly<CameraState> {
@@ -54,26 +57,14 @@ export class CameraManager {
     if (this._freeCam) {
       return
     }
-    const box = BALANCE.followBox
-    const dx = player.x - this._targetX
-    const dz = player.z - this._targetZ
-    if (Math.abs(dx) > box.halfWidth) {
-      this._targetX += (Math.abs(dx) - box.halfWidth) * Math.sign(dx) * box.bounceStrength
-    }
-    if (Math.abs(dz) > box.halfHeight) {
-      this._targetZ += (Math.abs(dz) - box.halfHeight) * Math.sign(dz) * box.bounceStrength
-    }
-    const speed = box.recenterSpeed * dt
-    this._camX = lerp(this._camX, this._targetX, clamp(speed, 0, 1))
-    this._camZ = lerp(this._camZ, this._targetZ, clamp(speed, 0, 1))
-
+    this._follow.update(player.x, player.z, dt)
     const cam = BALANCE.camera
-    this._state.x = this._camX + cam.position.x
+    this._state.x = this._follow.cameraX
     this._state.y = cam.position.y
-    this._state.z = this._camZ + cam.position.z
-    this._state.lookX = this._camX
-    this._state.lookY = 0
-    this._state.lookZ = this._camZ
+    this._state.z = this._follow.cameraZ
+    this._state.rotX = cam.rotation.x * DEG2RAD
+    this._state.rotY = cam.rotation.y * DEG2RAD
+    this._state.rotZ = cam.rotation.z * DEG2RAD
   }
 
   updateFreeCam(
@@ -81,19 +72,19 @@ export class CameraManager {
     moveZ: number,
     moveY: number,
     dt: number,
-    speed = 12,
+    speed = BALANCE.player.motion.maxSpeed,
   ): void {
     if (!this._freeCam) {
       return
     }
-    this._freeX += moveX * speed * dt
-    this._freeY += moveY * speed * dt
-    this._freeZ += moveZ * speed * dt
-    this._state.x = this._freeX
-    this._state.y = this._freeY
-    this._state.z = this._freeZ
-    this._state.lookX = this._freeX
-    this._state.lookY = 0
-    this._state.lookZ = this._freeZ - 10
+    this._freePose.x += moveX * speed * dt
+    this._freePose.y += moveY * speed * dt
+    this._freePose.z += moveZ * speed * dt
+    this._state.x = this._freePose.x
+    this._state.y = this._freePose.y
+    this._state.z = this._freePose.z
+    this._state.rotX = this._freePose.rotX * DEG2RAD
+    this._state.rotY = this._freePose.rotY * DEG2RAD
+    this._state.rotZ = this._freePose.rotZ * DEG2RAD
   }
 }

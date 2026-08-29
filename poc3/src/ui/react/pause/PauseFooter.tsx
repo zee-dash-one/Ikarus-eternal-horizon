@@ -5,8 +5,13 @@ export function PauseFooter() {
 
   return (
     <footer className="pause-overlay__footer">
-      <button type="button" id="pause-resume" onClick={() => ui.pauseHandlers.onResume()}>
-        Resume
+      <button
+        type="button"
+        className="pause-overlay__exit"
+        id="pause-exit"
+        onClick={() => ui.pauseHandlers.onResume()}
+      >
+        Exit
       </button>
     </footer>
   )

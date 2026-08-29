@@ -29,13 +29,17 @@ export interface GamepadControlsBalance {
 
 export interface TouchControlsBalance {
   readonly deadzone: number
+  readonly stickSize: number
+  readonly stickColor: string
   /** On-screen button slots → virtual token. */
   readonly slots: Readonly<Record<string, string>>
 }
 
 export interface MouseControlsBalance {
-  /** Pointer offset from canvas center → move axis (mix scheme). */
-  readonly moveRadiusFrac: number
+  /** Min pointer delta (px) at sensitivity 1× to register a steer hold. */
+  readonly moveHoldThresholdBase: number
+  /** Ms without qualifying movement before virtual hold releases. */
+  readonly moveHoldGraceMs: number
 }
 
 export interface ControlsBalance {
@@ -369,7 +373,8 @@ export const BALANCE: BalanceConfig = {
       Mouse2: 'B',
     },
     mouse: {
-      moveRadiusFrac: 0.35,
+      moveHoldThresholdBase: 8,
+      moveHoldGraceMs: 500,
     },
     gamepad: {
       deadzone: 0.18,
@@ -386,6 +391,8 @@ export const BALANCE: BalanceConfig = {
     },
     touch: {
       deadzone: 0.18,
+      stickSize: 120,
+      stickColor: '#22d3ee',
       slots: {
         fire: 'A',
         bomb: 'B',
@@ -591,7 +598,7 @@ export const BALANCE: BalanceConfig = {
       worldRadiusMul: 1.5,
       worldRadiusPad: 0.7,
       position: { x: 0, y: 0, z: 0 },
-      rotation: { x: 0, y: 0, z: 180 },
+      rotation: { x: 0, y: 0, z: 180 }, 
       autoRotationFromCamera: true,
       opacity: 1,
       renderOrder: 12,

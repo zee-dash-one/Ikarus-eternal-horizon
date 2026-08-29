@@ -1,34 +1,52 @@
 import { BALANCE } from '../../core/balancer.ts'
 import type { VirtualToken } from '../../core/input-types.ts'
 import {
+  isKeyboardBoundCode,
   keyboardTokenFromCode,
   mouseTokenFromButton,
+  mouseTokenFromInput,
   type KeyboardBindings,
   type MouseBindings,
 } from '../../core/input-bindings.ts'
-import { clamp } from '../../core/math.ts'
 import type { InputAdapter } from '../../systems/input-manager.ts'
+import {
+  shouldCaptureKeyboardPress,
+  shouldCaptureKeyboardRelease,
+  shouldIgnoreDomPress,
+  shouldIgnoreDomRelease,
+} from './dom-input-guard.ts'
+import {
+  applyMouseSteerImpulse,
+  createMouseSteerHoldState,
+  mouseHoldThresholdPx,
+  resetMouseSteerHold,
+  tickMouseSteerHold,
+  type MouseSteerHoldState,
+} from './mouse-steer-hold.ts'
 
 function combineAxis(keyboard: number, mouse: number): number {
   if (keyboard !== 0) {
     return keyboard
   }
-  return clamp(mouse, -1, 1)
+  return mouse
 }
 
-/** Keyboard + mouse buttons + pointer steering (live bindings). */
+/** Keyboard + mouse buttons + mouse-move virtual hold steering (live bindings). */
 export class MixInputAdapter implements InputAdapter {
   readonly scheme = 'mix' as const
   private readonly _getKeyboard: () => KeyboardBindings
   private readonly _getMouse: () => MouseBindings
+  private readonly _shouldCaptureDom: () => boolean
   private readonly _host: HTMLElement | undefined
   private readonly _down = new Set<VirtualToken>()
   private readonly _pressed = new Set<VirtualToken>()
-  private _mouseAxisX = 0
-  private _mouseAxisZ = 0
+  private readonly _steer: MouseSteerHoldState = createMouseSteerHoldState()
   private readonly _onKeyDown = (e: KeyboardEvent): void => {
     const keyboard = this._getKeyboard()
-    if (Object.values(keyboard).includes(e.code)) {
+    if (!shouldCaptureKeyboardPress(keyboard, e.code, e.target, this._shouldCaptureDom())) {
+      return
+    }
+    if (isKeyboardBoundCode(keyboard, e.code)) {
       e.preventDefault()
     }
     const token = keyboardTokenFromCode(keyboard, e.code)
@@ -38,12 +56,19 @@ export class MixInputAdapter implements InputAdapter {
     }
   }
   private readonly _onKeyUp = (e: KeyboardEvent): void => {
-    const token = keyboardTokenFromCode(this._getKeyboard(), e.code)
+    const keyboard = this._getKeyboard()
+    if (!shouldCaptureKeyboardRelease(keyboard, e.code, e.target)) {
+      return
+    }
+    const token = keyboardTokenFromCode(keyboard, e.code)
     if (token) {
       this._down.delete(token)
     }
   }
   private readonly _onMouseDown = (e: MouseEvent): void => {
+    if (shouldIgnoreDomPress(e.target, this._shouldCaptureDom())) {
+      return
+    }
     const token = mouseTokenFromButton(this._getMouse(), e.button)
     if (token) {
       e.preventDefault()
@@ -52,6 +77,9 @@ export class MixInputAdapter implements InputAdapter {
     }
   }
   private readonly _onMouseUp = (e: MouseEvent): void => {
+    if (shouldIgnoreDomRelease(e.target)) {
+      return
+    }
     const token = mouseTokenFromButton(this._getMouse(), e.button)
     if (token) {
       this._down.delete(token)
@@ -59,34 +87,51 @@ export class MixInputAdapter implements InputAdapter {
   }
   private readonly _onMouseMove = (e: MouseEvent): void => {
     const mouse = this._getMouse()
-    if (!mouse.moveEnabled || !this._host) {
+    if (!mouse.moveEnabled) {
+      this.resetSteer()
       return
     }
-    const rect = this._host.getBoundingClientRect()
-    if (rect.width <= 0 || rect.height <= 0) {
-      return
-    }
-    const cx = rect.left + rect.width / 2
-    const cy = rect.top + rect.height / 2
-    const radius = Math.min(rect.width, rect.height) * BALANCE.controls.mouse.moveRadiusFrac
-    if (radius <= 0) {
-      return
-    }
-    this._mouseAxisX = clamp((e.clientX - cx) / radius, -1, 1)
-    this._mouseAxisZ = clamp((e.clientY - cy) / radius, -1, 1)
+    const threshold = mouseHoldThresholdPx(mouse.moveSensitivity)
+    applyMouseSteerImpulse(
+      this._steer,
+      e.movementX,
+      e.movementY,
+      threshold,
+      performance.now(),
+    )
   }
   private readonly _onMouseLeave = (): void => {
-    this._mouseAxisX = 0
-    this._mouseAxisZ = 0
+    this.resetSteer()
+  }
+  private readonly _onWheel = (e: WheelEvent): void => {
+    if (shouldIgnoreDomPress(e.target, this._shouldCaptureDom())) {
+      return
+    }
+    if (e.deltaY === 0) {
+      return
+    }
+    const input = e.deltaY < 0 ? 'wheelUp' : 'wheelDown'
+    const token = mouseTokenFromInput(this._getMouse(), input)
+    if (token) {
+      e.preventDefault()
+      this._pressed.add(token)
+    }
+  }
+  private readonly _onContextMenu = (e: Event): void => {
+    if (mouseTokenFromButton(this._getMouse(), 2)) {
+      e.preventDefault()
+    }
   }
 
   constructor(
     getKeyboard: () => KeyboardBindings,
     getMouse: () => MouseBindings,
+    shouldCaptureDom: () => boolean,
     host?: HTMLElement,
   ) {
     this._getKeyboard = getKeyboard
     this._getMouse = getMouse
+    this._shouldCaptureDom = shouldCaptureDom
     this._host = host
   }
 
@@ -95,8 +140,10 @@ export class MixInputAdapter implements InputAdapter {
     window.addEventListener('keyup', this._onKeyUp)
     window.addEventListener('mousedown', this._onMouseDown)
     window.addEventListener('mouseup', this._onMouseUp)
-    window.addEventListener('mousemove', this._onMouseMove)
+    document.addEventListener('mousemove', this._onMouseMove)
     this._host?.addEventListener('mouseleave', this._onMouseLeave)
+    this._host?.addEventListener('wheel', this._onWheel, { passive: false })
+    this._host?.addEventListener('contextmenu', this._onContextMenu)
   }
 
   detach(): void {
@@ -104,16 +151,35 @@ export class MixInputAdapter implements InputAdapter {
     window.removeEventListener('keyup', this._onKeyUp)
     window.removeEventListener('mousedown', this._onMouseDown)
     window.removeEventListener('mouseup', this._onMouseUp)
-    window.removeEventListener('mousemove', this._onMouseMove)
+    document.removeEventListener('mousemove', this._onMouseMove)
     this._host?.removeEventListener('mouseleave', this._onMouseLeave)
+    this._host?.removeEventListener('wheel', this._onWheel)
+    this._host?.removeEventListener('contextmenu', this._onContextMenu)
     this._down.clear()
     this._pressed.clear()
-    this._mouseAxisX = 0
-    this._mouseAxisZ = 0
+    this.resetSteer()
+  }
+
+  resetSteer(): void {
+    resetMouseSteerHold(this._steer)
+  }
+
+  clearHeld(): void {
+    this._down.clear()
+    this._pressed.clear()
+    this.resetSteer()
   }
 
   update(): void {
-    /* pressed cleared at read */
+    if (!this._getMouse().moveEnabled) {
+      this.resetSteer()
+      return
+    }
+    tickMouseSteerHold(
+      this._steer,
+      BALANCE.controls.mouse.moveHoldGraceMs,
+      performance.now(),
+    )
   }
 
   isDown(token: VirtualToken): boolean {
@@ -131,6 +197,7 @@ export class MixInputAdapter implements InputAdapter {
   }
 
   axis(name: 'moveX' | 'moveZ'): number {
+    const mouseSteer = this._getMouse().moveEnabled
     let keyboard = 0
     if (name === 'moveX') {
       if (this._down.has('Left')) {
@@ -139,7 +206,7 @@ export class MixInputAdapter implements InputAdapter {
       if (this._down.has('Right')) {
         keyboard += 1
       }
-      return combineAxis(keyboard, this._mouseAxisX)
+      return combineAxis(keyboard, mouseSteer ? this._steer.holdX : 0)
     }
     if (this._down.has('Up')) {
       keyboard -= 1
@@ -147,6 +214,6 @@ export class MixInputAdapter implements InputAdapter {
     if (this._down.has('Down')) {
       keyboard += 1
     }
-    return combineAxis(keyboard, this._mouseAxisZ)
+    return combineAxis(keyboard, mouseSteer ? this._steer.holdZ : 0)
   }
 }

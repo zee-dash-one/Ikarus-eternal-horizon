@@ -65,16 +65,13 @@ export class RunScene implements GameScene {
   }
 
   update(dt: number): void {
-    if (this._deps.loop.paused) {
+    this._deps.input.update(dt)
+    if (this._deps.input.wasPressed('Start')) {
+      this._deps.onPause()
       return
     }
-    this._deps.input.update()
-    const scheme = this._deps.input.scheme
-    if (scheme === 'gamepad' || scheme === 'touch') {
-      if (this._deps.input.wasPressed('Start')) {
-        this._deps.onPause()
-        return
-      }
+    if (this._deps.loop.paused) {
+      return
     }
     this._tick += 1
     this._elapsed += dt

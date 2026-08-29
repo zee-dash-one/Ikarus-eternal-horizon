@@ -40,6 +40,13 @@ export class TouchInputAdapter implements InputAdapter {
     this._pressed.delete(token)
   }
 
+  clearHeld(): void {
+    this._down.clear()
+    this._pressed.clear()
+    this._moveX = 0
+    this._moveZ = 0
+  }
+
   axis(name: 'moveX' | 'moveZ'): number {
     return name === 'moveX' ? this._moveX : this._moveZ
   }

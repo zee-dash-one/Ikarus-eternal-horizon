@@ -98,10 +98,10 @@ export class PlayerManager {
     if (this._dashMs > 0) {
       this._dashMs = Math.max(0, this._dashMs - dt * 1000)
       if (this._dashMs === 0) {
-        this._dashing = false
-        this._sheet.setContext('dashing', false)
-        this._sheet.shipStatus.setDashingActive(false, BALANCE.player.cooldowns.dashingMs)
+        this._endDash()
       }
+    } else if (this._dashing) {
+      this._endDash()
     }
 
     const moveX = this._input.axis('moveX')
@@ -114,8 +114,11 @@ export class PlayerManager {
     let maxSpeed = summary.SPD * integrityMul
 
     if (this._input.wasPressed('R1') && !this._dashing) {
-      if (this._energy.spend(dash.energyCost)) {
+      if (
+        this._energy.canAfford(dash.energyCost) &&
         this._snapDash(moveX, moveZ, maxSpeed, dash)
+      ) {
+        this._energy.spend(dash.energyCost)
         this._dashing = true
         this._sheet.setContext('dashing', true)
         this._sheet.shipStatus.setDashingActive(true, BALANCE.player.cooldowns.dashingMs)
@@ -156,12 +159,18 @@ export class PlayerManager {
     this._pose.dashing = this._dashing
   }
 
+  private _endDash(): void {
+    this._dashing = false
+    this._sheet.setContext('dashing', false)
+    this._sheet.shipStatus.setDashingActive(false, BALANCE.player.cooldowns.dashingMs)
+  }
+
   private _snapDash(
     dirX: number,
     dirZ: number,
     maxSpeed: number,
     dash: { readonly speedMul: number; readonly durationMs: number },
-  ): void {
+  ): boolean {
     const dirLen = Math.hypot(dirX, dirZ)
     let dx: number
     let dz: number
@@ -171,7 +180,7 @@ export class PlayerManager {
     } else {
       const vLen = Math.hypot(this._vx, this._vz)
       if (vLen <= 0) {
-        return
+        return false
       }
       dx = this._vx / vLen
       dz = this._vz / vLen
@@ -187,6 +196,7 @@ export class PlayerManager {
       this._rollMs = 0
       this._rollDurMs = dash.durationMs
     }
+    return true
   }
 
   private _updateBank(

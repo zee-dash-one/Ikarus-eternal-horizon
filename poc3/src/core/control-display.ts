@@ -1,7 +1,22 @@
-import { BALANCE } from './balancer.ts'
-import type { InputScheme, VirtualToken } from './input-types.ts'
+import type { InputScheme } from './input-types.ts'
+import {
+  BIND_ACTION_LABELS,
+  BIND_ACTION_TO_TOKEN,
+  formatGamepadBinding,
+  formatKeyboardBinding,
+  formatMouseBinding,
+  MOUSE_BUTTON_ACTIONS,
+  TOUCH_SLOT_IDS,
+  TOUCH_SLOT_LABELS,
+  type BindAction,
+  type InputBindings,
+  type MouseButtonAction,
+  type TouchSlotId,
+} from './input-bindings.ts'
+import type { VirtualToken } from './input-types.ts'
 
 export interface ControlActionRow {
+  readonly id: string
   readonly label: string
   readonly binding: string
 }
@@ -15,151 +30,105 @@ export const CONTROL_SCHEME_OPTIONS: readonly { readonly id: InputScheme; readon
 
 const MOVE_TOKENS = new Set<VirtualToken>(['Up', 'Down', 'Left', 'Right'])
 
-const ACTION_ROWS: readonly { readonly token: VirtualToken; readonly label: string }[] = [
-  { token: 'Up', label: 'Up' },
-  { token: 'Down', label: 'Down' },
-  { token: 'Left', label: 'Left' },
-  { token: 'Right', label: 'Right' },
-  { token: 'A', label: 'Shoot' },
-  { token: 'X', label: 'Switch Weapon' },
-  { token: 'B', label: 'Bomb' },
-  { token: 'Y', label: 'Switch Bomb' },
-  { token: 'R1', label: 'Dash' },
+const ACTION_ROWS: readonly { readonly token: VirtualToken; readonly action: BindAction }[] = [
+  { token: 'Up', action: 'up' },
+  { token: 'Down', action: 'down' },
+  { token: 'Left', action: 'left' },
+  { token: 'Right', action: 'right' },
+  { token: 'A', action: 'shoot' },
+  { token: 'X', action: 'switchWeapon' },
+  { token: 'B', action: 'bomb' },
+  { token: 'Y', action: 'switchBomb' },
+  { token: 'R1', action: 'dash' },
 ]
 
-const PAD_BUTTON_LABELS = [
-  'A',
-  'B',
-  'X',
-  'Y',
-  'LB',
-  'RB',
-  'LT',
-  'RT',
-  'Select',
-  'Start',
-  'L3',
-  'R3',
-  'D-Up',
-  'D-Down',
-  'D-Left',
-  'D-Right',
-] as const
-
-const MOUSE_BUTTON_LABELS = ['Left click', 'Middle click', 'Right click'] as const
-
-const TOUCH_SLOT_LABELS: Record<string, string> = {
-  fire: 'Fire button',
-  bomb: 'Bomb button',
-  switchWeapon: 'Switch weapon button',
-  switchBomb: 'Switch bomb button',
-  dash: 'Dash button',
-}
-
-export function formatKeyCode(code: string): string {
-  if (code === 'Space') {
-    return 'Space'
-  }
-  if (code.startsWith('Key') && code.length === 4) {
-    return code.slice(3)
-  }
-  if (code.startsWith('Digit') && code.length === 6) {
-    return code.slice(5)
-  }
-  if (code.startsWith('Arrow')) {
-    return code.slice(5)
-  }
-  return code
-}
-
-export function formatMouseButton(button: number): string {
-  return MOUSE_BUTTON_LABELS[button] ?? `Mouse ${button}`
-}
-
-export function formatGamepadButton(index: number): string {
-  return PAD_BUTTON_LABELS[index] ?? `Button ${index}`
-}
-
-function formatBindings(parts: readonly string[]): string {
+function formatParts(parts: readonly string[]): string {
   if (parts.length === 0) {
     return '—'
   }
   return parts.join(' · ')
 }
 
-function bindingsFromTokenMap(
-  map: Readonly<Record<string, string>>,
-  token: VirtualToken,
-): string[] {
-  const parts: string[] = []
-  for (const [key, mapped] of Object.entries(map)) {
-    if (mapped !== token) {
-      continue
-    }
-    if (key.startsWith('Mouse')) {
-      const button = Number(key.slice(5))
-      if (Number.isFinite(button)) {
-        parts.push(formatMouseButton(button))
-      }
-      continue
-    }
-    parts.push(formatKeyCode(key))
+function keyboardRow(bindings: InputBindings, action: BindAction): string {
+  return formatKeyboardBinding(bindings.keyboard, action)
+}
+
+function mixMovementRow(bindings: InputBindings, action: BindAction): string {
+  const parts: string[] = [formatKeyboardBinding(bindings.keyboard, action)]
+  if (bindings.mouse.moveEnabled) {
+    parts.push('Mouse move')
   }
-  return parts
+  return formatParts(parts)
 }
 
-function keyboardBindings(token: VirtualToken): string {
-  return formatBindings(bindingsFromTokenMap(BALANCE.controls.keyboard, token))
+function mixRow(bindings: InputBindings, action: BindAction): string {
+  if (MOVE_TOKENS.has(BIND_ACTION_TO_TOKEN[action])) {
+    return mixMovementRow(bindings, action)
+  }
+  const parts: string[] = [formatKeyboardBinding(bindings.keyboard, action)]
+  if (MOUSE_BUTTON_ACTIONS.includes(action as MouseButtonAction)) {
+    const mouse = formatMouseBinding(bindings.mouse, action as MouseButtonAction)
+    if (mouse !== '—') {
+      parts.push(mouse)
+    }
+  }
+  return formatParts(parts)
 }
 
-function mixBindings(token: VirtualToken): string {
-  return formatBindings(bindingsFromTokenMap(BALANCE.controls.mix, token))
-}
-
-function gamepadBindings(token: VirtualToken): string {
+function gamepadRow(bindings: InputBindings, token: VirtualToken, action: BindAction): string {
   if (MOVE_TOKENS.has(token)) {
     return 'Left stick'
   }
-  const parts: string[] = []
-  for (const [index, mapped] of Object.entries(BALANCE.controls.gamepad.buttons)) {
-    if (mapped !== token) {
-      continue
-    }
-    parts.push(formatGamepadButton(Number(index)))
-  }
-  return formatBindings(parts)
+  return formatGamepadBinding(bindings.gamepad, action as MouseButtonAction)
 }
 
-function touchBindings(token: VirtualToken): string {
+function touchRow(bindings: InputBindings, token: VirtualToken): string {
   if (MOVE_TOKENS.has(token)) {
     return 'Virtual stick'
   }
   const parts: string[] = []
-  for (const [slot, mapped] of Object.entries(BALANCE.controls.touch.slots)) {
-    if (mapped !== token) {
-      continue
+  for (const slotId of TOUCH_SLOT_IDS) {
+    if (BIND_ACTION_TO_TOKEN[bindings.touch[slotId]] === token) {
+      parts.push(TOUCH_SLOT_LABELS[slotId])
     }
-    parts.push(TOUCH_SLOT_LABELS[slot] ?? slot)
   }
-  return formatBindings(parts)
+  return formatParts(parts)
 }
 
-export function resolveControlBindings(scheme: InputScheme): ControlActionRow[] {
-  const resolve = (token: VirtualToken): string => {
+export function resolveControlBindings(
+  scheme: InputScheme,
+  bindings: InputBindings,
+): ControlActionRow[] {
+  return ACTION_ROWS.map((row) => {
+    let binding: string
     switch (scheme) {
       case 'keyboard':
-        return keyboardBindings(token)
+        binding = keyboardRow(bindings, row.action)
+        break
       case 'mix':
-        return mixBindings(token)
+        binding = mixRow(bindings, row.action)
+        break
       case 'gamepad':
-        return gamepadBindings(token)
+        binding = gamepadRow(bindings, row.token, row.action)
+        break
       case 'touch':
-        return touchBindings(token)
+        binding = touchRow(bindings, row.token)
+        break
     }
-  }
+    return {
+      id: row.action,
+      label: BIND_ACTION_LABELS[row.action],
+      binding,
+    }
+  })
+}
 
-  return ACTION_ROWS.map((row) => ({
-    label: row.label,
-    binding: resolve(row.token),
+export function resolveTouchSlotRows(bindings: InputBindings): ControlActionRow[] {
+  return TOUCH_SLOT_IDS.map((slotId) => ({
+    id: slotId,
+    label: TOUCH_SLOT_LABELS[slotId],
+    binding: BIND_ACTION_LABELS[bindings.touch[slotId]],
   }))
 }
+
+export type { BindAction, MouseButtonAction, TouchSlotId }

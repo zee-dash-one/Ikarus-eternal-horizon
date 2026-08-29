@@ -4,6 +4,7 @@ import {
   type GamepadBindings,
 } from '../../core/input-bindings.ts'
 import type { InputAdapter } from '../../systems/input-manager.ts'
+import { isGamepadButtonDown } from '../gamepad-button.ts'
 
 function applyDeadzone(value: number, deadzone: number): number {
   if (Math.abs(value) < deadzone) {
@@ -42,7 +43,7 @@ export class GamepadInputAdapter implements InputAdapter {
   update(): void {
     const cfg = this._getGamepad()
     const pads = navigator.getGamepads?.() ?? []
-    const pad = pads[0]
+    const pad = pads.find((p) => p !== null) ?? null
     this._down.clear()
     if (!pad) {
       this._moveX = 0
@@ -59,7 +60,7 @@ export class GamepadInputAdapter implements InputAdapter {
     }
 
     for (let i = 0; i < pad.buttons.length; i++) {
-      const pressed = pad.buttons[i]?.pressed === true
+      const pressed = isGamepadButtonDown(pad.buttons[i])
       const token = gamepadTokenFromButton(cfg, i)
       if (token && pressed) {
         this._down.add(token)
@@ -84,6 +85,14 @@ export class GamepadInputAdapter implements InputAdapter {
 
   clearPressed(token: VirtualToken): void {
     this._pressed.delete(token)
+  }
+
+  clearHeld(): void {
+    this._down.clear()
+    this._pressed.clear()
+    this._prevButtons.clear()
+    this._moveX = 0
+    this._moveZ = 0
   }
 
   axis(name: 'moveX' | 'moveZ'): number {

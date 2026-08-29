@@ -19,7 +19,16 @@ import { HudManager } from './render/hud-manager.ts'
 import type { GameUiHost } from './ui/game-ui-types.ts'
 import { createDemoKit } from './platform/kit-demo.ts'
 import type { PlatformKit } from './platform/kit-demo.ts'
+import { cloneInputBindings } from './core/input-bindings.ts'
+import { TouchControls } from './ui/touch-controls/touch-controls.ts'
 import { loadControlSettings, saveControlSettings } from './persist/control-settings.ts'
+import {
+  releasePointerLock,
+  requestPointerLock,
+  shouldCapturePointerForMix,
+} from './ui/pointer-lock.ts'
+import { pauseMenuNav } from './ui/pause-menu-nav.ts'
+import { isRemapListening } from './ui/remap-listen-state.ts'
 
 export interface GameAppOptions {
   readonly canvas: HTMLCanvasElement
@@ -49,6 +58,8 @@ export class GameApp {
   private _pauseOpen = false
   private readonly _isDev: boolean
   private readonly _canvas: HTMLCanvasElement
+  private readonly _pointerLockHost: HTMLElement
+  private _touchOverlay: TouchControls | null = null
 
   constructor(options: GameAppOptions) {
     const kit = options.kit ?? createDemoKit()
@@ -63,7 +74,14 @@ export class GameApp {
     this.energy.bindRegenGate(() => this.sheet.shipStatus.energizing)
     this.renderer = new GameRenderer({ canvas: options.canvas })
     const gameArea = document.getElementById('game-area')
+    this._pointerLockHost = gameArea ?? options.canvas.parentElement ?? options.canvas
     this.hud = new HudManager(gameArea ?? options.canvas.parentElement ?? document.body)
+    this._touchOverlay = new TouchControls({
+      host: gameArea ?? options.canvas.parentElement ?? document.body,
+      adapter: this.input.touchAdapter,
+      getSlots: () => this.input.bindings.bindings.touch,
+      enabled: false,
+    })
     this._isDev = !import.meta.env.PROD
     this._ui.setIsDev(this._isDev)
 
@@ -72,8 +90,10 @@ export class GameApp {
         this.scenes.update(dt)
       },
       sidecar: () => {
-        if (this._pauseOpen) {
-          this._pollPauseInput()
+        if (this._pauseOpen && !isRemapListening()) {
+          pauseMenuNav.pollGamepad()
+          this._refreshDevLive()
+        } else if (this._pauseOpen) {
           this._refreshDevLive()
         }
         this.scenes.syncRender()
@@ -86,11 +106,6 @@ export class GameApp {
       this.renderer.resize(window.innerWidth, window.innerHeight)
     })
     window.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') {
-        e.preventDefault()
-        this._togglePause()
-        return
-      }
       if (e.key === 'Enter' && this.scenes.current?.id === 'start' && this._startScene) {
         this._startScene.tryStart()
       }
@@ -100,12 +115,18 @@ export class GameApp {
         this._startScene.tryStart()
       }
     })
+    this._pointerLockHost.addEventListener('mousedown', () => {
+      this._tryCapturePointer()
+    })
   }
 
   async boot(): Promise<void> {
     const controlSettings = await loadControlSettings()
+    this.input.bindings.load(controlSettings.bindings)
+    this._syncControlUi()
     this.input.setScheme(controlSettings.scheme)
     this._ui.setScheme(controlSettings.scheme)
+    this._syncTouchOverlay()
 
     const session = await this.auth.resolveBootSession()
     if (session) {
@@ -139,7 +160,59 @@ export class GameApp {
       onResume: () => this._closePause(),
       onSchemeChange: (scheme) => {
         this.input.setScheme(scheme)
-        void saveControlSettings({ scheme })
+        this._syncTouchOverlay()
+        this._syncPointerLock()
+        void this._persistControls(scheme)
+      },
+      onBindingsChange: () => this._syncControlUi(),
+      assignKeyboard: (action, code) => {
+        this.input.bindings.assignKeyboard(action, code)
+        this._syncControlUi()
+        void this._persistControls()
+      },
+      assignKeyboardPause: (code) => {
+        this.input.bindings.assignKeyboardPause(code)
+        this._syncControlUi()
+        void this._persistControls()
+      },
+      assignMouseInput: (action, input) => {
+        this.input.bindings.assignMouseInput(action, input)
+        this._syncControlUi()
+        void this._persistControls()
+      },
+      setMouseMoveEnabled: (enabled) => {
+        this.input.bindings.setMouseMoveEnabled(enabled)
+        if (!enabled) {
+          this.input.resetMixSteer()
+        }
+        this._syncControlUi()
+        this._syncPointerLock()
+        void this._persistControls()
+      },
+      setMouseMoveSensitivity: (sensitivity) => {
+        this.input.bindings.setMouseMoveSensitivity(sensitivity)
+        this._syncControlUi()
+        void this._persistControls()
+      },
+      assignGamepadButton: (action, button) => {
+        this.input.bindings.assignGamepadButton(action, button)
+        this._syncControlUi()
+        void this._persistControls()
+      },
+      assignGamepadPause: (button) => {
+        this.input.bindings.assignGamepadPause(button)
+        this._syncControlUi()
+        void this._persistControls()
+      },
+      assignTouchSlot: (slot, action) => {
+        this.input.bindings.assignTouchSlot(slot, action)
+        this._syncControlUi()
+        void this._persistControls()
+      },
+      resetControlBindings: () => {
+        this.input.bindings.resetToDefaults()
+        this._syncControlUi()
+        void this._persistControls()
       },
       onMuteChange: (muted) => this.sound.setMuted(muted),
       onFreeCamChange: (enabled) => this.camera.setFreeCam(enabled),
@@ -148,6 +221,29 @@ export class GameApp {
         this._run?.refreshCraftRings()
         this._refreshDevLive()
       },
+    })
+  }
+
+  private _syncControlUi(): void {
+    this._ui.syncControlBindings(this.input.bindings.bindings)
+    this._touchOverlay?.syncSlots(this.input.bindings.bindings.touch)
+  }
+
+  private _syncTouchOverlay(): void {
+    const overlay = this._touchOverlay
+    if (!overlay) {
+      return
+    }
+    const inRun = this.scenes.current?.id === 'run'
+    const show = this.input.scheme === 'touch' && inRun && !this._pauseOpen
+    overlay.syncSlots(this.input.bindings.bindings.touch)
+    overlay.setVisible(show)
+  }
+
+  private async _persistControls(scheme = this.input.scheme): Promise<void> {
+    await saveControlSettings({
+      scheme,
+      bindings: cloneInputBindings(this.input.bindings.bindings),
     })
   }
 
@@ -190,11 +286,23 @@ export class GameApp {
       firing: this.firing,
       shots: this.shots,
       hud: this.hud,
-      onPause: () => this._openPause(),
+      onPause: () => {
+        if (isRemapListening()) {
+          return
+        }
+        this._togglePause()
+      },
     })
     this.scenes.mount(this._run)
     this.hud.setVisible(true)
     this.hud.setPausedDimmed(false)
+    this._syncTouchOverlay()
+  }
+
+  private _flushCombatInput(): void {
+    this.input.clearHeld()
+    this.input.resetMixSteer()
+    this.firing.releaseFireHold()
   }
 
   private _openPause(): void {
@@ -205,7 +313,11 @@ export class GameApp {
     this._ui.setPauseTab('controls')
     this._refreshDevLive()
     this._ui.setPauseOpen(true)
+    this.input.setCaptureDom(false)
+    this._flushCombatInput()
     this.input.clearPressed('Start')
+    this._syncPointerLock()
+    this._syncTouchOverlay()
   }
 
   private _closePause(): void {
@@ -214,18 +326,10 @@ export class GameApp {
     this.loop.resume()
     this.hud.setPausedDimmed(false)
     this._ui.setPauseOpen(false)
+    this.input.setCaptureDom(true)
+    this._flushCombatInput()
     this.input.clearPressed('Start')
-  }
-
-  private _pollPauseInput(): void {
-    const scheme = this.input.scheme
-    if (scheme !== 'gamepad' && scheme !== 'touch') {
-      return
-    }
-    this.input.update()
-    if (this.input.wasPressed('Start')) {
-      this._closePause()
-    }
+    this._syncTouchOverlay()
   }
 
   private _togglePause(): void {
@@ -272,6 +376,28 @@ export class GameApp {
       bombing: yesNo(status.bombing),
       energizing: yesNo(status.energizing),
     })
+  }
+
+  private _syncPointerLock(): void {
+    if (!this._shouldCapturePointer()) {
+      releasePointerLock(this._pointerLockHost)
+    }
+  }
+
+  private _shouldCapturePointer(): boolean {
+    return shouldCapturePointerForMix(
+      this.input.scheme,
+      this.input.bindings.bindings.mouse.moveEnabled,
+      this.scenes.current?.id === 'run',
+      this._pauseOpen,
+    )
+  }
+
+  private _tryCapturePointer(): void {
+    if (!this._shouldCapturePointer()) {
+      return
+    }
+    requestPointerLock(this._pointerLockHost)
   }
 
   private _wireDebugger(host: HTMLElement): void {

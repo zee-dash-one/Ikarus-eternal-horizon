@@ -14,7 +14,7 @@ export function PauseHeader() {
   const tabs = ui.isDev ? MAIN_TABS : MAIN_TABS.filter((t) => t.id !== 'dev')
 
   return (
-    <>
+    <header className="pause-overlay__header">
       <h2>Paused</h2>
       <TabBar
         className="pause-overlay__tabs pause-tab-group"
@@ -22,6 +22,6 @@ export function PauseHeader() {
         active={ui.pauseTab}
         onSelect={(tab) => ui.setPauseTab(tab)}
       />
-    </>
+    </header>
   )
 }

@@ -1,19 +1,42 @@
 import type { VirtualToken } from '../../core/input-types.ts'
 import {
+  isKeyboardBoundCode,
   keyboardTokenFromCode,
   type KeyboardBindings,
 } from '../../core/input-bindings.ts'
 import type { InputAdapter } from '../../systems/input-manager.ts'
+import {
+  shouldCaptureKeyboardPress,
+  shouldCaptureKeyboardRelease,
+} from './dom-input-guard.ts'
+
+const VIRTUAL_TOKENS: VirtualToken[] = [
+  'Up',
+  'Down',
+  'Left',
+  'Right',
+  'Start',
+  'A',
+  'B',
+  'X',
+  'Y',
+  'R1',
+  'R2',
+]
 
 /** Keyboard → virtual pad (live bindings). */
 export class KeyboardInputAdapter implements InputAdapter {
   readonly scheme = 'keyboard' as const
   private readonly _getKeyboard: () => KeyboardBindings
+  private readonly _shouldCaptureDom: () => boolean
   private readonly _down = new Set<VirtualToken>()
   private readonly _pressed = new Set<VirtualToken>()
   private readonly _onKeyDown = (e: KeyboardEvent): void => {
     const keyboard = this._getKeyboard()
-    if (Object.values(keyboard).includes(e.code)) {
+    if (!shouldCaptureKeyboardPress(keyboard, e.code, e.target, this._shouldCaptureDom())) {
+      return
+    }
+    if (isKeyboardBoundCode(keyboard, e.code)) {
       e.preventDefault()
     }
     const token = keyboardTokenFromCode(keyboard, e.code)
@@ -23,14 +46,20 @@ export class KeyboardInputAdapter implements InputAdapter {
     }
   }
   private readonly _onKeyUp = (e: KeyboardEvent): void => {
-    const token = keyboardTokenFromCode(this._getKeyboard(), e.code)
+    const keyboard = this._getKeyboard()
+    if (!shouldCaptureKeyboardRelease(keyboard, e.code, e.target)) {
+      return
+    }
+    const token = keyboardTokenFromCode(keyboard, e.code)
     if (token) {
       this._down.delete(token)
     }
   }
 
-  constructor(getKeyboard: () => KeyboardBindings) {
+  constructor(getKeyboard: () => KeyboardBindings, shouldCaptureDom: () => boolean) {
     this._getKeyboard = getKeyboard
+    this._shouldCaptureDom = shouldCaptureDom
+    void VIRTUAL_TOKENS
   }
 
   attach(): void {
@@ -61,6 +90,11 @@ export class KeyboardInputAdapter implements InputAdapter {
 
   clearPressed(token: VirtualToken): void {
     this._pressed.delete(token)
+  }
+
+  clearHeld(): void {
+    this._down.clear()
+    this._pressed.clear()
   }
 
   axis(name: 'moveX' | 'moveZ'): number {

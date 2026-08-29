@@ -12,30 +12,42 @@ export interface InputAdapter {
   readonly scheme: InputScheme
   attach(): void
   detach(): void
-  update(): void
+  update(dt?: number): void
   isDown(token: VirtualToken): boolean
   wasPressed(token: VirtualToken): boolean
   clearPressed(token: VirtualToken): void
+  clearHeld(): void
   axis(name: 'moveX' | 'moveZ'): number
 }
 
 export class InputManager {
   readonly bindings = new InputBindingsManager()
   private _scheme: InputScheme = 'keyboard'
+  private _captureDom = true
   private readonly _adapters: Record<InputScheme, InputAdapter>
+  private readonly _touch: TouchInputAdapter
+  private readonly _mix: MixInputAdapter
   private _active: InputAdapter
   private readonly _commands: Command[] = []
 
   constructor(host?: HTMLElement) {
+    const touch = new TouchInputAdapter(host)
+    const mix = new MixInputAdapter(
+      () => this.bindings.bindings.keyboard,
+      () => this.bindings.bindings.mouse,
+      () => this._captureDom,
+      host,
+    )
+    this._touch = touch
+    this._mix = mix
     this._adapters = {
-      keyboard: new KeyboardInputAdapter(() => this.bindings.bindings.keyboard),
-      mix: new MixInputAdapter(
+      keyboard: new KeyboardInputAdapter(
         () => this.bindings.bindings.keyboard,
-        () => this.bindings.bindings.mouse,
-        host,
+        () => this._captureDom,
       ),
+      mix,
       gamepad: new GamepadInputAdapter(() => this.bindings.bindings.gamepad),
-      touch: new TouchInputAdapter(host),
+      touch,
     }
     this._active = this._adapters.keyboard
     this._active.attach()
@@ -45,8 +57,25 @@ export class InputManager {
     return this._scheme
   }
 
-  update(): void {
-    this._active.update()
+  /** When false, keyboard/mouse adapters ignore DOM events (pause menu, login, etc.). */
+  setCaptureDom(capture: boolean): void {
+    this._captureDom = capture
+  }
+
+  get touchAdapter(): TouchInputAdapter {
+    return this._touch
+  }
+
+  update(dt = 0): void {
+    this._active.update(dt)
+  }
+
+  resetMixSteer(): void {
+    this._mix.resetSteer()
+  }
+
+  clearHeld(): void {
+    this._active.clearHeld()
   }
 
   isDown(token: VirtualToken): boolean {

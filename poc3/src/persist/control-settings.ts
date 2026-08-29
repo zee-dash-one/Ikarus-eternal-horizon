@@ -1,3 +1,10 @@
+import {
+  cloneInputBindings,
+  createDefaultInputBindings,
+  isInputBindings,
+  normalizeInputBindings,
+  type InputBindings,
+} from '../core/input-bindings.ts'
 import type { InputScheme } from '../core/input-types.ts'
 import { getLocalDb } from './local-db.ts'
 
@@ -5,10 +12,12 @@ const SETTINGS_KEY = 'controls'
 
 export interface ControlSettings {
   readonly scheme: InputScheme
+  readonly bindings: InputBindings
 }
 
 const DEFAULT_SETTINGS: ControlSettings = {
   scheme: 'keyboard',
+  bindings: createDefaultInputBindings(),
 }
 
 function isInputScheme(value: string): value is InputScheme {
@@ -22,9 +31,11 @@ export async function loadControlSettings(): Promise<ControlSettings> {
       return DEFAULT_SETTINGS
     }
     const parsed = JSON.parse(row.payload) as Partial<ControlSettings>
-    if (parsed.scheme && isInputScheme(parsed.scheme)) {
-      return { scheme: parsed.scheme }
-    }
+    const scheme = parsed.scheme && isInputScheme(parsed.scheme) ? parsed.scheme : DEFAULT_SETTINGS.scheme
+    const bindings = isInputBindings(parsed.bindings)
+      ? normalizeInputBindings(cloneInputBindings(parsed.bindings))
+      : createDefaultInputBindings()
+    return { scheme, bindings }
   } catch {
     /* ignore corrupt storage */
   }

@@ -19,7 +19,6 @@ export class FiringManager {
   private readonly _loadout: readonly WeaponId[]
   private _weaponIndex = 0
   private _cooldown = 0
-  private _switchHeld = false
   private _fireHeld = false
 
   constructor(
@@ -43,12 +42,18 @@ export class FiringManager {
     return this._loadout[this._weaponIndex] ?? 'laser'
   }
 
+  /** Drop virtual fire hold — e.g. when pause menu opens while shoot is held. */
+  releaseFireHold(): void {
+    if (this._fireHeld) {
+      this._sheet.shipStatus.setShootingActive(false, BALANCE.player.cooldowns.shootingMs)
+    }
+    this._fireHeld = false
+  }
+
   updateSim(dt: number, muzzle: MuzzlePose): void {
-    const switchDown = this._input.isDown('X')
-    if (switchDown && !this._switchHeld) {
+    if (this._input.wasPressed('X')) {
       this._cycleWeapon()
     }
-    this._switchHeld = switchDown
 
     void this._input.wasPressed('Y')
 

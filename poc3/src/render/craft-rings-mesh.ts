@@ -18,6 +18,13 @@ import { resolveHudRingRotationDeg } from './hud-ring-layout.ts'
 
 type FillAnchor = 'start' | 'end'
 
+/** Local Y separation between track → fill → outline (prevents coplanar z-fight). */
+const RING_LAYER_Y_STEP = 0.004
+/** renderOrder gap between ENE / INT / SHD segments. */
+const RING_SEGMENT_ORDER_STRIDE = 10
+/** Per-segment layer order: 0 = track (back), 1 = fill, 2 = outline (front). */
+const RING_LAYER_ORDER = { track: 0, fill: 1, outline: 2 } as const
+
 interface SegmentDef {
   readonly sliceIndex: number
   readonly fillAnchor: FillAnchor
@@ -75,25 +82,32 @@ function fillArcDeg(
   return { startDeg: trackStart + spanDeg - filled, arcDeg: filled }
 }
 
-function makeMaterial(color: RgbaColor, groupOpacity: number): MeshBasicMaterial {
+function makeMaterial(color: RgbaColor, groupOpacity: number, layerIndex: number): MeshBasicMaterial {
   const { color: hex, opacity } = rgbaToThree(color)
   const alpha = clamp01(opacity * groupOpacity)
   return new MeshBasicMaterial({
     color: hex,
     transparent: alpha < 1,
     opacity: alpha,
-    depthWrite: alpha >= 1,
+    depthWrite: false,
     depthTest: true,
+    polygonOffset: true,
+    polygonOffsetFactor: -1 - layerIndex,
+    polygonOffsetUnits: -1 - layerIndex,
   })
 }
 
-function applyMaterialStyle(mat: MeshBasicMaterial, color: RgbaColor, groupOpacity: number): void {
+function applyMaterialStyle(
+  mat: MeshBasicMaterial,
+  color: RgbaColor,
+  groupOpacity: number,
+): void {
   const { color: hex, opacity } = rgbaToThree(color)
   const alpha = clamp01(opacity * groupOpacity)
   mat.color.setHex(hex)
   mat.opacity = alpha
   mat.transparent = alpha < 1
-  mat.depthWrite = alpha >= 1
+  mat.depthWrite = false
 }
 
 function disposeMaterial(mat: Material): void {
@@ -125,9 +139,11 @@ function createArcMesh(
   arcDeg: number,
   material: MeshBasicMaterial,
   renderOrder: number,
+  layerIndex: number,
 ): Mesh {
   const mesh = new Mesh(buildArcGeometry(majorR, tubeR, arcDeg), material)
   mesh.rotation.y = startDeg * DEG2RAD
+  mesh.position.y = layerIndex * RING_LAYER_Y_STEP
   mesh.renderOrder = renderOrder
   return mesh
 }
@@ -263,15 +279,28 @@ export class CraftRingsMesh {
 
   private _applySegmentStyles(groupOpacity: number): void {
     const defs = segmentDefs()
-    for (let i = 0; i < this._segments.length; i++) {
-      const def = defs[i]
-      const slot = this._segments[i]
+    for (let segIdx = 0; segIdx < defs.length; segIdx++) {
+      const def = defs[segIdx]
+      const slot = this._segments[segIdx]
       if (!def || !slot) {
         continue
       }
-      applyMaterialStyle(slot.outline.material as MeshBasicMaterial, def.style.outline, groupOpacity)
-      applyMaterialStyle(slot.track.material as MeshBasicMaterial, def.style.track, groupOpacity)
-      applyMaterialStyle(slot.fill.material as MeshBasicMaterial, def.style.fill, groupOpacity)
+
+      applyMaterialStyle(
+        slot.track.material as MeshBasicMaterial,
+        def.style.track,
+        groupOpacity,
+      )
+      applyMaterialStyle(
+        slot.fill.material as MeshBasicMaterial,
+        def.style.fill,
+        groupOpacity,
+      )
+      applyMaterialStyle(
+        slot.outline.material as MeshBasicMaterial,
+        def.style.outline,
+        groupOpacity,
+      )
     }
   }
 
@@ -312,38 +341,44 @@ export class CraftRingsMesh {
     const outlineR = barR + rings.outlineWidthWorld
     const span = sliceSpanDeg()
 
-    for (const def of segmentDefs()) {
+    const defs = segmentDefs()
+    for (let segIdx = 0; segIdx < defs.length; segIdx++) {
+      const def = defs[segIdx]
       const start = sliceCenterDeg(def.sliceIndex) - span / 2
+      const baseOrder = rings.renderOrder + segIdx * RING_SEGMENT_ORDER_STRIDE
 
-      const outline = createArcMesh(
-        majorR,
-        outlineR,
-        start,
-        span,
-        makeMaterial(def.style.outline, rings.opacity),
-        rings.renderOrder,
-      )
       const track = createArcMesh(
         majorR,
         barR,
         start,
         span,
-        makeMaterial(def.style.track, rings.opacity),
-        rings.renderOrder + 1,
+        makeMaterial(def.style.track, rings.opacity, RING_LAYER_ORDER.track),
+        baseOrder + RING_LAYER_ORDER.track,
+        RING_LAYER_ORDER.track,
       )
       const fill = createArcMesh(
         majorR,
         barR,
         start,
         0.001,
-        makeMaterial(def.style.fill, rings.opacity),
-        rings.renderOrder + 2,
+        makeMaterial(def.style.fill, rings.opacity, RING_LAYER_ORDER.fill),
+        baseOrder + RING_LAYER_ORDER.fill,
+        RING_LAYER_ORDER.fill,
       )
       fill.visible = false
+      const outline = createArcMesh(
+        majorR,
+        outlineR,
+        start,
+        span,
+        makeMaterial(def.style.outline, rings.opacity, RING_LAYER_ORDER.outline),
+        baseOrder + RING_LAYER_ORDER.outline,
+        RING_LAYER_ORDER.outline,
+      )
 
-      this.root.add(outline)
       this.root.add(track)
       this.root.add(fill)
+      this.root.add(outline)
       this._segments.push({ outline, track, fill, lastRatio: -1 })
     }
   }

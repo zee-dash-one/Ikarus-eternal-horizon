@@ -45,9 +45,9 @@ export class PauseOverlay implements GameScene {
     this._tab = tab
   }
 
-  update(): void {
+  update(dt: number): void {
     if (!this._mounted) return
-    this._deps.input.update()
+    this._deps.input.update(dt)
     if (this._deps.input.wasPressed('Start')) {
       this.resume()
     }

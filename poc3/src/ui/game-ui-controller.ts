@@ -1,4 +1,10 @@
 import {
+  clampMouseSteerSensitivity,
+  createDefaultInputBindings,
+  normalizeInputBindings,
+  type InputBindings,
+} from '../core/input-bindings.ts'
+import {
   EMPTY_DEV_LIVE,
   type DevLiveSnapshot,
   type GameUiHost,
@@ -17,6 +23,16 @@ export class GameUiController implements GameUiHost {
   private _pauseHandlers: PauseHandlers = {
     onResume: () => undefined,
     onSchemeChange: () => undefined,
+    onBindingsChange: () => undefined,
+    assignKeyboard: () => undefined,
+    assignKeyboardPause: () => undefined,
+    assignMouseInput: () => undefined,
+    setMouseMoveEnabled: () => undefined,
+    setMouseMoveSensitivity: () => undefined,
+    assignGamepadButton: () => undefined,
+    assignGamepadPause: () => undefined,
+    assignTouchSlot: () => undefined,
+    resetControlBindings: () => undefined,
     onMuteChange: () => undefined,
     onFreeCamChange: () => undefined,
     onBalanceChange: () => undefined,
@@ -31,6 +47,8 @@ export class GameUiController implements GameUiHost {
   isDev = true
   devLive: DevLiveSnapshot = EMPTY_DEV_LIVE
   scheme: InputScheme = 'keyboard'
+  controlBindings: InputBindings = createDefaultInputBindings()
+  bindingsRev = 0
   muted = false
   freeCam = false
   balanceRev = 0
@@ -118,6 +136,34 @@ export class GameUiController implements GameUiHost {
 
   setScheme(scheme: InputScheme): void {
     this.scheme = scheme
+    this._notify()
+  }
+
+  setMouseMoveSensitivity(value: number): void {
+    const next = clampMouseSteerSensitivity(value)
+    this.controlBindings = {
+      ...this.controlBindings,
+      mouse: {
+        ...this.controlBindings.mouse,
+        moveSensitivity: next,
+      },
+    }
+    this.bindingsRev += 1
+    this._notify()
+  }
+
+  syncControlBindings(bindings: InputBindings): void {
+    const normalized = normalizeInputBindings(bindings)
+    this.controlBindings = {
+      keyboard: { ...normalized.keyboard },
+      mouse: { ...normalized.mouse },
+      gamepad: {
+        ...normalized.gamepad,
+        axes: { ...normalized.gamepad.axes },
+      },
+      touch: { ...normalized.touch },
+    }
+    this.bindingsRev += 1
     this._notify()
   }
 

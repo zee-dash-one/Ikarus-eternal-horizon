@@ -1,13 +1,17 @@
 import {
   assignGamepadButton,
+  assignGamepadPause,
   assignKeyboard,
-  assignMouseButton,
+  assignKeyboardPause,
+  assignMouseInput,
   assignTouchSlot,
+  clampMouseSteerSensitivity,
   cloneInputBindings,
   createDefaultInputBindings,
   resetInputBindings,
   type BindAction,
   type InputBindings,
+  type MouseBindInput,
   type MouseButtonAction,
   type TouchSlotId,
 } from '../core/input-bindings.ts'
@@ -39,8 +43,13 @@ export class InputBindingsManager {
     this._bump()
   }
 
-  assignMouseButton(action: MouseButtonAction, button: number | null): void {
-    assignMouseButton(this._bindings, action, button)
+  assignKeyboardPause(code: string): void {
+    assignKeyboardPause(this._bindings, code)
+    this._bump()
+  }
+
+  assignMouseInput(action: MouseButtonAction, input: MouseBindInput): void {
+    assignMouseInput(this._bindings, action, input)
     this._bump()
   }
 
@@ -52,8 +61,19 @@ export class InputBindingsManager {
     this._bump()
   }
 
+  setMouseMoveSensitivity(sensitivity: number): void {
+    const next = clampMouseSteerSensitivity(sensitivity)
+    this._bindings.mouse.moveSensitivity = next
+    this._bump()
+  }
+
   assignGamepadButton(action: MouseButtonAction, button: number): void {
     assignGamepadButton(this._bindings, action, button)
+    this._bump()
+  }
+
+  assignGamepadPause(button: number): void {
+    assignGamepadPause(this._bindings, button)
     this._bump()
   }
 

@@ -2,6 +2,7 @@ import { useGameUiSnapshot } from '../GameUiContext.tsx'
 import { PauseHeader } from './PauseHeader.tsx'
 import { PauseBody } from './PauseBody.tsx'
 import { PauseFooter } from './PauseFooter.tsx'
+import { PauseMenuNavigation } from './PauseMenuNavigation.tsx'
 
 export function PauseOverlay() {
   const ui = useGameUiSnapshot()
@@ -16,6 +17,7 @@ export function PauseOverlay() {
         <PauseBody />
         <PauseFooter />
       </div>
+      <PauseMenuNavigation />
     </div>
   )
 }

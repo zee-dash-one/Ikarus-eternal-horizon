@@ -414,7 +414,7 @@ export const BALANCE: BalanceConfig = {
     rotation: { x: -40, y: 24, z: -14 },
   },
   followBox: {
-    halfX: 6,
+    halfX: 16,
     halfZ: 8,
     bounce: { timeMs: 500 },
     recenter: {

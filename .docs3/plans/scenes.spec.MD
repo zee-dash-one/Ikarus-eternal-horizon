@@ -222,7 +222,7 @@ Selecting a rail item opens a **panel/tab inside Pause** (same overlay; not `win
 
 | Rail         | Opens                                                | Contents                                                                                                                                           |
 | ------------ | ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Controls** | Controls tab                                         | Scheme picker + **physical→virtual** remap (`InputManager`, [`input.spec.MD`](./input.spec.MD)). Four schemes: Keyboard · Mix · Gamepad · Touch. |
+| **Controls** | Controls tab                                         | Scheme picker + **physical→virtual** remap (`InputManager`, [`input.spec.MD`](./input.spec.MD) `CTRL-02`/`CTRL-03`). Four schemes: Keyboard · Mix · Gamepad · Touch. Pause remap + combat bindings; mix mouse-steer options; touch slot assigns + fixed pause button. |
 | **Audio**    | Audio tab                                            | Driven by `SoundManager`: Music volume · SFX volume · **Mute** · **Mute ship AI** · **Show Audio as Text Log**                                     |
 | **Graphics** | Graphics tab                                         | **Screen size** / viewport mode · **Free Cam** (`CAM-06`, [`world.spec.MD`](./world.spec.MD)) — unlocks follow box in Pause **and** live Run. Further rows TBD (`Q10`) |
 | **Dev**      | Dev tab (**DEV builds only** — hidden in production) | Live **Balancer** editors bound to the running game’s `BALANCE` / sheet data, split into **inner tabs** by domain (ship, weapons, spawn, squad, …). **Not** `/dev/*` content CRUD — see [`dev-tools.spec.MD`](./dev-tools.spec.MD) (`D43`). |
@@ -230,9 +230,10 @@ Selecting a rail item opens a **panel/tab inside Pause** (same overlay; not `win
 
 #### Time freeze
 
-- On open: set loop / RunState to **paused**; world `update(dt)` does not advance; rAF may keep painting the frozen frame + overlay.
-- On close (Resume / pause toggle): clear pause; **no dt catch-up** burst.
-- Input: Esc / virtual **`Start`** / pause action toggles Pause while Run is active. **IJKL/UO** are never pause keys — when Free Cam is on they fly the camera behind the overlay.
+- On open: set loop / RunState to **paused**; gameplay `update(dt)` still polls `InputManager` for **`Start`** edge only, then returns before sim; rAF paints frozen frame + overlay.
+- On close (Exit / pause toggle): clear pause; **no dt catch-up** burst.
+- Input: **only** virtual **`Start`** (from bound physical pause controls per [`input.spec.MD`](./input.spec.MD) `CTRL-02`) toggles Pause while Run is active. **No hardcoded Esc or gamepad Start** in `game-app`. **IJKL/UO** are never pause keys — when Free Cam is on they fly the camera behind the overlay.
+- POC3 interim: near-fullscreen **DOM** pause panel (React) with tabs Controls · Audio · Graphics · Dev; frozen Run canvas visible behind dimmer (`HUD` dimmed). Exit button **#pause-exit**; DOM keyboard/gamepad navigation per `CTRL-03` (`pause-menu-nav.ts`).
 
 #### Rules
 

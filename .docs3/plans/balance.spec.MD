@@ -121,7 +121,9 @@ export declare const BALANCE: BalanceConfig;
 
 `SIM_DT = 1/60` stays a Core tick constant (`ARCH-17`) — it is the clock, not a feel knob. `loop.dtClampSec` *is* a feel/safety knob and lives on `BALANCE`.
 
-Physical → virtual remap tables are `BALANCE.controls.*` only (`CTRL-01`).
+**Defaults vs persisted:** `BALANCE.controls.*` seeds **`createDefaultInputBindings()`** only. Player remap lives in runtime **`InputBindings`** persisted via `control-settings.ts` (Dexie). Remap edits physical→virtual mappings — never virtual roles (`CTRL-02`).
+
+Physical → virtual default tables are `BALANCE.controls.*`; runtime tables are `InputBindings` (`CTRL-01` / `CTRL-02`).
 
 ---
 
@@ -153,7 +155,7 @@ RESUME: Game Design owns every number and colour on BALANCE; Programming does no
 | `layout.aspect` / `cssWidth` / `cssHeight` / `letterboxColor` | Playfield box + bars (`D44`) |
 | `render.background` / `pixelRatioCap` / `antialias` | Canvas clear and GPU caps |
 | `loop.dtClampSec` | Max rAF catch-up slice |
-| `controls.{keyboard,mix,gamepad,touch}` | Physical → virtual only |
+| `controls.{keyboard,mix,gamepad,touch}` | Default physical → virtual seed (`InputBindings` defaults · `CTRL-02`) |
 
 Palette, HUD chrome, camera FOV, drop colours, weapon VFX params land in their theme namespaces **on this same object**.
 

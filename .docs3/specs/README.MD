@@ -85,7 +85,10 @@ O hub já tem quase tudo que um processo SDD sério precisa:
 │   └── SCENE-04-result.spec.ts         # Theme 10 · #result-root pós-DEAD (DOM)
 │
 ├── input/                             # plans/input.spec.MD
-│   └── CTRL-01.spec.ts                 # Theme 1  · pad virtual + 4 schemes exclusivos
+│   ├── CTRL-01.spec.ts                 # Theme 1  · pad virtual + 4 schemes exclusivos
+│   ├── CTRL-02.spec.ts                 # Theme 1  · pause bindings + persist (Start only)
+│   ├── CTRL-03.spec.ts                 # Theme 4b · Pause Controls remap + DOM nav
+│   └── CTRL-04.spec.ts                 # Theme 1  · touch overlay layout / z-index
 │
 ├── balance/                           # plans/balance.spec.MD
 │   └── RUL-12.spec.ts                  # Theme 1  · BALANCE único (Core + canvas View)
@@ -401,6 +404,9 @@ Convenção de colunas: **Theme** = fatia vertical do `todo.md` · **Prio** = mu
 | ID | Prio | Fonte | Aceite | Teste sugerido |
 | --- | --- | --- | --- | --- |
 | `CTRL-01` | must | input | 4 esquemas exclusivos; zero import de hardware em `PlayerManager`/`FiringManager` | `input/CTRL-01.spec.ts` |
+| `CTRL-02` | must | input | Pause só via `Start` mapeado; bindings persistidos; sem Esc/Start hardcoded | `input/CTRL-02.spec.ts` |
+| `CTRL-03` | must | input | Pause Controls remap + listen guard + navegação Exit no DOM | `input/CTRL-03.spec.ts` |
+| `CTRL-04` | must | input | Touch overlay acima do HUD; pause top-right; nipplejs isolado | `input/CTRL-04.spec.ts` |
 | `RUL-12` | must | balance | Core e canvas View leem valores authored só de `BALANCE`; `render/` sem literais de apresentação | `balance/RUL-12.spec.ts` |
 
 ### Theme 2 — World presentation

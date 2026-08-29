@@ -94,7 +94,7 @@ Hub §2.5 · §7.6 · `SCENE-02` · `D20` · `D23`. Cockpit art, centered Start,
 ## Theme 1 — Engine core
 
 Numbers, time, input, memory — nothing allocates per frame on hot paths.
-**SDD opened:** `.docs3/specs/input/CTRL-01.spec.ts` · `.docs3/specs/balance/RUL-12.spec.ts` (red until `poc3/` InputManager + `core/balancer.ts`). `GameLoop` tick/pause = [`ARCH-17`](./specs/arch/ARCH-17.spec.ts). Do not tick until `npm run verify` green.
+**SDD opened:** `.docs3/specs/input/CTRL-01.spec.ts` … `CTRL-04.spec.ts` · `.docs3/specs/balance/RUL-12.spec.ts` (red until `poc3/` InputManager + `core/balancer.ts`). `GameLoop` tick/pause = [`ARCH-17`](./specs/arch/ARCH-17.spec.ts). Do not tick until `npm run verify` green.
 
 - [x] `BALANCE` single authored-value source (Core sim **and** canvas View paint) · `RUL-12` · `D46`
 - [x] Math helpers + scratch vectors · zero alloc
@@ -103,7 +103,10 @@ Numbers, time, input, memory — nothing allocates per frame on hot paths.
 - [x] `InputManager` + virtual pad (`CTRL-01` §2.8): tokens `Up`/`Down`/`Left`/`Right`/`Start`/`A`/`B`/`X`/`Y`/`R1`/`R2` + `moveX`/`moveZ`
 - [x] Four exclusive scheme adapters: **Keyboard** · **Mix** (keyboard+mouse) · **Gamepad** · **Touch** (nipplejs via `TouchInputAdapter` — no nipple import in `InputManager`)
 - [x] Default scheme **Keyboard**; switch on Pause → Controls tab
-- [x] Remap tables in `BALANCE.controls` map physical → virtual only
+- [x] Remap: `InputBindings` physical → virtual; defaults from `BALANCE.controls`; persist Dexie (`CTRL-02`/`CTRL-03`)
+- [x] Pause **only** via virtual `Start` from adapters — no hardcoded Esc/Start (`CTRL-02`)
+- [x] Pause Controls remap UI + listen guard + DOM Exit nav (`CTRL-03`)
+- [x] Touch overlay above HUD, transparent chrome, pause top-right (`CTRL-04`)
 
 **Done when:** loop runs stable; input schemes switch on pause; pools do not grow the heap under fire tests.
 
@@ -161,15 +164,15 @@ Motion and presentation consume **Summary** only.
 ## Theme 4b — Pause canvas UI (ship + parallax live)
 
 Hub §2.5 · §7.7 · `SCENE-05` · `D21` · `D23`. Ship as soon as Run renders **player craft + parallax** — do not wait for Theme 10.
-**SDD opened:** `.docs3/specs/scenes/SCENE-05.spec.ts` (red until `poc3/` Pause overlay). Do not tick until `npm run verify` green.
+**SDD opened:** `.docs3/specs/scenes/SCENE-05.spec.ts` · `.docs3/specs/input/CTRL-03.spec.ts` (red until `poc3/` Pause overlay). Do not tick until `npm run verify` green.
 
 - [x] Minimal Run mount that owns camera / parallax / player craft (if not already from Themes 2–4)
-- [x] Pause toggle (Esc / Start / pause action) **freezes** sim time — no world `dt`
+- [x] Pause toggle via virtual **`Start` only** (`CTRL-02`) — freezes sim time; no world gameplay `dt`
 - [x] Near-fullscreen **canvas** pause UI + dimmed frozen Run behind
 - [x] Run panel: **elapsed** · **kills** · **score** (stub counters OK)
 - [x] Run panel: **Inventory** with Use / Drop (stubs OK)
 - [x] Run panel: **Lab** craft UI (stubs OK)
-- [x] Right rail: **Controls** → scheme picker + physical→virtual remap (`InputManager`, §2.8)
+- [x] Right rail: **Controls** → scheme picker + pause/combat remap + mix mouse options (`CTRL-03`)
 - [x] Right rail: **Audio** → `SoundManager`: music · SFX · mute · mute ship AI · Show Audio as Text Log
 - [x] Right rail: **Graphics** → screen size + **Free Cam** (`CAM-06`) + further rows (`Q10`)
 - [x] Right rail: **Dev** (DEV only) → live Balancer editors with **inner tabs** by domain
@@ -355,7 +358,7 @@ Hub [`builds.spec.MD`](./plans/builds.spec.MD) · [`architecture.spec.MD`](./pla
 - [ ] `LoginStreakManager` weekly claim · 5/10/15/20/25/30/60 BUD · `STR-07`–`09` · `D35`
 - [ ] `StorePlatformAdapter` wire — Demo=`DemoStoreAdapter` · Itch · Poki · Steam · `STR-10`–`13` · `D36`/`D38`
 - [ ] `PlatformKit` boot wire (ACH + RNK + Store same kit) · `BLD-04` · `D37`
-- [ ] Persistent remap + Steam Input (G3)
+- [ ] Persistent remap + Steam Input (G3) — local Dexie done (`CTRL-02`); Steam adapter deferred
 - [ ] `SteamAchievementAdapter` · `ACH-06` · icons/copy · `ACH-08`–`ACH-09`
 - [ ] Narrative delivery: Bounty Board, AI narrator, sector bands, flavor text
 

@@ -33,7 +33,7 @@ Legend: **Covered** = owned by a docs3 ID above · **Deferred** = acknowledged, 
 | `SHIP-10` equipment effects        | **Covered**            | `CHAR-01`–`CHAR-05` · `EQP-01` modifier grants                  |
 | `SHIP-11` tech tree                | Deferred               |                                                                 |
 | `SHIP-12` hull penalties           | **Covered**            | `CHAR-04` states (replaces 1/2/3 level table)                   |
-| `SHIP-13` persistent remap         | Deferred               |                                                                 |
+| `SHIP-13` persistent remap         | **Partial**            | `CTRL-02`/`CTRL-03` · Dexie `control-settings` (Itch/Demo); Steam Input deferred |
 | `WPN-01..08`                       | **Partial**            | [`weapons.spec.MD`](./weapons.spec.MD) · Theme 5 = `WPN-01`/`02`/`05` · Theme 11 = `WPN-03`/`04`/`06` · `WPN-08` defer |
 | `ENM-01` spawn enemy               | **Covered** (identity) | `ENEMY-01`–`03`; spawn managers Deferred                        |
 | `ENM-02` pooling                   | Deferred               | memory/runtime                                                  |

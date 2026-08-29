@@ -70,7 +70,7 @@ Each file is self-contained English design authority for its domain. **This inde
 | [`weapons.spec.MD`](./weapons.spec.MD) | tag_g_combat | WPN-01–08: Laser slice (Theme 5) · full catalog + ordnance (Theme 11). |
 | [`meteors.spec.MD`](./meteors.spec.MD) | tag_g_environment | MET-01–05: pooled S/M/L asteroids, DamageManager hits, optional split. |
 | [`hud.spec.MD`](./hud.spec.MD) | tag_g_player_ship · tag_g_run_meta | HUD-01–04: canvas Integrity/Shield/Energy + border score (Theme 10). |
-| [`input.spec.MD`](./input.spec.MD) | tag_g_input | CTRL-01 / D27: virtual pad vocabulary, four scheme adapters, InputManager contract. |
+| [`input.spec.MD`](./input.spec.MD) | tag_g_input | CTRL-01–`04` / D27: virtual pad, pause bindings, Controls remap UI, touch overlay. |
 | [`achievements.spec.MD`](./achievements.spec.MD) | tag_g_achievements | ACH-01–09: AchievementManager, Local + platform adapters, initial catalog. |
 | [`rankings.spec.MD`](./rankings.spec.MD) | tag_g_rankings | RNK-01–12: RankingManager + DemoHost/Itch/Poki/Steam adapters (`D30`/`D38`). |
 | [`coverage.spec.MD`](./coverage.spec.MD) | tag_g_docs | Docs2 SHIP/ENM/RUL/… prefix checklist, stage cards A–G, naming deltas. |
@@ -218,7 +218,7 @@ Full tables: [`decisions.spec.MD`](./decisions.spec.MD). Locked **D01–D46**; o
 
 | Field | Value |
 | --- | --- |
-| Hub version | **0.3.21** (`BALANCE` / `RUL-12` · `D46` — Core + canvas View) |
+| Hub version | **0.3.22** (`CTRL-02`–`04` pause bindings · remap persist · touch overlay z-index) |
 | Structure | Index + sibling theme files in `.docs3/plans/` (incl. [`balance.spec.MD`](./balance.spec.MD)) |
 | Crafting | Inventory + CraftSlot (`D31`, [`crafting.spec.MD`](./crafting.spec.MD)) |
 | Drops | DropManager loot / magnet / pool (`D32`, [`drops.spec.MD`](./drops.spec.MD)) |

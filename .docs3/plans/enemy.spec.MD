@@ -1,5 +1,8 @@
 # Ikarus Eternal Horizon — ENEMY — Individual Craft
 
+> **D48/D49 integration:** enemy movement and group behavior are the only permitted POC2 study references. Sector/faction catalogs restrict archetypes; WaveManager consumes deterministic WavePlans and EnemyManager owns entities/AI. No independent kill-based spawning/miniboss clock. See [run-flow.spec.MD](./run-flow.spec.MD).
+
+
 tag_g_enemy
 RESUME: Enemy Base fields, five-state strategy SM, Tanker/Warrior/Rogue classes and formation roles.
 

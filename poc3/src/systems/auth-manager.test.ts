@@ -3,13 +3,14 @@ import { AuthManager } from '../systems/auth-manager.ts'
 import type { AuthPlatformAdapter, AuthSession } from '../platform/auth-types.ts'
 
 class MockAdapter implements AuthPlatformAdapter {
+  readonly capabilities = { email: true, google: false, mock: true }
   session: AuthSession | null = null
   async probeSession(): Promise<AuthSession | null> {
     return this.session
   }
-  async trySignIn(username: string, password: string): Promise<AuthSession | null> {
-    if (!username.trim() || !password.trim()) return null
-    this.session = { userId: 'u1', displayName: username, provider: 'mock' }
+  async signInWithEmail(email: string): Promise<AuthSession> {
+    if (!email.includes('@')) throw new Error('Invalid email')
+    this.session = { userId: 'u1', displayName: 'pilot', provider: 'mock' }
     return this.session
   }
   signInWithGoogle(): void {}
@@ -19,11 +20,11 @@ class MockAdapter implements AuthPlatformAdapter {
 }
 
 describe('AuthManager', () => {
-  it('mock sign-in succeeds when fields non-empty', async () => {
+  it('email sign-in normalizes and resolves an adapter session', async () => {
     const auth = new AuthManager()
     const adapter = new MockAdapter()
     auth.setPlatformAdapter(adapter)
-    const session = await auth.trySignIn('pilot', 'secret')
+    const session = await auth.signInWithEmail('pilot@example.com')
     expect(session).not.toBeNull()
     expect(session?.displayName).toBe('pilot')
   })

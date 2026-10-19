@@ -1,318 +1,110 @@
 # Ikarus Eternal Horizon — Login & Auth
 
-tag_g_auth tag_s_auth_manager tag_s_auth_ui_bridge
-RESUME: AuthManager + LoginUIBridge — HTML/CSS auth shell; mock password + Google OAuth; one AuthPlatformAdapter per build.
+tag_g_auth tag_s_auth_manager tag_s_auth_ui_bridge tag_s_auth_platform_adapter
+RESUME: Email-only mock authentication in DEV, persisted through local DemoHost SQLite; real Google/email providers are production backlog.
 
-**Hub index:** [`planning.spec.MD`](./planning.spec.MD) · **Hub version:** 0.3.13
+**Revision:** 2026-10-02 · **Hub version:** 0.4.0 · **Decision:** D47 revises D19/D38/D41.
+**Related:** [architecture.spec.MD](./architecture.spec.MD) · [scenes.spec.MD](./scenes.spec.MD) · [todo-codex.md](../todo-codex.md).
 
-**Related:** [`scenes.spec.MD`](./scenes.spec.MD) (`SCENE-01` flow gate) · [`store.spec.MD`](./store.spec.MD) (same JS Bridge pattern · `D34`) · [`architecture.spec.MD`](./architecture.spec.MD) (`D38` DemoHost OAuth) · [`builds.spec.MD`](./builds.spec.MD) (`D37` PlatformKit) · [`nomenclature.spec.MD`](./nomenclature.spec.MD) (`AuthManager`)
+**Implementation status (2026-10-19):** part A delivered; [local run/API guide](../../demo-host/README.md). DEV email sessions and per-user controls use SQLite; real production providers remain deferred.
 
----
+## Environment contract
 
-## Architecture & UI stack
-
-tag_g_auth tag_s_auth_ui tag_s_auth_ui_bridge
-RESUME: Presentation is DOM (HTML/CSS); authority is TypeScript AuthManager via same-document JS Bridge — no WebSocket.
-
-Login is a **dedicated HTML/CSS panel** in the game shell layout (same shell that hosts the WebGL canvas and hub tabs). Forms, typography, and error states are standard DOM/CSS matching the design system — **the same stack as the Store tab** (`D34`).
-
-| Layer | Technology | Role |
+| Environment | Visible providers | Authority / persistence |
 | --- | --- | --- |
-| **Presentation** | HTML + CSS (+ minimal TS bindings) | Render form fields, validation hints, provider buttons, loading/error CSS states |
-| **Bridge** | `LoginUIBridge` (same JS realm) | DOM events → `AuthManager`; result codes → CSS / SFX / scene transition |
-| **Authority** | `AuthManager` | Session probe, sign-in attempts, logout — **platform-blind** |
-| **Platform** | `AuthPlatformAdapter` (`D41`) | OAuth redirect, cookie/session, mock password — **one concrete class per build** |
+| **DEV (current delivery)** | **Email only**, mock; no password field, Google button or automatic guest | Local DemoHost API → SQLite users/sessions |
+| **Production web (future)** | Google or real email sign-in | Real provider verification and server sessions; no DEV mock routes |
+| **Other platform builds (future)** | Host-specific providers where supported | PlatformKit adapters; capability-driven UI |
 
-**`D23` exception (locked):** **Login** and **Store** are **DOM shell chrome** — not canvas scenes. **Start · Title · Run · Pause** stay on the shared WebGL canvas. **Result** and **Rankings** are also DOM (`D42`). On cold boot the canvas may stay hidden until auth succeeds; then `SceneManager` mounts **Start** (`SCENE-02`).
+Mock means a syntactically valid email creates/reuses a local test identity; it sends no message and does not prove ownership. Production email authentication method (for example, verified email link versus password) must be specified before implementing it; this revision does not choose one.
 
-### Communication lock (`D41`) — JS Bridge, not WebSocket
+A frontend DEV flag is not a server authorization boundary. The host must independently enable the local mock profile. Fake Google callback behavior is removed; Google routes are unavailable in DEV and real OAuth is deferred.
 
-| Option | Decision |
-| --- | --- |
-| **Same-document JS Bridge** | **Locked** — UI calls `AuthManager` / `LoginUIBridge` in-process |
-| Local WebSocket | **Rejected** — same rationale as Store (`D34`) |
-| Full-page HTML route | **Rejected** — Login lives in the game shell `#login-root`, not a separate SPA route |
+## UI and ownership
 
-```text
-[HTML #login-root] --submit--> LoginUIBridge.trySignIn(credentials)
-                                      │
-                                      ▼
-                                AuthManager.trySignIn
-                                      │
-                    AuthPlatformAdapter (OAuth / mock / host SDK)
-                                      │
-                                      ▼
-[HTML #login-root] <--result----- LoginUIBridge.applyResult(code)
-                                      │
-                                      ▼
-                         hide #login-root → SceneManager.mount(Start)
-```
+Login remains a React/HTML/CSS panel at `#login-root`, before canvas Start. Presentation → same-document bridge → AuthManager → one injected AuthPlatformAdapter → HTTP API. No WebSocket or full-page login route is needed for local DEV.
 
-UI layers **never** set cookies, parse OAuth tokens, or decide session validity. They only reflect `getSessionState()` and dispatch sign-in / Google actions through the bridge.
+- Email input (`type="email"`, required), Enter button, short development-mode label, loading/error/retry states.
+- Hide unavailable providers by adapter capabilities; do not render a broken Google button in DEV.
+- Normalize email with trim/lowercase under this local test-account policy; validate both UI and server. Do not derive the session userId in the browser.
+- Disable repeated submit while busy; release busy state on both success and failure. Distinguish service unavailable from expired/no session.
+- AuthManager owns client session orchestration; the server validates sessions and account identity. UI never writes cookies or stores tokens.
+- Display names are separate from email; leaderboard rows do not expose email addresses.
 
----
-
-## Platform adapters (`D41`) — decision lock
-
-tag_g_auth tag_s_auth_platform_adapter tag_s_auth_adapter_demo
-RESUME: Same pattern as Store/RNK/ACH — AuthManager talks only to AuthPlatformAdapter; build injects one concrete adapter.
-
-### Why this shape (chosen)
-
-| Option | Verdict |
-| --- | --- |
-| **A. Interface + one concrete adapter per build** (mirror `D28`/`D30`/`D36`) | **Chosen** — one mental model across meta systems; tree-shake host SDKs |
-| B. Auth logic scattered in LoginScene canvas code | **Rejected** — Login is DOM; no canvas scene for auth |
-| C. Runtime WebSocket for Login UI | **Rejected** — banned by `D41` |
-| D. Inline `fetch` in HTML onclick handlers | **Rejected** — UI goes through bridge only |
-
-**Injection:** build flag `IKARUS_PLATFORM=demo|itch|poki|steam` selects which adapter **module is bundled**. Boot calls `AuthManager.setPlatformAdapter(adapter)` once — **no mid-session swap**. Wired via `PlatformKit` alongside Store/RNK/ACH ([`builds.spec.MD`](./builds.spec.MD) `D37`).
+## Boot and logout
 
 ```text
-[Build: Demo]  ──► DemoAuthAdapter   ──┐
-[Build: Itch]  ──► ItchAuthAdapter   ──┤
-[Build: Poki]  ──► PokiAuthAdapter   ──┼─► AuthManager (core)
-[Build: Steam] ──► SteamAuthAdapter  ──┘
+Boot → GET /api/me
+         ├─ valid session → load that user's settings → Start → Title
+         ├─ 401 → show Email Login
+         └─ transport/server failure → recoverable error + retry
+
+Email Login → POST /api/auth/dev-email → session cookie + AuthSession
+            → load user settings → Start → Title → Play / Rankings
+
+Logout → POST /api/auth/logout → revoke SQLite session
+       → cancel preparation/Run → clear account cache → Login
 ```
 
-### Port contract (sketch)
+There is no `guestStub` fallback in the standard DEV flow. Unit-test fixtures may inject a session explicitly without changing product boot behavior. Start keeps the existing asset/audio-unlock responsibility; auth success does not auto-start combat.
+
+## API and persistence
+
+| Method / path | Request | Result |
+| --- | --- | --- |
+| `POST /api/auth/dev-email` | `{ email }` | Create/reuse local user, create expiring opaque session, set cookie, return public AuthSession |
+| `GET /api/me` | Session cookie | AuthSession or 401; no session fabrication |
+| `POST /api/auth/logout` | Session cookie | Revoke server session and clear cookie; repeat is harmless |
+
+Use local SQLite migrations/repositories from [architecture.spec.MD](./architecture.spec.MD). Session identity and settings survive browser reload and host restart until expiry. Two test emails are separate users. Cookie is HttpOnly + SameSite; Secure on HTTPS and explicitly configured for local DEV HTTP. Vite uses a same-origin API proxy. No tokens in localStorage/Dexie.
+
+Server returns 400 for malformed email, 401 for invalid/expired session, and service errors separately. Production profile does not register the DEV email route. Mutating APIs validate expected origin and session where appropriate. Login mock accepts only the development identity contract; it is not real email verification.
+
+## Proposed port changes
+
+Adapt existing `AuthPlatformAdapter`, `AuthManager`, UI handlers and tests together. These signatures are a target, not the current implementation.
 
 ```typescript
 interface AuthSession {
-  readonly provider: 'password' | 'google' | 'steam' | 'guest';
+  readonly userId: string;
   readonly displayName: string;
-  readonly userId?: string;
+  readonly provider: 'mock' | 'email' | 'google' | 'steam';
 }
-
+interface AuthCapabilities {
+  readonly email: boolean;
+  readonly google: boolean;
+  readonly mock: boolean;
+}
 interface AuthPlatformAdapter {
-  readonly id: 'demo' | 'local' | 'itch' | 'poki' | 'steam';
-  /** Cold boot / return from OAuth tab */
+  readonly capabilities: AuthCapabilities;
   probeSession(): Promise<AuthSession | null>;
-  /** Username/password — mock on web; real only if adapter implements */
-  signInWithPassword?(username: string, password: string): Promise<AuthSession>;
-  /** Returns URL to open in new tab, or starts inline redirect — adapter decides */
-  startGoogleSignIn?(): Promise<{ openUrl: string } | 'INLINE_REDIRECT'>;
+  signInWithEmail(email: string): Promise<AuthSession>;
+  startGoogleSignIn?(): Promise<void>;
   signOut(): Promise<void>;
-  dispose(): void;
 }
 ```
 
-`AuthManager` never imports Google client libs, Steamworks, or Poki SDK. `id: 'local'` is for unit tests — **not** production Demo kit.
-
-### Adapter matrix (4 builds)
-
-| Build | Adapter | UI chrome | Auth behaviour | Extra |
-| --- | --- | --- | --- | --- |
-| **Demo** | `DemoAuthAdapter` | JS Bridge (`D41`) | Real **Google OAuth** via DemoHost (`D38`); password path **mock** (`D19`) | `GET /api/me` + httpOnly cookie |
-| **Itch.io** | `ItchAuthAdapter` | JS Bridge | Password mock; Google optional later; guest stub OK v1 | Session in Dexie display cache only (`D39`) |
-| **Poki** | `PokiAuthAdapter` | JS Bridge | Host identity when SDK exposes; else mock password | Follow Poki account docs when available |
-| **Steam** | `SteamAuthAdapter` | JS Bridge inside **Tauri** | **Steam overlay auth** preferred (`Q30`); Google fallback optional | Session via Tauri FS or Steam ticket |
-
-### Rules (locked)
-
-| # | Rule |
-| --- | --- |
-| R1 | **One** platform adapter active per boot — never Steam imports in a Poki bundle |
-| R2 | **Demo = DemoHost** — `DemoAuthAdapter` uses same-origin `/api/auth/*` + `/api/me` |
-| R3 | **Password path** on web builds is **mock** — always succeeds when both fields non-empty (`D19`) |
-| R4 | **Google OAuth** opens a **new browser tab** on web — game shell stays on Login until `probeSession()` succeeds |
-| R5 | Success always transitions to **Start**, never Title (`D19`) |
-| R6 | Valid session on cold boot **skips Login** — hide `#login-root`, mount Start directly (`SCENE-01`) |
-| R7 | UI never writes `document.cookie` or stores tokens in `localStorage` — adapter + DemoHost own transport |
-| R8 | Logout clears session via adapter → show `#login-root` again (Title/Run must not remain reachable) |
-
----
-
-## Ownership (`D41`)
-
-tag_g_auth tag_s_auth_manager
-RESUME: AuthManager is the sole validator of session state and sign-in outcomes.
-
-| Owns | Does **not** own |
-| --- | --- |
-| Session probe on boot | DOM layout / CSS authorship beyond structural contract |
-| Sign-in attempt orchestration | OAuth HTTP handlers (DemoHost server) |
-| Result codes to bridge | Scene preload (`Start` / `AssetManager`) |
-| Which adapter is active (boot wire) | Login streak BUD (`LoginStreakManager` in [`store.spec.MD`](./store.spec.MD)) |
-| Dispatch SUCCESS / fail cues | Store purchases |
-
-**Trigger:** Login form buttons call `AuthManager.trySignIn` / `startGoogleSignIn` only through `LoginUIBridge`.
-
----
-
-## Boot flow
-
-tag_g_scene_flow tag_s_scene_login_auth
-RESUME: Bootstrap probes session → show or hide Login DOM → on success mount canvas Start.
-
-```text
-Bootstrap
-   │
-   ├─ AuthManager.initialize(adapter)
-   ├─ session = await probeSession()
-   │
-   ├─ session ok ──► hide #login-root ──► SceneManager.mount(Start)
-   │
-   └─ no session ──► show #login-root (canvas hidden or idle backdrop)
-                         │
-                         auth ok ──► hide #login-root ──► SceneManager.mount(Start)
-```
-
-| Step | Rule |
-| --- | --- |
-| 1. Probe | `probeSession()` before first paint when possible — avoid Login flash ≤1 frame (`SCENE-01`) |
-| 2. Show Login | `#login-root` visible; WebGL canvas may show static splash or stay hidden |
-| 3. Sign in | Bridge validates non-empty fields → Manager → adapter |
-| 4. Success | Hide Login DOM; **do not** dispose shell; mount **Start** on canvas |
-| 5. Google | Button → adapter returns URL → `window.open(url)`; poll / focus listener → re-probe session |
-
----
-
-## Sign-in paths
-
-tag_g_auth tag_s_auth_ui
-RESUME: Mock password + Google new-tab; validation errors stay on Login.
-
-| Control | Behaviour |
-| --- | --- |
-| **Username** field | Required for password path |
-| **Password** field | Masked; required for password path |
-| **Sign in** | Mock (`D19`) — **always succeeds** when both non-empty → **Start** |
-| **Continue with Google** | Demo: `/api/auth/google/start` URL in **new tab**; shell stays on Login until cookie session valid |
-| **Sign out** (hub/settings later) | `AuthManager.signOut()` → show Login again |
-
-| Result code | DOM / CSS | Next scene |
-| --- | --- | --- |
-| `SUCCESS` | Remove `.login--busy`; optional success flash | Hide Login → **Start** |
-| `INVALID_INPUT` | `.login--error` on empty fields | Stay on Login |
-| `FAILED` | `.login--error` generic message | Stay on Login |
-| `PENDING_OAUTH` | `.login--busy`; disable buttons | Stay until probe succeeds |
-
-SFX stubs: `SND_LOGIN_SUCCESS` · `SND_LOGIN_FAIL` (optional Theme 0b).
-
----
-
-## Feedback, audio & CSS states
-
-tag_g_audio tag_s_auth_ui
-RESUME: Distinct CSS hooks for idle / busy / error — mirror Store card states.
-
-| Case | DOM / CSS | SFX |
-| --- | --- | --- |
-| Idle | Default form layout | — |
-| Busy | `.login--busy` — disable inputs + spinner on primary button | — |
-| Validation error | `.login--error` on field group | — |
-| Success | Brief `.login--success` flash before hide | `SND_LOGIN_SUCCESS` |
-| Fail | Shake on form (reuse `ui_shake_duration` from store BALANCE if shared) | `SND_LOGIN_FAIL` |
-
----
-
-## HTML / CSS structure (sketch)
-
-tag_s_auth_ui
-RESUME: Minimal shell — Game Design owns final visual system; structural contract only.
-
-```html
-<section id="login-root" class="login" data-login-panel>
-  <header class="login__header">
-    <h1 class="login__title">Ikarus: Eternal Horizon</h1>
-  </header>
-  <form class="login__form" data-login-form novalidate>
-    <label class="login__field">
-      <span class="login__label">Username</span>
-      <input type="text" name="username" autocomplete="username" required />
-    </label>
-    <label class="login__field">
-      <span class="login__label">Password</span>
-      <input type="password" name="password" autocomplete="current-password" required />
-    </label>
-    <p class="login__error" data-login-error hidden></p>
-    <button type="submit" class="login__submit" data-action="sign-in">Sign in</button>
-  </form>
-  <div class="login__providers">
-    <button type="button" class="login__google" data-action="google">Continue with Google</button>
-  </div>
-</section>
-```
-
-| CSS hook | Meaning |
-| --- | --- |
-| `.login--busy` | OAuth in flight / submit pending |
-| `.login--error` | Validation or auth failure |
-| `.login--success` | Brief success before transition |
-| `#login-root[hidden]` | Session valid — panel removed from tab order |
-
-Bridge binds `[data-action="sign-in"]` / form submit → `trySignIn`; `[data-action="google"]` → `startGoogleSignIn`. Never reads password into Manager logs.
-
-**Shell coexistence with Store:** both `#login-root` and `#store-root` live in `ui/shell.html` (or equivalent). Login shows **before** hub; Store shows **after** Title. Never visible together.
-
----
-
-## `AuthManager` contract (sketch)
-
-tag_s_auth_manager
-
-```
-setPlatformAdapter(adapter)   // boot only — D41
-initialize()
-probeSession() → AuthSession | null
-getSessionState() → AuthSession | null
-trySignIn({ username, password }) → AuthResultCode
-startGoogleSignIn() → void   // bridge opens tab if URL returned
-signOut() → void
-dispose()
-```
-
-Ports: `AuthPlatformAdapter` · `UIEventDispatcherPort` (bridge) · `SceneTransitionPort` (hide Login → mount Start).
-
----
-
-## `LoginUIBridge` contract (sketch)
-
-tag_s_auth_ui_bridge
-
-```
-bind(root: HTMLElement)
-syncSessionState(session | null)
-applyResult(code: AuthResultCode)
-setBusy(busy: boolean)
-dispose()
-```
-
----
+DEV adapter uses `/api/auth/dev-email`; it must not construct a client-only mock session. Future production email UI/port may require a challenge/verification state after the authentication method is selected. Google OAuth remains a future server authorization-code flow; no OAuth secrets in the client.
 
 ## Requirements (`AUTH-`)
 
-| ID | Prio | Requirement | Acceptance |
+IDs are retained for traceability; historical SDD cards must be updated before coding against this revision.
+
+| ID | Priority | Requirement | Acceptance |
 | --- | --- | --- | --- |
-| `AUTH-01` | must | Login UI is HTML/CSS shell tab (`D41`) — same bridge pattern as Store (`D34`) | No canvas Login scene; `#login-root` DOM |
-| `AUTH-02` | must | `AuthManager` sole sign-in authority | UI never sets cookies or tokens |
-| `AUTH-03` | must | Mock password always succeeds when fields non-empty (`D19`) | Sign in → Start |
-| `AUTH-04` | must | Google opens new tab; shell stays on Login until session probe ok | Demo: DemoHost OAuth (`D38`/`ARCH-05`) |
-| `AUTH-05` | must | Valid session skips Login on cold boot | Start mounts without Login flash (≤1 frame) |
-| `AUTH-06` | must | One `AuthPlatformAdapter` per build (`D41`) | Demo=`DemoAuthAdapter`; no cross-SDK imports |
-| `AUTH-07` | must | JS Bridge only — no WebSocket | Same as `STR-06` / `D34` |
-| `AUTH-08` | should | Busy / error CSS states on form | `.login--busy` / `.login--error` |
-| `AUTH-09` | must | Demo auth via httpOnly cookie + `GET /api/me` | Matches `ARCH-05` |
-| `AUTH-10` | should | Steam build prefers Steam overlay auth (`Q30`) | Google optional on Steam |
+| `AUTH-01` | must | DOM Login with email-only DEV form | No password or Google shown in DEV |
+| `AUTH-02` | must | AuthManager orchestrates adapter; server validates session | UI cannot set identity/cookie |
+| `AUTH-03` | must | DEV email mock through local API and SQLite | Same email reuses user; malformed email fails; no mail sent |
+| `AUTH-04` | later production | Real Google provider by capability | Unavailable in DEV; no fake callback in production |
+| `AUTH-05` | must | Valid persisted session skips Login | Reload/restart returns to Start; no guest fallback |
+| `AUTH-06` | must | One adapter per environment/platform boot | DEV uses local HTTP adapter; no provider SDK leakage |
+| `AUTH-07` | must | Same-document UI bridge | UI calls Manager, never SQL or WebSocket |
+| `AUTH-08` | must | Busy/error/retry and input validation | Repeated submit gated; network failure recoverable |
+| `AUTH-09` | must | SQLite session + cookie + /api/me + revoking logout | Session expires; restart preserves valid rows; logout invalidates |
+| `AUTH-10` | later production | Host identity where supported | Implement after current DEV flow; verify platform capabilities |
 
-**Flow gate (unchanged id):** `SCENE-01` in [`scenes.spec.MD`](./scenes.spec.MD) — auth → Start; skip when session exists. Detail lives in this file.
+## Verification and remaining decisions
 
----
+Test create/reuse email identity, malformed input, expired session, restart persistence, logout/retry, production mock-route rejection, absence of Google in DEV, and account-scoped settings. Use a temporary SQLite file for integration tests.
 
-## BALANCE keys (Game Design owns numbers)
-
-| Key | Intent |
-| --- | --- |
-| `ui_shake_duration` | Shared with store fail shake (ms) — or reuse `BALANCE.store.ui_shake_duration` |
-| `login.oauthPollIntervalMs` | How often to re-probe after Google tab opened (stub) |
-
----
-
-## Open questions
-
-| # | Question | Default |
-| --- | --- | --- |
-| Q36 | Canvas visible behind Login (splash) vs fully hidden | **Hidden** until Start — optional static CSS backdrop only |
-| Q37 | Itch/Poki guest/anonymous boot | **Require mock sign-in** v1 — no silent guest |
-| Q38 | Re-show Login on session expiry mid-session | Force sign-out overlay; block Store/RNK mutate until re-auth |
+Open production decisions: real email authentication method, Google credentials/redirect URI and per-host provider support. None blocks local email mock development. Affected auth/scene/ARCH-05 cards were reconciled for D47 on 2026-10-19. Runtime coverage lives in `poc3/src/ui/session-flow.test.ts`, `poc3/src/platform/demo-auth-adapter.test.ts`, `poc3/src/ui/login-ui.test.ts` and `demo-host/src/app.test.ts`. Other historical TODOs do not certify production providers.

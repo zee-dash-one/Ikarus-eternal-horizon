@@ -1,5 +1,8 @@
 # Ikarus Eternal Horizon — SQUAD — Coordinated Group
 
+> **D48/D49 integration:** study POC2 movement/formations/group logic only; implement against POC3 CHAR/Summary contracts. Squads are instantiated from WavePlan recipes and report member completion; a retreat grants no kill reward. Wave/sprint advancement belongs to WaveManager/RunFlowManager. See [run-flow.spec.MD](./run-flow.spec.MD).
+
+
 tag_g_squad
 RESUME: Squad sheet 1–8, five-state squad SM, six formations, Break/PatrolGrouping triggers with enemy SM.
 

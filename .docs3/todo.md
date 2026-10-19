@@ -1,5 +1,8 @@
 # Docs3 / POC3 — development todo
 
+> **Historical tracker (2026-10-02):** active Codex priorities and revised acceptance live in [todo-codex.md](./todo-codex.md). Checked items below record earlier work, not compliance with D47–D50. Do not use this build order for new implementation.
+
+
 > Tracker for `poc3/`, ordered like a vertical-slice shmup build: foundation → feel → sheet → combat → pressure → meta.
 > Design authority: `[planning.spec.MD](./plans/planning.spec.MD)` (index) + theme specs in `[plans/](./plans/)` (English). Docs2 = coverage checklist only.
 >

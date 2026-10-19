@@ -25,8 +25,16 @@ node_modules/
 !.docs3/plans/*.spec.MD
 !.docs3/specs/
 !.docs3/todo.md
+!.docs3/todo-codex.md
 
 # Logs
+demo-host/data/
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+.env
+.env.*
+!.env.example
 dev.err
 dev.out
 

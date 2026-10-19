@@ -1,5 +1,8 @@
 # Ikarus Eternal Horizon — World Presentation
 
+> **D49 preparation:** allocate exactly three parallax levels (far/middle/near) before mounting Run; configurations come from BALANCE. Spawn registries are separate for enemies and asteroids. Resolve the existing docs X/Y versus runtime x/z mapping explicitly before new spawn code. See [run-flow.spec.MD](./run-flow.spec.MD).
+
+
 tag_g_world tag_s_world_camera_rig tag_s_world_parallax
 RESUME: Landscape letterbox, CameraManager follow box, free-cam unlock, three-layer parallax, playfield bounds + off-field despawn (`RUL-02`), DEV gizmos.
 
@@ -7,7 +10,7 @@ RESUME: Landscape letterbox, CameraManager follow box, free-cam unlock, three-la
 
 **Related:** [`architecture.spec.MD`](./architecture.spec.MD) (`D40` Core/View) · [`scenes.spec.MD`](./scenes.spec.MD) (Run owns the rig) · [`drops.spec.MD`](./drops.spec.MD) (off-field recycle) · [`meteors.spec.MD`](./meteors.spec.MD) · [`builds.spec.MD`](./builds.spec.MD) (`BLD-05` gizmos)
 
-Coverage: docs2 `B01`–`B04` · `RUL-02`. Feel reference: frozen `poc/` camera / parallax / limit-box — **not** a port map.
+Coverage: docs2 `B01`–`B04` · `RUL-02`. POC3 owns camera/parallax/bounds; POC1/POC2 are not rendering or feel references (D48).
 
 ---
 
@@ -90,7 +93,7 @@ RESUME: Graphics toggle unlocks the follow box — free fly in live Run and whil
 | Off | Override dropped; camera **eases back** onto the follow-box pose (`BALANCE.camera.freeCam.rejoinMs`). No teleport |
 | Live Run | World sim keeps ticking. Ship still reads the virtual pad (`WASD` / stick). Camera fly is a **parallel** path — does **not** steal pad tokens (`D27`) |
 | Pause | Core world ticks stay gated (`D21`). **Free-cam pose still updates on rAF** so the player can inspect a frozen field. Overlay may stay; fly keys are not consumed by Pause chrome |
-| Fly | Physical **I**/**J**/**K**/**L** (strafe/forward) · **U**/**O** (up/down) — same as frozen `poc/` debug rig. Outside the virtual pad. Speed in `BALANCE.camera.freeCam` |
+| Fly | Physical **I**/**J**/**K**/**L** (strafe/forward) · **U**/**O** (up/down) — existing POC3 controls. Outside the virtual pad. Speed in `BALANCE.camera.freeCam` |
 | Gamepad / Touch | Not required v1 (`Q48`) |
 | Parallax | Still driven by camera Δ — free fly slides layers |
 | Despawn | `RUL-02` stays playfield/ship-relative — **not** the camera frustum |

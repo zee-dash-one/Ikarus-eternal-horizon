@@ -4,7 +4,7 @@ import { ParallaxField } from '../render/parallax-field.ts'
 import { PlayerCraftView } from '../render/player-craft-view.ts'
 import { CraftRingsMesh } from '../render/craft-rings-mesh.ts'
 import { ShotFieldView } from '../render/shot-field-view.ts'
-import { HudManager } from '../render/hud-manager.ts'
+import type { HudManager } from '../render/hud-manager.ts'
 import { BALANCE } from '../core/balancer.ts'
 import type { GameLoop } from '../core/game-loop.ts'
 import type { InputManager } from '../systems/input-manager.ts'
@@ -134,7 +134,7 @@ export class RunScene implements GameScene {
       {
         activeWeapon: this._deps.firing.activeWeapon,
         weaponLevel: this._deps.sheet.summary.LVL,
-        highScore: HudManager.readHighScore(),
+        highScore: BALANCE.hud.stubs.defaultHighScore,
         craftPct: null,
         craftName: null,
       },

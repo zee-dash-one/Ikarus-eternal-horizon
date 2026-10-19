@@ -1,5 +1,8 @@
 # Ikarus Eternal Horizon — Nomenclature & Tags
 
+> **D49 vocabulary:** Run = one attempt; Sprint = in-game cycle numbered from 1; Wave = index 0–49, with miniboss on 49; Sector = faction/content profile. New planned owners: RunPreparationManager, SpawnPointManager, SectorManager, SprintPlanManager, RunFlowManager, WaveManager and RunSimulation. Contracts and responsibilities: [run-flow.spec.MD](./run-flow.spec.MD).
+
+
 tag_g_docs tag_s_docs_tag_registry tag_g_system tag_s_system_manager_classes
 RESUME: Shared vocabulary — sheet layers, Summary codes, enemy/squad identity, scene boot order, *Manager naming, grep tag rules.
 
@@ -125,7 +128,7 @@ Runtime owners that drive a domain use the `…Manager` suffix. Do **not** use `
 | `DevContentManager` | DEV `/dev/*` CRUD for content records; UI via `DevCrudBridge` (`D43`)       |
 | `LoginStreakManager`| Weekly UTC login streak → grant **BUD** (`D35`)                          |
 | — platform adapters | `DemoStoreAdapter` · `ItchStoreAdapter` · `PokiStoreAdapter` · `SteamStoreAdapter` (`D36`/`D38`); `LocalStoreAdapter` = tests only |
-| `DifficultyManager` | Kill-based scaling                                               |
+| `DifficultyManager` | Sprint/wave profile calculation (D49); no separate kill-milestone boss trigger                                               |
 | `VfxManager`        | Pooled feedback FX                                               |
 | `InputManager`      | Virtual pad owner; scheme adapters; binds ([`input.spec.MD`](./input.spec.MD))                     |
 | `AchievementManager`| Catalog + run tracker; publish via Local / Itch / Poki / Steam adapters ([`achievements.spec.MD`](./achievements.spec.MD)) |

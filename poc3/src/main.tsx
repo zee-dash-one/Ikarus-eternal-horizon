@@ -4,16 +4,18 @@ import './style.css'
 import { GameApp } from './game-app.ts'
 import { getGameUiController } from './ui/game-ui-store.ts'
 import { LoginRoot } from './ui/react/login/LoginRoot.tsx'
+import { AccountPanel } from './ui/react/login/AccountPanel.tsx'
 import { StartHint } from './ui/react/hints/StartHint.tsx'
 import { StoreRoot } from './ui/react/store/StoreRoot.tsx'
 import { PauseOverlay } from './ui/react/pause/PauseOverlay.tsx'
 
 function mountUi(): void {
   const loginRoot = document.getElementById('login-root')
+  const accountRoot = document.getElementById('account-root')
   const startHint = document.getElementById('start-hint')
   const storeRoot = document.getElementById('store-root')
   const pauseMount = document.getElementById('pause-overlay-mount')
-  if (!loginRoot || !startHint || !storeRoot || !pauseMount) {
+  if (!loginRoot || !accountRoot || !startHint || !storeRoot || !pauseMount) {
     throw new Error('Missing UI mount roots in index.html')
   }
 
@@ -22,6 +24,7 @@ function mountUi(): void {
       <LoginRoot />
     </StrictMode>,
   )
+  createRoot(accountRoot).render(<StrictMode><AccountPanel /></StrictMode>)
   createRoot(startHint).render(
     <StrictMode>
       <StartHint />

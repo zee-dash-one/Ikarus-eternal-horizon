@@ -1,9 +1,9 @@
 # Ikarus Eternal Horizon — Locked Decisions
 
 tag_g_docs tag_s_docs_decisions_locked
-RESUME: D01–D46 locked design decisions and open questions Q01–Q49.
+RESUME: D01–D50 locked design decisions and open questions Q01–Q49.
 
-**Hub index:** [`planning.spec.MD`](./planning.spec.MD) · **Hub version:** 0.3.21
+**Hub index:** [`planning.spec.MD`](./planning.spec.MD) · **Hub version:** 0.4.0
 
 ---
 
@@ -57,6 +57,17 @@ RESUME: D01–D46 locked design decisions and open questions Q01–Q49.
 | **D45** | **Combat HUD** is a **canvas overlay on Run** (`D23`) — `HudManager` is View-only. Reads `WorldSnapshot` / Summary Sheet (`D07`); never mutates Core; never lives in `core/` · `systems/` · `gameobjects/`. Pause run-panel (`SCENE-05`) is a different surface. See [`hud.spec.MD`](./hud.spec.MD) · `HUD-01`–`04` | Theme 10 · View |
 | **D46** | **`BALANCE` is the sole authored-value source** for Core (sim / catalogs / feel) **and** canvas View (layout, camera, palette, HUD chrome, VFX params). View paints from **WorldSnapshot + `BALANCE` only** — no presentation literals in `render/`. Live instance state (pose, Summary HP, integrity) never lives on `BALANCE`. Domain tables may *define* rows; only `core/balancer.ts` *exports* `BALANCE`. Pause → Dev Balancer binds that same object (`SCENE-05`). `/dev` export JSON hydrates catalogs at boot — not a second runtime source. See [`balance.spec.MD`](./balance.spec.MD) · `RUL-12` | Theme 1 · Core+View |
 
+
+## Revision 2026-10-02 — current POC3 direction
+
+These decisions take precedence over conflicting earlier rows. Older platform rules describe future production, not the current DEV environment.
+
+| # | Decision | Scope |
+| --- | --- | --- |
+| **D47** | DEV login is **email-only mock**, no password/Google/automatic guest. DemoHost local API owns SQLite users, sessions and persistent data, including profile settings and future DEV content. Client uses async adapters; no independent Dexie/localStorage truth in DEV. Google + real email auth are production backlog. Revises D19/D28/D30/D38/D39/D41/D43 for DEV. | AUTH · ARCH · DEV · persist |
+| **D48** | POC3 is the product. POC2 may be studied **only for enemy movement and group logic**; no general port. Docs2 links are historical traceability. | all implementation |
+| **D49** | Separate preparation, simulation and presentation. Prepare spawn registries, three parallax layers, sector/faction catalog and Sprint 1; stage first encounter; mount Run; Ikarus enters; start combat; prepare N+1 in bounded look-ahead. **50 waves (0–49), miniboss on 49**, sprint numbering from 1. Replaces kill-count-driven boss/wave progression. Details/defaults: [run-flow.spec.MD](./run-flow.spec.MD). | FLOW-01–09 |
+| **D50** | DEV rankings persist in SQLite; weekly/monthly/annual/eternal UTC windows, modes separated, idempotent run submission. Rankings available from **Title and Result** (revises D42 post-run-only). Server computes buckets; UI formats timestamps for the user. | RNK · SCENE |
 
 ## Open (tune later — do not block this hub)
 

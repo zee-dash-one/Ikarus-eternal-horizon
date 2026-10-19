@@ -21,7 +21,8 @@ import { createDemoKit } from './platform/kit-demo.ts'
 import type { PlatformKit } from './platform/kit-demo.ts'
 import { cloneInputBindings } from './core/input-bindings.ts'
 import { TouchControls } from './ui/touch-controls/touch-controls.ts'
-import { loadControlSettings, saveControlSettings } from './persist/control-settings.ts'
+import { SessionFlow } from './ui/session-flow.ts'
+import type { ControlSettings } from './persist/control-settings.ts'
 import {
   releasePointerLock,
   requestPointerLock,
@@ -42,16 +43,17 @@ export class GameApp {
   readonly assets = new AssetManager()
   readonly sound = new SoundManager()
   readonly input: InputManager
-  readonly sheet = CharSheetManager.create()
-  readonly energy: EnergyManager
-  readonly player: PlayerManager
-  readonly firing: FiringManager
-  readonly shots: ShotManager
-  readonly camera = new CameraManager()
+  sheet = CharSheetManager.create()
+  energy: EnergyManager
+  player: PlayerManager
+  firing: FiringManager
+  shots: ShotManager
+  camera = new CameraManager()
   readonly scenes = new SceneManager()
   readonly renderer: GameRenderer
   readonly hud: HudManager
   readonly loop: GameLoop
+  private readonly _sessionFlow: SessionFlow
   private readonly _ui: GameUiHost
   private _run: RunScene | null = null
   private _startScene: StartScene | null = null
@@ -84,6 +86,7 @@ export class GameApp {
     })
     this._isDev = !import.meta.env.PROD
     this._ui.setIsDev(this._isDev)
+    this._ui.setAuthCapabilities(this.auth.capabilities)
 
     this.loop = new GameLoop({
       step: (dt) => {
@@ -100,6 +103,18 @@ export class GameApp {
       },
     })
 
+    this._sessionFlow = new SessionFlow({
+      auth: this.auth,
+      ui: this._ui,
+      createProfileStore: (userId) => {
+        if (!kit.createProfileStore) throw new Error('Persistência de perfil não configurada nesta plataforma.')
+        return kit.createProfileStore(userId)
+      },
+      applyControls: (settings) => this._applyControls(settings),
+      onReady: () => { this.input.setCaptureDom(true); this._mountStart() },
+      onClear: () => this._clearSession(),
+    })
+    this.input.setCaptureDom(false)
     this._wireUi()
     this._wireDebugger(options.debuggerRoot)
     window.addEventListener('resize', () => {
@@ -121,39 +136,52 @@ export class GameApp {
   }
 
   async boot(): Promise<void> {
-    const controlSettings = await loadControlSettings()
+    await this._sessionFlow.boot()
+  }
+
+  private _applyControls(controlSettings: ControlSettings): void {
     this.input.bindings.load(controlSettings.bindings)
     this._syncControlUi()
     this.input.setScheme(controlSettings.scheme)
     this._ui.setScheme(controlSettings.scheme)
     this._syncTouchOverlay()
 
-    const session = await this.auth.resolveBootSession()
-    if (session) {
-      this._ui.setLoginVisible(false)
-      this._mountStart()
-    } else {
-      this._ui.setLoginVisible(true)
-    }
+  }
+
+  private _clearSession(): void {
+    this.loop.stop()
+    this.loop.resume()
+    this.scenes.dispose()
+    this._run = null
+    this._startScene = null
+    this._pauseOpen = false
+    this._ui.setPauseOpen(false)
+    this._ui.setStartHintVisible(false)
+    this.hud.setVisible(false)
+    this.input.setCaptureDom(false)
+    this._flushCombatInput()
+    releasePointerLock(this._pointerLockHost)
+    for (const shot of [...this.shots.activeShots]) this.shots.release(shot)
+    this.sheet = CharSheetManager.create()
+    this.energy = new EnergyManager(this.sheet)
+    this.shots = new ShotManager()
+    this.firing = new FiringManager(this.input, this.energy, this.sheet, this.shots)
+    this.player = new PlayerManager(this.input, this.sheet, this.energy)
+    this.camera = new CameraManager()
+    this.energy.bindRegenGate(() => this.sheet.shipStatus.energizing)
+    this.sound.setMuted(false)
+    this._syncTouchOverlay()
   }
 
   private _wireUi(): void {
     this._ui.setLoginHandlers({
-      onSubmit: async (username, password) => {
-        this._ui.setLoginBusy(true)
-        this._ui.setLoginError(null)
-        const session = await this.auth.trySignIn(username, password)
-        this._ui.setLoginBusy(false)
-        if (!session) {
-          this._ui.setLoginError('Invalid credentials')
-          return
-        }
-        this._ui.setLoginVisible(false)
-        this._mountStart()
-      },
-      onGoogle: () => {
-        this.auth.signInWithGoogle()
-      },
+      onSubmit: (email) => { void this._sessionFlow.signIn(email) },
+      onRetry: () => { void this._sessionFlow.boot() },
+      onGoogle: () => { this.auth.signInWithGoogle() },
+    })
+    this._ui.setAccountHandlers({
+      onSignOut: () => { void this._sessionFlow.signOut() },
+      onRetrySave: () => { void this._sessionFlow.retryAccountAction() },
     })
 
     this._ui.setPauseHandlers({
@@ -241,7 +269,7 @@ export class GameApp {
   }
 
   private async _persistControls(scheme = this.input.scheme): Promise<void> {
-    await saveControlSettings({
+    await this._sessionFlow.saveControls({
       scheme,
       bindings: cloneInputBindings(this.input.bindings.bindings),
     })
@@ -259,7 +287,7 @@ export class GameApp {
     this.loop.start()
     this._ui.setStartHintVisible(true)
     if (this.assets.criticalReady) {
-      window.setTimeout(() => start.tryStart(), 400)
+      window.setTimeout(() => { if (this._startScene === start && this.auth.session) start.tryStart() }, 400)
     }
   }
 

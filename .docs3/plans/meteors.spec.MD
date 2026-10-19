@@ -1,5 +1,8 @@
 # Ikarus Eternal Horizon — Meteors (Environmental Pressure)
 
+> **D49 scheduling:** separate asteroid spawn-point registry and deterministic sprint-time sequence, planned before Run starts. MeteorManager consumes these events, independently of enemy clearance; no competing random timer. First batch is staged inactive before entry; pause freezes clocks. See [run-flow.spec.MD](./run-flow.spec.MD) for extension, pool exhaustion and sprint handoff.
+
+
 tag_g_environment tag_s_env_meteor_pool tag_s_env_meteor_spawn
 RESUME: MeteorManager — pooled S/M/L asteroids, spawn/drift/despawn, DamageManager hits, optional large split.
 
@@ -19,7 +22,7 @@ RESUME: MeteorManager is the sole owner of world-space meteor entities — spawn
 | Owns | Does **not** own |
 | --- | --- |
 | Pooled meteor entities · sizes `S`/`M`/`L` | Loot rolls ([`drops.spec.MD`](./drops.spec.MD)) |
-| Spawn volumes / drift / `RUL-02` despawn | Difficulty cadence (`DifficultyManager` — Theme 12) |
+| Spawn volumes / drift / `RUL-02` despawn | Sprint planning/cadence (`SprintPlanManager`, D49) |
 | Destroy → `DropManager.onMeteorDestroyed` | VFX mesh pool (`VfxManager` — Theme 13) |
 | Layer `Meteor` registration | Player/enemy AI |
 

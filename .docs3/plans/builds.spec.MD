@@ -1,5 +1,10 @@
 # Ikarus Eternal Horizon — Production Builds (4 outputs)
 
+> **Itch release plan — 2026-10-19:** [itch-release.spec.MD](./itch-release.spec.MD) owns ITCH-01–10 and the release checklist; [todo-codex.md](../todo-codex.md), section G, tracks implementation. First target is HTML5 desktop. Current scripts/kit selection are incomplete. A full connected release needs its own hosted HTTPS API for Google/email auth and rankings; the uploaded frontend cannot rely on local DemoHost/SQLite. Do not assume native Itch leaderboards/achievement APIs.
+
+> **Current DEV first (D47):** run Vite + local DemoHost/SQLite; email-only mock auth, Google unavailable. Production outputs below are later targets. Environment profile and platform selection are separate concerns: production must reject DEV auth routes even if a client requests them.
+
+
 tag_g_builds tag_s_builds_matrix tag_s_builds_platform_wire
 RESUME: Four production outputs — Demo · Itch · Poki · Steam — one shared core; build-time `IKARUS_PLATFORM` injects matching adapter sets for Store · Achievements · Rankings. Demo uses DemoHost (`D38`).
 
@@ -134,8 +139,8 @@ tag_s_builds_itch tag_s_store_adapter_itch
 | --- | --- |
 | **Purpose** | itch.io page embed and/or downloadable HTML5 |
 | **Package** | Zip of `dist-itch/` per itch HTML5 upload rules |
-| **Store** | Soft BUD shop + streak; `ItchStoreAdapter` — Dexie persist (`D39`); no Steam Cloud |
-| **ACH / RNK** | Local mirror + `ItchAchievementAdapter` · `ItchRankingAdapter` |
+| **Store** | Local Dexie preferences/cache; account-authoritative data via own HTTPS service for connected release; scope per [release spec](./itch-release.spec.MD) |
+| **Auth / ACH / RNK** | Real Google/email via own service; local ACH and own-service rankings behind project adapters, not presumed native Itch APIs |
 | **QA gate** | Embed on itch; unlock one ACH; submit one RNK; store save survives refresh |
 
 ### 3. Poki Games

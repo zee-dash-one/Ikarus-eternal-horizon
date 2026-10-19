@@ -1,5 +1,8 @@
 # Ikarus Eternal Horizon — Docs2 Coverage Checklist
 
+> **D48 scope:** this is historical traceability, not an implementation source. Only POC2 enemy movement and group logic remain permitted study references. POC3 work order is [todo-codex.md](../todo-codex.md); FLOW-01–09 adds preparation and sprint scheduling without importing docs2 architecture.
+
+
 tag_g_docs tag_s_docs_coverage_matrix
 RESUME: Docs2 prefix/stage coverage matrix — what docs3 owns vs defers; naming deltas vs docs2/GDD.
 

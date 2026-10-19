@@ -1,5 +1,8 @@
 # Ikarus Eternal Horizon — Dev Tools (Content CRUD)
 
+> **D47 override:** current DEV content persistence uses DemoHost API → local SQLite, through the existing bridge/manager boundary. Dexie dev-content-store statements below are superseded for DEV. Export remains versioned content data; the Pause debugger is separate and marks affected runs ineligible for normal rankings.
+
+
 tag_g_dev tag_s_dev_crud tag_s_dev_content_manager
 RESUME: DEV-only `/dev/*` HTML CRUD routes — filter, list, create, edit, delete game content; DevContentManager + JS Bridge; compiled out of production.
 

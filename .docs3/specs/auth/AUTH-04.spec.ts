@@ -1,14 +1,20 @@
-import { describe, it, expect } from 'vitest';
-import { DemoAuthAdapter } from '../../../poc3/src/platform/demo-auth-adapter.ts';
+import { describe, it, expect, vi } from 'vitest'
+import { DemoAuthAdapter } from '../../../poc3/src/platform/demo-auth-adapter.ts'
+import { AuthManager } from '../../../poc3/src/systems/auth-manager.ts'
 
-describe('AUTH-04 — Google opens new tab; shell stays on Login', () => {
-  it('startGoogleSignIn returns an openUrl for window.open (web)', () => {
-    const adapter = new DemoAuthAdapter('/api');
-    const openUrl = adapter.getGoogleStartUrl();
-    expect(openUrl).toBe('/api/auth/google/start');
-  });
-
-  it.todo('#login-root stays visible until probeSession() returns a session');
-
-  it.todo('OAuth URL is DemoHost /api/auth/* (ARCH-05)');
-});
+/** AUTH-04 — D47: providers are capability-gated; production OAuth is later work. */
+describe('AUTH-04 — Google is unavailable in DEV', () => {
+  it('email mock is explicit and Google cannot be invoked', () => {
+    const adapter = new DemoAuthAdapter('/api', true)
+    const auth = new AuthManager()
+    auth.setPlatformAdapter(adapter)
+    expect(adapter.capabilities).toEqual({ email: true, google: false, mock: true })
+    expect(() => auth.signInWithGoogle()).toThrow(/indisponível/)
+  })
+  it('production default cannot perform mock sign-in', async () => {
+    const fetch = vi.spyOn(globalThis, 'fetch')
+    await expect(new DemoAuthAdapter().signInWithEmail('pilot@example.com')).rejects.toThrow()
+    expect(fetch).not.toHaveBeenCalled()
+    fetch.mockRestore()
+  })
+})

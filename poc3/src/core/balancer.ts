@@ -298,21 +298,9 @@ export interface PlayerBalance {
   }
 }
 
-export interface AuthGuestStubBalance {
-  /** POC slice: skip Login when probeSession is empty. Disable for real auth QA. */
-  readonly enabled: boolean
-  readonly userId: string
-  readonly displayName: string
-}
-
-export interface AuthBalance {
-  readonly guestStub: AuthGuestStubBalance
-}
-
 export interface BalanceConfig {
   readonly layout: LayoutBalance
   readonly render: RenderBalance
-  readonly auth: AuthBalance
   readonly controls: ControlsBalance
   readonly loop: LoopBalance
   readonly camera: CameraBalance
@@ -339,13 +327,6 @@ export const BALANCE: BalanceConfig = {
     background: 0x05040a,
     pixelRatioCap: 2,
     antialias: true,
-  },
-  auth: {
-    guestStub: {
-      enabled: true,
-      userId: 'stub:ikarus',
-      displayName: 'IKARUS',
-    },
   },
   controls: {
     keyboard: {

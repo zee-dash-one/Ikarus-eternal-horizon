@@ -5,6 +5,7 @@ import type {
   MouseButtonAction,
   TouchSlotId,
 } from '../core/input-bindings.ts'
+import type { AuthCapabilities } from '../platform/auth-types.ts'
 
 export type PauseMainTab = 'controls' | 'audio' | 'graphics' | 'dev'
 export type DevSectionTab = 'ship' | 'hud'
@@ -39,8 +40,14 @@ export const EMPTY_DEV_LIVE: DevLiveSnapshot = {
 }
 
 export interface LoginHandlers {
-  onSubmit(username: string, password: string): void
+  onSubmit(email: string): void
   onGoogle(): void
+  onRetry(): void
+}
+
+export interface AccountHandlers {
+  onSignOut(): void
+  onRetrySave(): void
 }
 
 export interface PauseHandlers {
@@ -62,6 +69,10 @@ export interface PauseHandlers {
 }
 
 export interface GameUiHost {
+  setAuthCapabilities(capabilities: AuthCapabilities): void
+  setAccountState(name: string | null, busy: boolean, error: string | null): void
+  setAccountBusy(busy: boolean): void
+  setAccountHandlers(handlers: AccountHandlers): void
   setLoginVisible(visible: boolean): void
   setLoginBusy(busy: boolean): void
   setLoginError(error: string | null): void

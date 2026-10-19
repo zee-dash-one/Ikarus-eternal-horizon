@@ -6,6 +6,7 @@
   "description": "Ikarus: Eternal Horizon — POC3. Built against .docs3/plans/planning.spec.MD (SDD hub).",
   "scripts": {
     "dev": "vite",
+    "dev:all": "node ../scripts/dev.mjs",
     "build": "tsc && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",

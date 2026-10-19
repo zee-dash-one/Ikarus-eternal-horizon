@@ -6,6 +6,7 @@ import {
 } from '../core/input-bindings.ts'
 import {
   EMPTY_DEV_LIVE,
+  type AccountHandlers,
   type DevLiveSnapshot,
   type GameUiHost,
   type InputScheme,
@@ -13,13 +14,20 @@ import {
   type PauseHandlers,
   type PauseMainTab,
 } from './game-ui-types.ts'
+import type { AuthCapabilities } from '../platform/auth-types.ts'
 
 export class GameUiController implements GameUiHost {
   private readonly _listeners = new Set<() => void>()
   private _loginHandlers: LoginHandlers = {
     onSubmit: () => undefined,
     onGoogle: () => undefined,
+    onRetry: () => undefined,
   }
+  accountHandlers: AccountHandlers = { onSignOut: () => undefined, onRetrySave: () => undefined }
+  authCapabilities: AuthCapabilities = { email: false, google: false, mock: false }
+  accountName: string | null = null
+  accountBusy = false
+  accountError: string | null = null
   private _pauseHandlers: PauseHandlers = {
     onResume: () => undefined,
     onSchemeChange: () => undefined,
@@ -38,7 +46,7 @@ export class GameUiController implements GameUiHost {
     onBalanceChange: () => undefined,
   }
 
-  loginVisible = true
+  loginVisible = false
   loginBusy = false
   loginError: string | null = null
   startHintVisible = false
@@ -89,7 +97,15 @@ export class GameUiController implements GameUiHost {
 
   setLoginHandlers(handlers: LoginHandlers): void {
     this._loginHandlers = handlers
+    this._notify()
   }
+
+  setAuthCapabilities(capabilities: AuthCapabilities): void { this.authCapabilities = capabilities; this._notify() }
+  setAccountHandlers(handlers: AccountHandlers): void { this.accountHandlers = handlers; this._notify() }
+  setAccountState(name: string | null, busy: boolean, error: string | null): void {
+    this.accountName = name; this.accountBusy = busy; this.accountError = error; this._notify()
+  }
+  setAccountBusy(busy: boolean): void { this.accountBusy = busy; this._notify() }
 
   setStartHintVisible(visible: boolean): void {
     this.startHintVisible = visible

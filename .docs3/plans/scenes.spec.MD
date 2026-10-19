@@ -1,5 +1,12 @@
 # Ikarus Eternal Horizon — Scenes & Boot Flow
 
+> **Current flow (D47–D50):** DEV email-only Login → Start/audio unlock → Title (Play / Rankings) → preparation → Run entry → sprint combat → Result. Rankings opens from Title or Result. No automatic Title → Run. [Run preparation spec](./run-flow.spec.MD) owns FLOW-01–09; older Google/password acceptance below applies only after revised production auth lands.
+
+## Run gate revision
+
+Title remains visible and responsive while `RunPreparationManager` creates enemy points, asteroid points, three parallax levels, sector content, all 50 wave plans and the first inactive encounter. Only after READY does `SceneManager` mount Run. Ikarus enters before Sprint 1 starts; wave 0 and asteroid timers activate on `PlayerEntryCompleted`. Next-sprint preparation runs with bounded work during the current sprint. Error allows retry/back; cancellation prevents late scene mounts. RunScene presents snapshots; it does not own combat clocks or score.
+
+
 tag_g_scene_flow tag_s_scene_canvas_render tag_g_assets tag_g_audio tag_g_run_meta
 RESUME: HTML Login → canvas Start/Title/Run; HTML Result/Rankings; Pause overlay on Run; SCENE-01/02/03/04/05 detail.
 
@@ -13,7 +20,7 @@ RESUME: HTML Login → canvas Start/Title/Run; HTML Result/Rankings; Pause overl
 
 | ID         | Prio   | Requirement                                                                                           | Acceptance                                                         |
 | ---------- | ------ | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| `SCENE-01` | must   | Login scene; skip when `AuthSession` exists; Google new-tab; mock password always succeeds            | Auth → **Start**; skip path boots straight to Start                |
+| `SCENE-01` | must   | Login scene; skip when `AuthSession` exists; DEV email mock via SQLite session; production Google/email deferred            | Auth → **Start**; skip path boots straight to Start                |
 | `SCENE-02` | must   | Start: cockpit art + centered Start; preload; on critical ready fire `welcome_screen_ready` (mock OK) | Cue fires once at ready; Start unlocks audio if needed; then Title |
 | `SCENE-03` | should | Title scene (main menu)                                                                               | Canvas hub — entered from Start; Store tab is DOM (`D34`)                          |
 | `SCENE-04` | should | **Title → Run** (canvas) · **Result → Rankings** (DOM)                                                  | Run on canvas · Result/Rankings HTML/CSS + JS Bridge — [`rankings.spec.MD`](./rankings.spec.MD) (`RNK-04`) |
@@ -39,15 +46,15 @@ RESUME: Auth gate before canvas Start — HTML/CSS shell + JS Bridge; detail in 
 | Probe | `AuthManager.probeSession()` on boot |
 | Skip | Session ok → Start directly (Login flash ≤1 frame) |
 | Show | No session → `#login-root` visible |
-| Sign in | Mock password or Google OAuth → **Start** on success |
+| Sign in | DEV email mock (production: Google or real email) → **Start** on success |
 
 Full UI controls, adapter matrix, bridge contract, and `AUTH-*` requirements: [`login.spec.MD`](./login.spec.MD).
 
 #### Acceptance
 
 - Cold boot with session → Start (Login never flashes, or flashes ≤1 frame).
-- Cold boot without session → Login DOM; mock Sign in → Start.
-- Google button opens a new tab; game shell stays on Login until session probe succeeds.
+- Cold boot without session → Login DOM; DEV email Sign in → Start.
+- DEV hides Google and rejects Google routes; future production OAuth keeps Login until the session probe succeeds.
 
 ## Start scene (`SCENE-02`)
 
@@ -122,7 +129,7 @@ RESUME: **Title** and **Run** are the only post-Start **canvas scene swaps** —
 
 | Scene | Kind | Role |
 | --- | --- | --- |
-| **Title** | Canvas | Main menu / hub entry from Start (`SCENE-03`) — gameplay CTA mounts **Run** |
+| **Title** | Canvas | Main menu / hub entry from Start (`SCENE-03`) — Play CTA starts **preparation**; Rankings opens its DOM panel |
 | **Run** | Canvas | Active gameplay loop — player ship, combat, parallax (`SCENE-04`) |
 
 #### Rules

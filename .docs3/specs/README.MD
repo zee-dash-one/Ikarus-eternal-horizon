@@ -1,5 +1,8 @@
 # Ikarus Eternal Horizon — Índice Mestre de SDD
 
+> **Revision 2026-10-02:** [todo-codex.md](../todo-codex.md) is the active backlog. D47–D50 and [run-flow.spec.MD](../plans/run-flow.spec.MD) supersede conflicting historical cards. AUTH-03/04, SCENE-01/03/04, RNK and persistence cards must be reconciled before implementation; FLOW-01–09 cards are pending. Existing test/card presence is not proof of revised behavior.
+
+
 > Gerado a partir de `planning.spec.MD` (hub), `decisions.spec.MD`, `todo.md` e dos arquivos de tema em `plans/` (`char-sheet`, `equipment`, `crafting`, `drops`, `enemy`, `squad`, `input`, `scenes`, `world`, `weapons`, `meteors`, `hud`, `nomenclature`, `achievements`, `rankings`, `builds`, `store`, `architecture`, `balance`, `coverage`, `dev-tools`, `login`).
 > Objetivo deste documento: **não reescrever nada** do que vocês já têm (está bem maduro), e sim **acoplar o SDD por cima** — 1 spec de teste por Requirement ID, rastreável até o Theme do `todo.md`.
 

@@ -15,7 +15,6 @@ export interface HudProjectContext {
   readonly canvas: HTMLCanvasElement
 }
 
-const HIGH_SCORE_KEY = 'ikarus_poc3_high'
 
 function padScore(value: number): string {
   return String(Math.floor(value)).padStart(7, '0')
@@ -99,33 +98,6 @@ export class HudManager {
     this._statsBar = document.createElement('div')
     this._statsBar.className = 'hud__stats-bar'
     this._root.appendChild(this._statsBar)
-  }
-
-  static readHighScore(): number {
-    try {
-      const raw = localStorage.getItem(HIGH_SCORE_KEY)
-      if (raw) {
-        const n = Number(raw)
-        if (Number.isFinite(n) && n >= 0) {
-          return n
-        }
-      }
-    } catch {
-      /* private mode */
-    }
-    return BALANCE.hud.stubs.defaultHighScore
-  }
-
-  static writeHighScoreIfBetter(score: number): void {
-    const best = HudManager.readHighScore()
-    if (score <= best) {
-      return
-    }
-    try {
-      localStorage.setItem(HIGH_SCORE_KEY, String(Math.floor(score)))
-    } catch {
-      /* ignore */
-    }
   }
 
   setVisible(visible: boolean): void {

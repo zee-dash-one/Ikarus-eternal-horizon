@@ -1,5 +1,25 @@
 # Ikarus Eternal Horizon — Architecture & Tech Stack
 
+> **Itch release clarification (2026-10-19):** DEV SQLite remains local. The complete Itch HTML5 release uploads a frontend and uses a separately hosted HTTPS API for real auth/account persistence/shared rankings; Dexie is cache/preferences in that connected profile. The old Itch-only IndexedDB matrix below is not sufficient for these connected product requirements. See [itch-release.spec.MD](./itch-release.spec.MD); a standalone local-only demo requires an explicit scope decision.
+
+> **Current DEV contract (D47/D49, 2026-10-02):** local DemoHost + SQLite; email-only mock auth; separated preparation/simulation/View. VPS/OAuth/Dexie platform material below is future production scope where it conflicts with this section. Active backlog: [todo-codex.md](../todo-codex.md).
+
+## Local development baseline — implementation pending
+
+- `poc3/` Vite proxies `/api` to `demo-host/` on loopback. Runtime profile is explicit on server and client; browser DEV flags alone do not authorize mock routes.
+- SQLite is a local server file (default `demo-host/data/ikarus-dev.sqlite`, configurable); migrations run before serving. Ignore DB/WAL/SHM files in Git. Driver selection must match the supported Node runtime.
+- Persist users, sessions, profile settings, runs, and future store/achievement/DEV-content records in SQLite. Server repositories own transactions; browser managers use async ports. No SQLite driver in the browser and no database work in sim/render.
+- Minimal tables: `users(id, email_normalized UNIQUE, display_name, created_at)`, `sessions(id, user_id, expires_at)`, `profile_settings(user_id, key, schema_version, payload, updated_at)` with composite key, `runs(run_id PRIMARY KEY, user_id, mode, score, kills, duration_ms, ended_at_utc, seed, build_version, content_version, eligible)`. Use foreign keys and ranking query indexes. Session tokens are opaque and generated securely; user identity comes from the session, never a submitted userId.
+- Email mock creates/reuses a local user without mail delivery or password storage. Sessions survive server restart until expiration; logout revokes the row. HttpOnly/SameSite cookies; Secure on HTTPS, explicit local-HTTP configuration in DEV.
+- `POST /api/auth/dev-email`, `GET /api/me`, `POST /api/auth/logout`; authenticated settings `GET/PUT /api/profile/settings`; `POST /api/rankings/submit`, `GET /api/rankings/board`. Validate requests on the host. Mock auth routes and Google fake callback must not be enabled in production.
+- Ranking submit uses unique runId and transaction: repeat identical submission returns the existing result; conflicting reuse is rejected. Server assigns the authoritative UTC completion timestamp on first accepted finalization (client time is diagnostic), preserves it on retries and calculates period windows. A real offline completion-time protocol is deferred; do not trust arbitrary client timestamps for buckets.
+- DEV UI shows public display names, never user email in rankings. Keep one best run per user/mode/period; query history rather than deleting scores at period rollover.
+- Dexie and localStorage are not alternate DEV sources of truth. Load session before user settings. If legacy import is provided, it is explicit, one-time and account-scoped; do not silently assign old shared-browser data to a user.
+- Separate `RunPreparationManager` (async staging), `RunSimulation` (fixed tick), and View (rAF snapshots). Detailed order, cancellation, bounded catch-up and next-sprint staging: [run-flow.spec.MD](./run-flow.spec.MD).
+
+Production hosting, provider credentials, backup deployment and other platform transports below are later work. Real Google **and email** authentication must replace DEV mocks before a production web release; the real email method is an explicit design choice still to make.
+
+
 tag_g_builds tag_s_arch_stack tag_s_builds_demo_host tag_s_arch_persist_dexie
 RESUME: Demo-first stack — Sim-first Core/View (`D40`); per-platform SDK persist; DemoHost; four PlatformKit builds.
 

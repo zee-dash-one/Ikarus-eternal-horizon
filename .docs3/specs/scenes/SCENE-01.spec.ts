@@ -20,13 +20,14 @@ import { AuthManager } from '../../../poc3/src/systems/auth-manager.ts';
 import type { AuthPlatformAdapter, AuthSession } from '../../../poc3/src/platform/auth-types.ts';
 
 class MockAdapter implements AuthPlatformAdapter {
+  readonly capabilities = { email: true, google: false, mock: true }
   session: AuthSession | null = null;
   async probeSession(): Promise<AuthSession | null> {
     return this.session;
   }
-  async trySignIn(username: string, password: string): Promise<AuthSession | null> {
-    if (!username.trim() || !password.trim()) return null;
-    this.session = { userId: 'u1', displayName: username, provider: 'mock' };
+  async signInWithEmail(email: string): Promise<AuthSession> {
+    if (!email.includes('@')) throw new Error('Invalid email');
+    this.session = { userId: 'u1', displayName: 'pilot', provider: 'mock' };
     return this.session;
   }
   signInWithGoogle(): void {}
@@ -51,10 +52,10 @@ describe('SCENE-01 — Login gate before canvas Start', () => {
     const adapter = new MockAdapter();
     auth.setPlatformAdapter(adapter);
     expect(await auth.probeSession()).toBeNull();
-    const session = await auth.trySignIn('pilot', 'secret');
+    const session = await auth.signInWithEmail('pilot@example.com');
     expect(session).not.toBeNull();
     expect(auth.session?.displayName).toBe('pilot');
   });
 
-  it.todo('Google button opens a new tab; shell stays on Login until probe ok');
+  it.todo('production Google provider requires real configuration');
 });

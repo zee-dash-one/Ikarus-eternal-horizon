@@ -6,12 +6,13 @@
 >
 > Space shooter roguelite. Two-axis gameplay, 3D rendering, endless arcade pressure — now wired straight into the mercenary, monster-haunted universe it always deserved.
 
-**Status:** pre-production (Gate G0) · **Stack:** TypeScript · Vite · Three.js · Yuka · Howler
-**Operational source of truth:** `[.docs2/plans/planning.spec.MD](.docs2/plans/planning.spec.MD)` v4.3.0 (canonical names, decisions, gates, traceable requirements, SDD build order)
-**Architecture:** `[.docs2/phases/phase-0-poc2.md](.docs2/phases/phase-0-poc2.md)` — pattern constructor, Model/View by THREE inheritance, collision layers, managers, target tree
-**Specs index:** `[.docs2/specs/README.md](.docs2/specs/README.md)` — one SDD+TDD card per Stage A–G subject
-**Builds:** `[poc/](poc/README.md)` — POC-1, frozen playable reference · `[poc2/](poc2/README.md)` — active build (`npm run dev` in `poc2/`)
-**POC2 now (Fase 0 playable):** modular airplane · four weapons L1–12 (`F`/`Y` fire, `G`/`X` switch) · dash on shared Energy · four exclusive schemes + live remap · pause scheme picker · SpawnArea (left/right/front) + EnemyGate → Warrior squads (10 Z standoff, FURY cap 4) · collision + damage resolver live · DEV debugger (Ship · Equips · Enemy · Squad · SpawnArea · Parallax). Laser overheat cues via `SoundManager.playOverheatCue()` (silent until Howler). **Next:** remaining G08 tabs · wire C03 onto byte pools · statuses · G07 HUD · G11 inventory · G01 Title.
+**Current development:** POC3 is the product workstream (`poc3/`); local supporting API lives in `demo-host/`.
+**Design authority:** [Docs3 planning hub](.docs3/plans/planning.spec.MD) · [run preparation and sprints](.docs3/plans/run-flow.spec.MD).
+**Active Codex backlog:** [todo-codex.md](.docs3/todo-codex.md).
+**Current direction (2026-10-02):** DEV email-only mock login + local SQLite; weekly/monthly/annual/eternal rankings; explicit world preparation, Ikarus entry, then 50-wave sprints (0–49, miniboss at 49), with next-sprint preparation during play. These are revised requirements, not a claim of completed implementation.
+**POC2 scope:** study enemy movement and group logic only. Docs2 is historical; it is not the architecture or porting guide for POC3.
+**GDD scope:** the world/lore and broad game vision below remain reference material. Docs3 D47–D50 override conflicting historical boot, persistence and kill-milestone progression details below. In particular, the old miniboss-every-50-kills rule is replaced by the final wave of each sprint.
+
 **This document supersedes GDD v2.0.** All mechanical systems from v2.0 are preserved; this revision folds in the full lore bible and the narrative-delivery systems (HUD storytelling, Bounty Board, item flavor text, sector staging, boss narrative beats) that were previously parked as "open worldbuilding questions."
 
 ---

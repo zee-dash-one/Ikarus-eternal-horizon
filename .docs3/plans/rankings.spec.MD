@@ -1,5 +1,20 @@
 # Ikarus Eternal Horizon — Rankings — Leaderboards
 
+> **Itch release clarification (2026-10-19):** shared rankings use our HTTPS service behind ItchRankingAdapter, with the same four UTC periods; do not implement against a presumed Itch leaderboard API. IndexedDB alone provides browser-local data, not shared boards. See [itch-release.spec.MD](./itch-release.spec.MD), ITCH-06.
+
+> **D50 revision (2026-10-02):** implement local SQLite rankings first through DemoHost; Dexie mirrors/platform uploads below are future scope. Screen is accessible from **Title and Result**. Active work: [todo-codex.md](../todo-codex.md), section B.
+
+## DEV acceptance additions
+
+- Normal first; preserve separate mode keys, show Survivor unavailable until playable. Four working period tabs are required now, not deferred UI polish.
+- Server is authoritative for UTC buckets; weeks start Monday, months and years are civil periods, eternal has no lower bound. Use half-open intervals `[start, nextStart)`; do not truncate subsecond timestamps at 23:59:59.
+- Store run history in SQLite, one run per unique runId; repeated result callbacks/retries cannot duplicate score. Each board selects the best eligible run per user/mode within that period. Different periods may select different runs.
+- Order: score descending, kills descending, duration ascending, runId ascending for a stable final tie-break. Show public display name, never email.
+- Authoritative completion time is stamped by the host on first valid finalization and retained on retry; client timestamps are diagnostic. Offline historical bucketing needs a later verified protocol.
+- DEAD finalizes; DRIFTING does not. Quit/cancelled and debugger-modified runs do not enter normal boards. Local DEV validation does not claim production anticheat.
+- Loading/empty/error/retry states, current-player highlight and return to Title are required. HUD gets cached best score through its presentation model, never localStorage reads per frame.
+
+
 tag_g_rankings tag_s_rankings_submit_pipeline tag_s_rankings_local_adapter tag_s_rankings_demo_adapter
 RESUME: Eight UTC boards (Normal/Survivor × W/M/Y/E); RankingManager platform-blind; one RankingPlatformAdapter per build (Demo · Itch · Poki · Steam) via PlatformKit — same pattern as Store (`D36`); Demo → DemoHost (`D38`).
 
@@ -173,7 +188,7 @@ Source satellite: `[../../.docs2/plans-later/ranking-plan.spec.MD](../../.docs2/
 | Special Ordnance | Off |
 | Craft / skills | Off (`Q11`) |
 | Pause | System pause OK; **no** inventory/lab/craft management tabs |
-| Difficulty | Same kill curve and milestones as Normal |
+| Difficulty | Same sprint/wave progression as Normal (D49; FLOW-01–09) |
 | Submit | Only on legitimate run end |
 
 **Later:** Survivor+ (full arsenal, still no meta) · daily shared seed (`Q14`).
@@ -193,7 +208,7 @@ Source satellite: `[../../.docs2/plans-later/ranking-plan.spec.MD](../../.docs2/
 | ID | Prio | Requirement | Acceptance |
 | --- | --- | --- | --- |
 | `RNK-01` | must | Local bests — Normal Eternal minimum (`LocalRankingAdapter`) | Survives reload |
-| `RNK-02` | should | UTC window calc W/M/Y on client | Weekly board resets on Monday UTC |
+| `RNK-02` | should | UTC windows W/M/Y authoritative on server in DEV (D50) | Weekly board resets on Monday UTC |
 | `RNK-03` | defer | Survivor mode playable per table above | Zero loadout, laser only, one-shot |
 | `RNK-04` | should | Rankings **DOM** UI: 2 modes × 4 periods (`#rankings-root`, `D42`) | Tabs show separated local bests |
 | `RNK-05` | must | Modes never mix on a board | Survivor score never listed under Normal |

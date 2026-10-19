@@ -7,7 +7,7 @@ RESUME: Primary/Secondary catalog (Laser · Plasma · Beam · Mjolnir); ShotMana
 
 **Related:** [`char-sheet.spec.MD`](./char-sheet.spec.MD) (`Primary_Weapon` / `Secondary_Weapon` / `Bomb` · Summary `S_D` `S_R` `ENE`) · [`equipment.spec.MD`](./equipment.spec.MD) (`EQP-01` — items do not own weapon behaviour) · [`input.spec.MD`](./input.spec.MD) (`A`/`B`/`X`/`Y`) · [`hud.spec.MD`](./hud.spec.MD) (weapon chip · charges)
 
-Coverage: docs2 `WPN-01`–`08` · `SHIP-03`. Feel reference: frozen `poc/` four weapons — **not** a port map.
+Coverage: docs2 `WPN-01`–`08` · `SHIP-03`. Implement from POC3 contracts; POC1/POC2 weapons are not a port/feel reference (D48).
 
 ---
 

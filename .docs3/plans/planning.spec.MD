@@ -3,13 +3,23 @@
 tag_g_docs tag_s_docs_tag_registry
 RESUME: Design hub authority — requirement IDs, locked decisions, coverage matrix, and grep-tag matrix for docs3 / poc3.
 
-**Version:** 0.3.21 · **Status:** active (design hub · implementation in `poc3/`)
-**Purpose:** the **design hub index** — theme specs live as sibling files in this folder for the next model of the game. It is written **from scratch**. Canonical rules for ship sheets, individual enemies, and squads come from `[.docs3/consider/](../consider/)` (historical drafts). Runtime systems read only the **Summary Sheet**; the **Full Sheet** exists for equip/effect recalculation — not per-frame math. Code and tasks: `poc3/` + `[.docs3/todo.md](../todo.md)`.
+**Version:** 0.4.0 · **Status:** active (design hub · implementation in `poc3/`)
+**Purpose:** the **design hub index** — theme specs live as sibling files in this folder for the next model of the game. It is written **from scratch**. Canonical rules for ship sheets, individual enemies, and squads come from `[.docs3/consider/](../consider/)` (historical drafts). Runtime systems read only the **Summary Sheet**; the **Full Sheet** exists for equip/effect recalculation — not per-frame math. Code: `poc3/`; active execution: [todo-codex.md](../todo-codex.md). The previous todo is historical.
 **Sources:** `[../consider/char_sheet.MD](../consider/char_sheet.MD)` · `[../consider/enemy_sheet.MD](../consider/enemy_sheet.MD)` · `[../consider/squad_sheet.MD](../consider/squad_sheet.MD)` · public GDD `[README.md](../../README.md)`
 **Docs2 role:** `[.docs2/plans/planning.spec.MD](../../.docs2/plans/planning.spec.MD)` is a **coverage checklist only** — not inherited architecture, not a workstream, not a port map. See [`coverage.spec.MD`](./coverage.spec.MD).
-**Supersedes:** none (docs3 starts at 0.1.0). Does **not** retire docs2; docs2 remains the historical POC2 hub.
+**Supersedes:** conflicting POC3 requirements from 0.3.21 in the domains revised by D47–D50. Docs2 remains historical reference only.
 
 ---
+## Current direction — 2026-10-02 (D47–D50)
+
+POC3 is the product workstream. POC2 is a study reference **only for enemy movement and group logic**. Docs2 links elsewhere are historical traceability, not implementation instructions or a requirement to port systems.
+
+- Active backlog: [todo-codex.md](../todo-codex.md); old [todo.md](../todo.md) is an implementation history.
+- DEV: email-only mock login and local server SQLite for persistent data. Google and real email auth are future production work; no automatic guest bypass.
+- Run: explicit preparation → ready world → Ikarus entry → Sprint 1 → prepare Sprint 2 during gameplay. Each sprint has **50 waves (0–49), miniboss at 49**. See [run-flow.spec.MD](./run-flow.spec.MD), `FLOW-01`–`09`.
+- Rankings: weekly/monthly/annual/eternal, persisted locally in DEV; accessible from Title and Result.
+- New requirements are planned, not already implemented. D47–D50 supersede conflicting portions of D19/D28/D30/D38/D39/D41/D42/D43 and kill-based progression for this workstream. Production platform designs remain future scope.
+
 ## 0. What this hub is (and is not)
 
 
@@ -21,7 +31,7 @@ RESUME: Design hub authority — requirement IDs, locked decisions, coverage mat
 | A docs2 **coverage matrix** so no topic is silently dropped   | A copy or “thin inherit” of docs2 §0–§10        |
 
 
-**Implementation workstream:** code lives in `poc3/`; backlog is `[.docs3/todo.md](../todo.md)`. This hub stays the design authority (`D01`–`D46` in [`decisions.spec.MD`](./decisions.spec.MD); domain detail in theme files below).
+**Implementation workstream:** code lives in `poc3/`; backlog is [todo-codex.md](../todo-codex.md). This hub stays the design authority (`D01`–`D50` in [`decisions.spec.MD`](./decisions.spec.MD); domain detail in theme files below).
 
 **Runtime cost rule (hard):** every frame, combat/AI/render may read **Summary Sheet fields only** (`ENE`, `SHD`, `DEF`, `MIT`, `SPD`, `S_D`, `S_R`, `REG`, `LVL`, `HP`, integrity state). Full Sheet recalculation runs **only** on equip change, effect activate/expire, or the LVL triggers defined in `CHAR-05`. Hit resolution must **not** recompute `DEF / 10` — it reads precomputed `MIT`.
 
@@ -34,7 +44,7 @@ RESUME: Design hub authority — requirement IDs, locked decisions, coverage mat
 | **Title**           | Ikarus: Eternal Horizon                                                               |
 | **Genre**           | Shooter roguelite / arcade shmup, 2.5D                                                |
 | **Perspective**     | 3D rendering · gameplay on **X/Y** (Z visual)                                         |
-| **Session**         | Short intense runs; endless; difficulty scales with kills                             |
+| **Session**         | Endless runs; sprint/wave difficulty; 50 waves per sprint (0–49)                             |
 | **Modes**           | **Normal** (full systems) · **Survivor** (one-shot, laser-only v1) — [`rankings.spec.MD`](./rankings.spec.MD) · boards never mix |
 | **Playable pillar** | move · fire · shield→integrity risk · **DRIFTING→DEAD** · collect · result · next run |
 | **Sheet model**     | Every craft (player and enemy) is a **CHAR** sheet                                    |
@@ -51,8 +61,10 @@ Each file is self-contained English design authority for its domain. **This inde
 
 | Spec | Primary tags | Super-summary |
 | --- | --- | --- |
+| [run-flow.spec.MD](./run-flow.spec.MD) | tag_g_scene_flow · tag_g_engine | FLOW-01–09: preparation, spawn points, sector catalogs, 50-wave sprints, entry and next-sprint look-ahead. |
+| [itch-release.spec.MD](./itch-release.spec.MD) | tag_g_builds | ITCH-01–10: HTML5 release, production adapters/API, ZIP, hosted iframe QA, page and rollback. Active backlog section G. |
 | [`nomenclature.spec.MD`](./nomenclature.spec.MD) | tag_g_system · tag_g_docs | Sheet layers, Summary codes, enemy/squad vocabulary, canvas scene boot order, *Manager table, grep tag rules and matrix snapshot. |
-| [`decisions.spec.MD`](./decisions.spec.MD) | tag_g_docs | Locked decisions D01–D46 and open questions Q01–Q49. |
+| [`decisions.spec.MD`](./decisions.spec.MD) | tag_g_docs | Locked decisions D01–D50 and open questions Q01–Q49. |
 | [`char-sheet.spec.MD`](./char-sheet.spec.MD) | tag_g_char_sheet · tag_g_combat | CHAR-01–06: data contract (Core + Balancer) + 54 slots, Full/Summary math, DRIFTING→DEAD, recalc, MIT. |
 | [`equipment.spec.MD`](./equipment.spec.MD) | tag_g_equipment | EQP-01–03: data contract (registry + items) + *_mod/*_mul grants, when-bundles, lab craft time. |
 | [`crafting.spec.MD`](./crafting.spec.MD) | tag_g_resources · tag_g_crafting | RES-05 · EQP-04–06: inventory caps, CraftSlot, recipes, energy tension. |
@@ -87,6 +99,7 @@ Each file is self-contained English design authority for its domain. **This inde
 | DOM shell chrome (`D34`/`D41`/`D42`/`D43`) | Login · Store · Result · Rankings · **`/dev/*` CRUD** (DEV-only) — [`login.spec.MD`](./login.spec.MD) · [`store.spec.MD`](./store.spec.MD) · [`scenes.spec.MD`](./scenes.spec.MD) · [`rankings.spec.MD`](./rankings.spec.MD) · [`dev-tools.spec.MD`](./dev-tools.spec.MD) |
 | Dev content CRUD (`D43`) | [`dev-tools.spec.MD`](./dev-tools.spec.MD) |
 | `*Manager` naming (`D22`) | [`nomenclature.spec.MD`](./nomenclature.spec.MD) |
+| Run preparation and sprints (`D49`) | [run-flow.spec.MD](./run-flow.spec.MD) |
 | Virtual input pad (`D27`) | [`input.spec.MD`](./input.spec.MD) |
 | Achievement adapters (`D28`) | [`achievements.spec.MD`](./achievements.spec.MD) |
 | Equip grants (`D29`) | [`equipment.spec.MD`](./equipment.spec.MD) |
@@ -105,7 +118,7 @@ Each file is self-contained English design authority for its domain. **This inde
 | Meteors | [`meteors.spec.MD`](./meteors.spec.MD) |
 | Combat HUD (`D45`) | [`hud.spec.MD`](./hud.spec.MD) |
 
-Requirement IDs (`CHAR-` · `ENEMY-` · `SQUAD-` · `SCENE-` · `CAM-` · `WPN-` · `MET-` · `HUD-` · `AUTH-` · `DEV-` · `CTRL-` · `ACH-` · `EQP-` · `RES-` · `RNK-` · `STR-` · `BLD-` · `ARCH-` · `RUL-02` · `RUL-12`) live in the theme files above. Deferred prefixes (`LORE-` · remaining `RUL-06`/`09`/`11`/`14`) → [`coverage.spec.MD`](./coverage.spec.MD).
+Requirement IDs (`CHAR-` · `ENEMY-` · `SQUAD-` · `SCENE-` · `CAM-` · `WPN-` · `MET-` · `HUD-` · `AUTH-` · `FLOW-` · `DEV-` · `CTRL-` · `ACH-` · `EQP-` · `RES-` · `RNK-` · `STR-` · `BLD-` · `ARCH-` · `RUL-02` · `RUL-12`) live in the theme files above. Deferred prefixes (`LORE-` · remaining `RUL-06`/`09`/`11`/`14`) → [`coverage.spec.MD`](./coverage.spec.MD).
 
 ---
 
@@ -156,7 +169,7 @@ Creation rules (`D25`, `D26`): see [`nomenclature.spec.MD`](./nomenclature.spec.
 
 ## 4. Decisions index
 
-Full tables: [`decisions.spec.MD`](./decisions.spec.MD). Locked **D01–D46**; open **Q01–Q49**.
+Full tables: [`decisions.spec.MD`](./decisions.spec.MD). Locked **D01–D50**; open **Q01–Q49**.
 
 | Decision | One-line |
 | --- | --- |
@@ -187,6 +200,10 @@ Full tables: [`decisions.spec.MD`](./decisions.spec.MD). Locked **D01–D46**; o
 | **D44** | Landscape **16:9** playfield + letterbox — docs2 portrait retired |
 | **D45** | Combat HUD is canvas overlay on Run — Summary/snapshot only |
 | **D46** | `BALANCE` sole authored-value source — Core sim **and** canvas View paint (`RUL-12`) |
+| **D47** | DEV email-only mock login and local SQLite persistence |
+| **D48** | POC3 product workstream; POC2 study restricted to enemy movement/groups |
+| **D49** | Preparation → entry → 50-wave sprints (0–49), final miniboss and bounded look-ahead |
+| **D50** | Local SQLite period rankings; screen accessible from Title and Result |
 
 ---
 
@@ -197,7 +214,9 @@ Full tables: [`decisions.spec.MD`](./decisions.spec.MD). Locked **D01–D46**; o
 | [`planning.spec.MD`](./planning.spec.MD) | **This index** — tags, theme list, cross-links |
 | [`../tags/matrix.json`](../tags/matrix.json) | Tag matrix source of truth |
 | [`../scripts/validate_tags.py`](../scripts/validate_tags.py) | Tag validate · domain grep · matrix print |
-| [`../todo.md`](../todo.md) | POC3 implementation backlog (themes 0–14) |
+| [todo-codex.md](../todo-codex.md) | Active Codex implementation backlog |
+| [run-flow.spec.MD](./run-flow.spec.MD) | FLOW-01–09 preparation, entry and sprint lifecycle |
+| [`../todo.md`](../todo.md) | Historical implementation tracker (themes 0–14) |
 | [`../consider/char_sheet.MD`](../consider/char_sheet.MD) | Historical CHAR draft (superseded by theme specs) |
 | [`../consider/enemy_sheet.MD`](../consider/enemy_sheet.MD) | Historical ENEMY draft |
 | [`../consider/squad_sheet.MD`](../consider/squad_sheet.MD) | Historical SQUAD draft |

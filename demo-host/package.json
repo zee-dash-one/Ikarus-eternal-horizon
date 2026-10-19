@@ -3,16 +3,20 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
+  "engines": { "node": ">=24.12.0" },
   "scripts": {
-    "dev": "tsx src/index.ts",
-    "start": "node dist/index.js"
+    "dev": "node --watch src/index.ts --dev --allow-local-http",
+    "start": "node src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test src/app.test.ts",
+    "verify": "npm run typecheck && npm test"
   },
   "dependencies": {
     "@hono/node-server": "^1.14.0",
     "hono": "^4.7.4"
   },
   "devDependencies": {
-    "tsx": "^4.19.3",
+    "@types/node": "^24.0.0",
     "typescript": "^6.0.3"
   }
 }

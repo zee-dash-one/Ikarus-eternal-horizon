@@ -1,19 +1,9 @@
 import type { AuthPlatformAdapter } from './auth-types.ts'
 
+/** Production provider not configured yet. Never fall back to a mock identity. */
 export class SteamAuthAdapter implements AuthPlatformAdapter {
-  async probeSession(): Promise<null> {
-    return null
-  }
-
-  async trySignIn(): Promise<null> {
-    return null
-  }
-
-  signInWithGoogle(): void {
-    /* steam stub */
-  }
-
-  async signOut(): Promise<void> {
-    /* steam stub */
-  }
+  readonly capabilities = { email: false, google: false, mock: false }
+  async probeSession(): Promise<null> { return null }
+  async signInWithEmail(): Promise<never> { throw new Error('Provider not configured') }
+  async signOut(): Promise<void> { /* no session */ }
 }

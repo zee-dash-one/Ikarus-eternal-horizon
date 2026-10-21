@@ -30,18 +30,22 @@ export class AuthManager {
     return this.probeSession()
   }
 
-  async signInWithEmail(email: string): Promise<AuthSession> {
+  async signInWithEmail(email: string, password?: string): Promise<AuthSession> {
     if (!this._adapter?.capabilities.email) throw new Error('Login por email indisponível neste ambiente.')
     const normalized = email.trim().toLowerCase()
     if (normalized.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)) throw new Error('Informe um email válido.')
-    const session = await this._adapter.signInWithEmail(normalized)
+    const session = await (password === undefined ? this._adapter.signInWithEmail(normalized) : this._adapter.signInWithEmail(normalized, password))
     this._session = session
     return session
   }
 
-  signInWithGoogle(): void {
+  async register(email: string, password: string): Promise<void> {
+    if (!this._adapter?.signUpWithEmail) throw new Error('Cadastro indisponível neste ambiente.')
+    await this._adapter.signUpWithEmail(email.trim().toLowerCase(), password)
+  }
+  async signInWithGoogle(): Promise<void> {
     if (!this._adapter?.capabilities.google || !this._adapter.startGoogleSignIn) throw new Error('Login Google indisponível neste ambiente.')
-    this._adapter.startGoogleSignIn()
+    await this._adapter.startGoogleSignIn()
   }
 
   async signOut(): Promise<void> {

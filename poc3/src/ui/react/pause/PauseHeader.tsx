@@ -6,12 +6,13 @@ const MAIN_TABS: ReadonlyArray<{ id: PauseMainTab; label: string }> = [
   { id: 'controls', label: 'Controls' },
   { id: 'audio', label: 'Audio' },
   { id: 'graphics', label: 'Graphics' },
+  { id: 'lab', label: 'Laboratório' },
   { id: 'dev', label: 'Dev' },
 ]
 
 export function PauseHeader() {
   const ui = useGameUiSnapshot()
-  const tabs = ui.isDev ? MAIN_TABS : MAIN_TABS.filter((t) => t.id !== 'dev')
+  const tabs = MAIN_TABS.filter((tab) => (tab.id !== 'dev' || ui.isDev) && (tab.id !== 'lab' || (ui.runLab && !ui.runLab.survivor)))
 
   return (
     <header className="pause-overlay__header">

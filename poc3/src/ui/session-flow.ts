@@ -10,7 +10,7 @@ interface SessionFlowDeps {
   readonly ui: GameUiHost
   readonly createProfileStore: (userId: string) => ProfileStore
   readonly applyControls: (settings: ControlSettings) => void
-  readonly onReady: () => void
+  readonly onReady: () => void | Promise<void>
   readonly onClear: () => void
 }
 
@@ -25,7 +25,16 @@ export class SessionFlow {
 
   constructor(deps: SessionFlowDeps) { this._deps = deps }
   async boot(): Promise<void> { await this._enter(() => this._deps.auth.resolveBootSession()) }
-  async signIn(email: string): Promise<void> { await this._enter(() => this._deps.auth.signInWithEmail(email)) }
+  async signIn(email: string, password?: string): Promise<void> { await this._enter(() => this._deps.auth.signInWithEmail(email, password)) }
+  async register(email: string, password: string): Promise<void> {
+    if (this._busy) return
+    this._busy = true; this._deps.ui.setLoginBusy(true); this._deps.ui.setLoginError(null)
+    try {
+      await this._deps.auth.register(email, password)
+      this._deps.ui.setLoginNotice('Confira seu email e confirme o cadastro antes de entrar. Verifique também a pasta de spam.')
+    } catch (error) { this._deps.ui.setLoginError(error instanceof Error ? error.message : 'Não foi possível cadastrar.') }
+    finally { this._busy = false; this._deps.ui.setLoginBusy(false) }
+  }
 
   private async _enter(resolveSession: () => Promise<AuthSession | null>): Promise<void> {
     if (this._busy) return
@@ -42,7 +51,7 @@ export class SessionFlow {
       this._deps.applyControls(controls)
       ui.setAccountState(session.displayName, false, null)
       ui.setLoginVisible(false)
-      this._deps.onReady()
+      await this._deps.onReady()
     } catch (error) {
       this._clear()
       auth.setSession(null)

@@ -3,12 +3,15 @@ import { TabBar, TabPanel } from '../../shared/TabBar.tsx'
 import type { DevSectionTab } from '../../../game-ui-types.ts'
 import { DevShipTab } from '../dev/DevShipTab.tsx'
 import { DevHudTab } from '../dev/DevHudTab.tsx'
+import { useGameUiSnapshot } from '../../GameUiContext.tsx'
 
 export function PauseDevTab() {
+  const ui = useGameUiSnapshot()
   const [tab, setTab] = useState<DevSectionTab>('ship')
 
   return (
     <div className="pause-dev">
+      {ui.isDev && <div><button type="button" onClick={() => ui.pauseHandlers.onDevFinish()}>Testar fim de partida</button><p>Encerra como teste de desenvolvimento, fora dos recordes.</p></div>}
       <TabBar
         tabs={[
           { id: 'ship', label: 'Ship' },

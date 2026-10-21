@@ -1,4 +1,5 @@
 import { useGameUiSnapshot } from '../GameUiContext.tsx'
+import { PauseLabTab } from './tabs/PauseLabTab.tsx'
 import { PauseControlsTab } from './tabs/PauseControlsTab.tsx'
 import { PauseAudioTab } from './tabs/PauseAudioTab.tsx'
 import { PauseGraphicsTab } from './tabs/PauseGraphicsTab.tsx'
@@ -25,6 +26,7 @@ export function PauseBody() {
           <PauseGraphicsTab />
         </div>
       ) : null}
+      {tab === 'lab' && !ui.runLab?.survivor ? <PauseLabTab /> : null}
       {tab === 'dev' && ui.isDev ? (
         <div className="pause-tab">
           <PauseDevTab />

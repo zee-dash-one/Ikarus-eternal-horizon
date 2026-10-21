@@ -105,6 +105,8 @@ export class HudManager {
     this._root.hidden = !visible
   }
 
+  resetRun(): void { this._aiTimer = 0; this._aiIndex = 0 }
+
   setPausedDimmed(dimmed: boolean): void {
     this._root.style.opacity = dimmed ? String(BALANCE.hud.pausedOpacity) : '1'
   }
@@ -127,7 +129,12 @@ export class HudManager {
     }
 
     this._pilot.textContent = `[PILOT STATUS: ${stubs.pilotStatus}]`
-    this._radio.textContent = `[${stubs.radioLabel}]`
+    const encounter = snapshot.encounter
+    this._radio.textContent = encounter
+      ? encounter.phase === 'ENTERING' ? '[IKARUS: ENTRANDO NO SETOR]'
+        : encounter.phase === 'TRANSITION' ? '[PREPARANDO PRÓXIMA SPRINT]'
+          : `[SPRINT ${encounter.sprint} · WAVE ${encounter.wave}/49${encounter.wave === 49 ? ' · MINIBOSS' : ''}]`
+      : `[${stubs.radioLabel}]`
     const aiLine = stubs.aiLines[this._aiIndex] ?? stubs.aiLines[0] ?? ''
     this._ai.textContent = `AI: "${aiLine}"`
 
@@ -144,7 +151,7 @@ export class HudManager {
     }
 
     this._primary.textContent = `[PRIMARY: ${weaponLabel(extras.activeWeapon, extras.weaponLevel)}]`
-    const charges = stubs.bombCharges
+    const charges = snapshot.bombCharges ?? stubs.bombCharges
     this._special.textContent = `[SPECIAL: ${stubs.bombName} x${charges} [${bombDots(charges)}]]`
 
     this._statsBar.textContent = formatHudStatsBar(snapshot.summary)

@@ -29,6 +29,11 @@ const themeSpecs = [
   '../.docs3/specs/char/CHAR-05.spec.ts',
   '../.docs3/specs/char/CHAR-06.spec.ts',
   '../.docs3/specs/equipment/EQP-02.spec.ts',
+  '../.docs3/specs/rankings/RNK-01.spec.ts',
+  '../.docs3/specs/rankings/RNK-02.spec.ts',
+  '../.docs3/specs/rankings/RNK-04.spec.ts',
+  '../.docs3/specs/rankings/RNK-05.spec.ts',
+  '../.docs3/specs/run-meta/SCENE-04-result.spec.ts',
 ]
 
 export default defineConfig({
@@ -36,6 +41,7 @@ export default defineConfig({
     include: ['src/**/*.test.ts', ...themeSpecs],
     environment: 'node',
     globals: false,
+    maxWorkers: 4,
     passWithNoTests: true,
   },
 })

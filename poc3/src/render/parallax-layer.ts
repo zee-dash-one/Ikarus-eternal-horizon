@@ -16,8 +16,8 @@ import type { PerspectiveCamera } from 'three'
 import type { ParallaxLayerBalance } from '../core/balancer.ts'
 import { DEG2RAD } from '../core/math.ts'
 
-function rand(min: number, max: number): number {
-  return min + Math.random() * (max - min)
+function rand(min: number, max: number, random: () => number): number {
+  return min + random() * (max - min)
 }
 
 function disposeMaterial(material: PointsMaterial | GridHelper['material']): void {
@@ -50,7 +50,7 @@ export class ParallaxLayer {
   private _camZ = 0
   private _disposed = false
 
-  constructor(config: ParallaxLayerBalance) {
+  constructor(config: ParallaxLayerBalance, private readonly _random: () => number = Math.random) {
     this.group = new Group()
     this.name = config.name
     this._cfg = config
@@ -214,9 +214,9 @@ export class ParallaxLayer {
   ): void {
     const cfg = this._cfg
     const o = i * 3
-    positions[o] = rand(-cfg.gridSize / 2, cfg.gridSize / 2)
-    positions[o + 1] = rand(-cfg.gridSize * 0.25, cfg.gridSize * 0.25)
-    positions[o + 2] = rand(cfg.zNearWrap, cfg.zFar)
-    speeds[i] = 1 + rand(-cfg.speedJitter, cfg.speedJitter)
+    positions[o] = rand(-cfg.gridSize / 2, cfg.gridSize / 2, this._random)
+    positions[o + 1] = rand(-cfg.gridSize * 0.25, cfg.gridSize * 0.25, this._random)
+    positions[o + 2] = rand(cfg.zNearWrap, cfg.zFar, this._random)
+    speeds[i] = 1 + rand(-cfg.speedJitter, cfg.speedJitter, this._random)
   }
 }

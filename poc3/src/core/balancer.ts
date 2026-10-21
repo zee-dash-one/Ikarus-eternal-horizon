@@ -299,6 +299,11 @@ export interface PlayerBalance {
 }
 
 export interface BalanceConfig {
+  readonly scoring: {
+    readonly enemy: number
+    readonly miniboss: number
+    readonly meteors: Readonly<Record<'S' | 'M' | 'L', number>>
+  }
   readonly layout: LayoutBalance
   readonly render: RenderBalance
   readonly controls: ControlsBalance
@@ -315,6 +320,7 @@ export interface BalanceConfig {
 }
 
 export const BALANCE: BalanceConfig = {
+  scoring: { enemy: 100, miniboss: 1000, meteors: { S: 10, M: 25, L: 50 } },
   layout: {
     aspect: 16 / 9,
     letterboxColor: 0x05040a,

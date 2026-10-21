@@ -19,7 +19,7 @@ export class TitleScene implements GameScene {
   }
 
   update(): void {
-    /* auto-enter run on action in full game; manual via goToRun */
+    /* Menu actions are handled by RunMetaFlow and the React shell overlay. */
   }
 
   syncRender(): void {

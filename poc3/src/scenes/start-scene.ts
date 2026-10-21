@@ -37,7 +37,7 @@ export class StartScene implements GameScene {
     }
     if (this._clickedEarly && this._startEnabled) {
       this._clickedEarly = false
-      this._deps.sound.unlock()
+      this._mounted = false
       this._deps.onStart()
     }
   }
@@ -47,8 +47,10 @@ export class StartScene implements GameScene {
   }
 
   tryStart(): void {
+    if (!this._mounted) return
+    this._deps.sound.unlock()
     if (this._startEnabled) {
-      this._deps.sound.unlock()
+      this._mounted = false
       this._deps.onStart()
     } else {
       this._clickedEarly = true

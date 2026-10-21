@@ -1,8 +1,13 @@
 # Ikarus Eternal Horizon — Scenes & Boot Flow
 
+> **Part B implementation (2026-10-19):** TitleScene retains the shared canvas background; an accessible React menu overlay offers Play / Rankings. Result and Rankings are conditional React DOM panels under #run-meta-root (active IDs #result-root / #rankings-root). DEAD disposes Run before Result; DRIFTING keeps the attempt alive. New attempts reset simulation managers. Quit returns to Title without a score submission. World/sprint preparation remains FLOW/D/E work; the current start gate obtains the run ticket.
+
+
 > **Current flow (D47–D50):** DEV email-only Login → Start/audio unlock → Title (Play / Rankings) → preparation → Run entry → sprint combat → Result. Rankings opens from Title or Result. No automatic Title → Run. [Run preparation spec](./run-flow.spec.MD) owns FLOW-01–09; older Google/password acceptance below applies only after revised production auth lands.
 
 ## Run gate revision
+
+**D implemented (2026-10-19):** Title shows progress/Cancel across six preparation stages. The run ticket uses content version poc3-2; the manager snapshots BALANCE, validates registries/catalog/plans, reserves only the initial encounter, and warms the detached View. GameApp mounts the same graph only after READY; errors/cancel release it. The entry animation and actual Sprint/Wave activation described next remain E work.
 
 Title remains visible and responsive while `RunPreparationManager` creates enemy points, asteroid points, three parallax levels, sector content, all 50 wave plans and the first inactive encounter. Only after READY does `SceneManager` mount Run. Ikarus enters before Sprint 1 starts; wave 0 and asteroid timers activate on `PlayerEntryCompleted`. Next-sprint preparation runs with bounded work during the current sprint. Error allows retry/back; cancellation prevents late scene mounts. RunScene presents snapshots; it does not own combat clocks or score.
 
@@ -237,7 +242,7 @@ Selecting a rail item opens a **panel/tab inside Pause** (same overlay; not `win
 
 #### Time freeze
 
-- On open: set loop / RunState to **paused**; gameplay `update(dt)` still polls `InputManager` for **`Start`** edge only, then returns before sim; rAF paints frozen frame + overlay.
+- On open: set loop / RunState to **paused**. `GameLoop.beforeFrame` polls `InputManager` for the **`Start`** edge outside the sim gate, including zero-tick frames; rAF paints the frozen snapshot + overlay. `RunScene` does not poll input or step gameplay (part C).
 - On close (Exit / pause toggle): clear pause; **no dt catch-up** burst.
 - Input: **only** virtual **`Start`** (from bound physical pause controls per [`input.spec.MD`](./input.spec.MD) `CTRL-02`) toggles Pause while Run is active. **No hardcoded Esc or gamepad Start** in `game-app`. **IJKL/UO** are never pause keys — when Free Cam is on they fly the camera behind the overlay.
 - POC3 interim: near-fullscreen **DOM** pause panel (React) with tabs Controls · Audio · Graphics · Dev; frozen Run canvas visible behind dimmer (`HUD` dimmed). Exit button **#pause-exit**; DOM keyboard/gamepad navigation per `CTRL-03` (`pause-menu-nav.ts`).

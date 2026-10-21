@@ -1,5 +1,7 @@
 # Ikarus Eternal Horizon — ENEMY — Individual Craft
 
+> **Runtime E (2026-10-20):** EnemyManager pools full CHAR crafts, runs five individual strategies, uses Summary speed, smooths headings, emits pooled hostile bolts and resolves damage/destruction. Special miniboss cannot flee or time out. See [run-flow](./run-flow.spec.MD#implemented-execution-part-e) and [POC2 study](./poc2-enemy-study.spec.MD). Older theme/TODO notes below describe the original contract milestone; additional content/polish remain F scope.
+
 > **D48/D49 integration:** enemy movement and group behavior are the only permitted POC2 study references. Sector/faction catalogs restrict archetypes; WaveManager consumes deterministic WavePlans and EnemyManager owns entities/AI. No independent kill-based spawning/miniboss clock. See [run-flow.spec.MD](./run-flow.spec.MD).
 
 

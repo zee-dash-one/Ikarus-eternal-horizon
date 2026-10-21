@@ -1,4 +1,5 @@
 import type { IntegrityState } from './sheet/char-sheet.ts'
+import type { EnemyClass, MeteorSize } from './run-plan.ts'
 
 export interface PlayerPose {
   readonly x: number
@@ -27,6 +28,18 @@ export interface SummarySnapshot {
 }
 
 export interface WorldSnapshot {
+  readonly crafting?: { readonly name: string; readonly progress: number }
+  readonly weaponLevel?: number
+  readonly bombCharges?: number
+  readonly drops?: readonly ShotSnapshot[]
+  readonly areaAttack?: { readonly kind: 'beam' | 'mjolnir' | 'nova'; readonly x: number; readonly z: number; readonly damage: number }
+
+  readonly encounter?: EncounterSnapshot
+  readonly enemies?: readonly { readonly id: string; readonly x: number; readonly z: number; readonly rotY: number; readonly class: EnemyClass; readonly boss: boolean }[]
+  readonly meteors?: readonly { readonly id: string; readonly x: number; readonly z: number; readonly size: MeteorSize }[]
+  readonly hostileShots?: readonly ShotSnapshot[]
+  readonly shots?: readonly ShotSnapshot[]
+  readonly activeWeapon?: string
   readonly tick: number
   readonly paused: boolean
   readonly player: PlayerPose
@@ -35,6 +48,15 @@ export interface WorldSnapshot {
   readonly kills: number
   readonly score: number
 }
+
+export interface EncounterSnapshot {
+  readonly phase: 'ENTERING' | 'ACTIVE' | 'TRANSITION'
+  readonly sprint: number; readonly wave: number; readonly sector: string
+  readonly entryProgress: number; readonly nextReady: boolean; readonly retainedPlans: number
+  readonly enemies: number; readonly meteors: number; readonly omittedMeteors: number; readonly waitingForEnemyPool: boolean
+}
+
+export interface ShotSnapshot { readonly id: number; readonly x: number; readonly z: number; readonly radius?: number; readonly weapon?: string }
 
 export function createEmptyWorldSnapshot(): WorldSnapshot {
   return {

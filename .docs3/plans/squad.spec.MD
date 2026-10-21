@@ -1,5 +1,7 @@
 # Ikarus Eternal Horizon — SQUAD — Coordinated Group
 
+> **Runtime E (2026-10-20):** SquadManager coordinates V/Circle/LineDivers slots and independent five-state group strategy, elects a leader by Summary LVL/ID, and breaks after losses. Individual Flee/Fury remains EnemyManager state. The initial catalog does not select mixed CircleII/III/IV recipes; expansion remains F scope. See [run-flow](./run-flow.spec.MD#implemented-execution-part-e). Original contract milestone notes below are historical.
+
 > **D48/D49 integration:** study POC2 movement/formations/group logic only; implement against POC3 CHAR/Summary contracts. Squads are instantiated from WavePlan recipes and report member completion; a retreat grants no kill reward. Wave/sprint advancement belongs to WaveManager/RunFlowManager. See [run-flow.spec.MD](./run-flow.spec.MD).
 
 

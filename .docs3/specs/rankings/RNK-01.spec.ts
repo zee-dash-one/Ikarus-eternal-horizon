@@ -1,37 +1,18 @@
-/**
- * Naming: .docs3/specs/rankings/RNK-01.spec.ts
- *
- * -----------------------------------------------------------------
- * Source     : plans/rankings.spec.MD → RNK-01
- * Decision(s): D30 D39
- * Tags       : tag_g_rankings tag_s_rankings_local_adapter
- * Priority   : must
- * Theme      : Theme 10 — Run meta
- * Render     : N/A (Local adapter; DOM UI in RNK-04)
- * -----------------------------------------------------------------
- *
- * Acceptance (verbatim from Requirements):
- *
- *   "Survives reload"
- */
+import { describe, it, expect } from 'vitest'
+import { RankingManager } from '../../../poc3/src/systems/ranking-manager.ts'
+import type { RankingPlatformAdapter } from '../../../shared/rankings.ts'
 
-import { existsSync, readFileSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { describe, it, expect } from 'vitest';
-
-const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
-const RNK = resolve(REPO_ROOT, 'poc3/src/systems/ranking-manager.ts');
-
-describe('RNK-01 — Local bests survive reload', () => {
-  it('RankingManager module exists', () => {
-    expect(existsSync(RNK), 'ranking-manager.ts').toBe(true);
-    expect(readFileSync(RNK, 'utf8')).toMatch(/RankingManager/);
-  });
-
-  it('survives reload', () => {
-    expect(true).toBe(false);
-  });
-
-  it.todo('LocalRankingAdapter always mirrors via Dexie (D39)');
-});
+/** RNK-01 / D50: server is truth; cache must rehydrate and reset across accounts. SQLite restart is tested in demo-host. */
+describe('RNK-01 — account bests', () => {
+  it('rehydrates a new manager from the adapter and clears cache on logout', async () => {
+    const adapter: RankingPlatformAdapter = {
+      startRun: async () => { throw new Error('unused') }, submitRun: async () => { throw new Error('unused') }, fetchBoard: async () => { throw new Error('unused') },
+      fetchBests: async () => ({ weekly: 20, monthly: 30, annual: 30, eternal: 50 }),
+    }
+    const first = new RankingManager(); first.reset(adapter); await first.refreshBests()
+    const reload = new RankingManager(); reload.reset(adapter); await reload.refreshBests()
+    expect(reload.highScore).toBe(first.highScore)
+    reload.reset(null)
+    expect(reload.highScore).toBe(0)
+  })
+})

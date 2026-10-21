@@ -1,4 +1,18 @@
 # Ikarus Eternal Horizon — Rankings — Leaderboards
+> **Part B implementation (2026-10-19):** DEV SQLite standings are live through `RankingManager` + account-bound `DemoRankingAdapter`. Title exposes Play / Rankings; Result exposes retry / menu / Rankings. React panels mount under `#run-meta-root`, with `#result-root` / `#rankings-root` IDs while active. F makes Survivor playable with separated tickets/bests/boards and adds an account-bound durable outbox.
+
+### Current DEV protocol
+
+- `POST /api/rankings/start` accepts Normal/Survivor + build/content version and issues server-generated runId, seed and an opaque 24-hour ticket bound to the authenticated user. No gameplay starts before this gate succeeds.
+- `POST /api/rankings/submit` accepts the ticket and a frozen DEAD summary: mode, score, kills, durationMs, diagnostic client endedAt, seed, versions and debugModified. The host validates types/bounds/metadata/ownership and stores an input fingerprint transactionally. Identical retry returns the original receipt; conflicting reuse is 409. First accepted **server UTC** time determines period membership. A DEV ticket is not production anticheat.
+- DEAD with zero points is stored for history but excluded from boards, as are debugger-modified runs. Quit/cancel never submits. This revises the old "submit only score > 0" note below: only positive eligible scores participate in standings.
+- `GET /api/rankings/board?mode=normal&period=weekly|monthly|annual|eternal` returns top 50, total players and the signed-in user's personal best/rank even outside the top 50. Modes stay separate; Both modes are accepted for run creation and validated against ticket metadata. `GET /api/rankings/bests?mode=normal|survivor` warms per-account HUD bests outside the frame loop.
+- One best per user/mode/window; order = score descending, kills descending, duration ascending, runId ascending. Historical runs remain intact on period rollover. No email in public rows.
+- In-page retries keep the exact payload/token; pending results block navigation/logout until recorded or explicitly discarded. Unload protection warns while pending. F persists a per-account pending message in IndexedDB before upload and restores it after reload. SQLite becomes authoritative after acknowledgement. Ticket expiry and browser-storage deletion remain explicit limits.
+- Scoring is event-driven (`enemy_destroyed`, `meteor_destroyed`) and deduplicated by destruction eventId, with values in `BALANCE.scoring`. DamageManager can publish credited enemy DEAD events. RunSimulation consumes the bus (part C); HUD reads cached bests. D/E/F now run combat and economy; idle flight scores zero. No synthetic targets or fixture points were added to normal gameplay.
+- Pause → Dev → Testar fim de partida exercises DEAD/Result and is always ineligible. Any balance edit taints the current and subsequent runs until page reload, since modified BALANCE remains in memory.
+- Server schema migration 2 adds run tickets and submission fingerprints while preserving part A users/settings/runs. Tests cover migration, restart, calendar boundaries, ties, modes, invalid requests and idempotency.
+
 
 > **Itch release clarification (2026-10-19):** shared rankings use our HTTPS service behind ItchRankingAdapter, with the same four UTC periods; do not implement against a presumed Itch leaderboard API. IndexedDB alone provides browser-local data, not shared boards. See [itch-release.spec.MD](./itch-release.spec.MD), ITCH-06.
 
@@ -6,7 +20,7 @@
 
 ## DEV acceptance additions
 
-- Normal first; preserve separate mode keys, show Survivor unavailable until playable. Four working period tabs are required now, not deferred UI polish.
+- Normal and Survivor are playable; keep all four period keys isolated per mode. Four working period tabs are required now, not deferred UI polish.
 - Server is authoritative for UTC buckets; weeks start Monday, months and years are civil periods, eternal has no lower bound. Use half-open intervals `[start, nextStart)`; do not truncate subsecond timestamps at 23:59:59.
 - Store run history in SQLite, one run per unique runId; repeated result callbacks/retries cannot duplicate score. Each board selects the best eligible run per user/mode within that period. Different periods may select different runs.
 - Order: score descending, kills descending, duration ascending, runId ascending for a stable final tie-break. Show public display name, never email.
@@ -209,7 +223,7 @@ Source satellite: `[../../.docs2/plans-later/ranking-plan.spec.MD](../../.docs2/
 | --- | --- | --- | --- |
 | `RNK-01` | must | Local bests — Normal Eternal minimum (`LocalRankingAdapter`) | Survives reload |
 | `RNK-02` | should | UTC windows W/M/Y authoritative on server in DEV (D50) | Weekly board resets on Monday UTC |
-| `RNK-03` | defer | Survivor mode playable per table above | Zero loadout, laser only, one-shot |
+| `RNK-03` | implemented F | Survivor mode playable per table above | Zero loadout, laser only, one-shot |
 | `RNK-04` | should | Rankings **DOM** UI: 2 modes × 4 periods (`#rankings-root`, `D42`) | Tabs show separated local bests |
 | `RNK-05` | must | Modes never mix on a board | Survivor score never listed under Normal |
 | `RNK-06` | defer | `SteamRankingAdapter` — 8 boards, KeepBest | Score on correct `LB_*` board |

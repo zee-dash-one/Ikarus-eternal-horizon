@@ -1,7 +1,7 @@
 import type { DatabaseSync } from 'node:sqlite'
 
 /** Append migrations; never edit an already shipped schema version. */
-const migrations = [
+export const MIGRATIONS: readonly string[] = [
   `CREATE TABLE users (
      id TEXT PRIMARY KEY,
      email_normalized TEXT NOT NULL UNIQUE,
@@ -38,6 +38,19 @@ const migrations = [
    ) STRICT;
    CREATE INDEX runs_boards ON runs(mode, eligible, ended_at_utc, score DESC);
    CREATE INDEX runs_user ON runs(user_id, mode, ended_at_utc);`,
+  `ALTER TABLE runs ADD COLUMN submission_hash TEXT;
+   CREATE TABLE run_tickets (
+     run_id TEXT PRIMARY KEY,
+     user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+     token_hash TEXT NOT NULL,
+     mode TEXT NOT NULL CHECK(mode IN ('normal', 'survivor')),
+     seed TEXT NOT NULL,
+     build_version TEXT NOT NULL,
+     content_version TEXT NOT NULL,
+     started_at INTEGER NOT NULL,
+     expires_at INTEGER NOT NULL
+   ) STRICT;
+   CREATE INDEX run_tickets_user ON run_tickets(user_id);`,
 ]
 
 export function migrate(db: DatabaseSync): number {
@@ -45,11 +58,11 @@ export function migrate(db: DatabaseSync): number {
   db.exec('CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER PRIMARY KEY, applied_at INTEGER NOT NULL) STRICT')
   const row = db.prepare('SELECT COALESCE(MAX(version), 0) AS version FROM schema_migrations').get()
   let version = Number(row?.version ?? 0)
-  if (version > migrations.length) throw new Error('Database schema is newer than this server')
-  for (let i = version; i < migrations.length; i++) {
+  if (version > MIGRATIONS.length) throw new Error('Database schema is newer than this server')
+  for (let i = version; i < MIGRATIONS.length; i++) {
     db.exec('BEGIN IMMEDIATE')
     try {
-      db.exec(migrations[i])
+      db.exec(MIGRATIONS[i])
       db.prepare('INSERT INTO schema_migrations(version, applied_at) VALUES (?, ?)').run(i + 1, Date.now())
       db.exec('COMMIT')
       version = i + 1

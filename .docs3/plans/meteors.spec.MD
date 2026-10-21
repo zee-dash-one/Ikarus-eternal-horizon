@@ -1,5 +1,7 @@
 # Ikarus Eternal Horizon — Meteors (Environmental Pressure)
 
+> **Runtime E (2026-10-20):** MeteorManager consumes planned events, activates pooled S/M/L state, drifts, despawns and handles HP through DamageManager. CombatManager resolves swept shot/contact hits. Destruction emits score and `drop_requested`; contact/despawn/transition retirement gives neither. Overflow increments omissions without retry bursts. Loot materialization, optional splitting and VFX remain F work. See [run-flow](./run-flow.spec.MD#implemented-execution-part-e).
+
 > **D49 scheduling:** separate asteroid spawn-point registry and deterministic sprint-time sequence, planned before Run starts. MeteorManager consumes these events, independently of enemy clearance; no competing random timer. First batch is staged inactive before entry; pause freezes clocks. See [run-flow.spec.MD](./run-flow.spec.MD) for extension, pool exhaustion and sprint handoff.
 
 
@@ -60,7 +62,7 @@ RESUME: MeteorManager drives lanes; off-field recycle uses RUL-02 box.
 | Rule | Detail |
 | --- | --- |
 | Spawn | Volumes in `BALANCE.meteors.spawn` (left / right / front — same idea as enemy gates, **no** Enemy Base SM) |
-| Drift | Constant velocity on gameplay X/Y; no Full Sheet reads |
+| Drift | Constant velocity on gameplay X/Z (C06); no Full Sheet reads |
 | Despawn | Outside [`world.spec.MD`](./world.spec.MD) `RUL-02` box → release to pool **without** loot |
 | Pause | Drift does not advance while Core ticks are gated (`D21`) |
 | Mix | Meteors share the field with enemies; collision matrix decides pairs |

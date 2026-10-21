@@ -1,3 +1,6 @@
+import { DEFAULT_RUN_PREPARATION } from './run-balance.ts'
+import type { RunPreparationBalance } from './run-plan.ts'
+
 const PARALLAX_GAIN_UNIT = 0.015
 
 export interface LayoutBalance {
@@ -299,6 +302,7 @@ export interface PlayerBalance {
 }
 
 export interface BalanceConfig {
+  readonly preparation: RunPreparationBalance
   readonly scoring: {
     readonly enemy: number
     readonly miniboss: number
@@ -320,6 +324,7 @@ export interface BalanceConfig {
 }
 
 export const BALANCE: BalanceConfig = {
+  preparation: DEFAULT_RUN_PREPARATION,
   scoring: { enemy: 100, miniboss: 1000, meteors: { S: 10, M: 25, L: 50 } },
   layout: {
     aspect: 16 / 9,

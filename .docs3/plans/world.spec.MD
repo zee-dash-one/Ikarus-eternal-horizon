@@ -1,6 +1,8 @@
 # Ikarus Eternal Horizon — World Presentation
 
-> **D49 preparation:** allocate exactly three parallax levels (far/middle/near) before mounting Run; configurations come from BALANCE. Spawn registries are separate for enemies and asteroids. Resolve the existing docs X/Y versus runtime x/z mapping explicitly before new spawn code. See [run-flow.spec.MD](./run-flow.spec.MD).
+> **D49 / C06:** canonical gameplay plane is **X/Z** (right +X, up/forward -Z); world Y is visual height. Use `playfieldToWorld` / `worldToPlayfield` at View boundaries; new spawn/plan coordinates use x/z. This supersedes the older X/Y terminology below. Allocate three parallax levels before Run; enemy/asteroid spawn registries stay separate. See [run-flow.spec.MD](./run-flow.spec.MD).
+
+> **D implemented (2026-10-19):** SpawnPointManager validates independent registries against bounds/envelope and safe entry. RunPreparationManager allocates the three BALANCE parallax levels before READY; RunScene adopts that prepared graph. Initial encounter meshes stay hidden/noncollidable. Emission/movement/collision belongs to E; settings and current tuning are in [run-flow.spec.MD](./run-flow.spec.MD).
 
 
 tag_g_world tag_s_world_camera_rig tag_s_world_parallax
@@ -45,7 +47,7 @@ RESUME: Landscape 16:9 playfield with letterbox; docs2 portrait 540×960 retired
 | Paths | Game assets are **relative** URLs (Itch/Poki/Demo HTTPS-safe — `BLD-06`). |
 | Numbers | CSS canvas size / safe margins live in `BALANCE.layout` only. |
 
-Gameplay plane stays **X/Y** (Z visual) — [`planning.spec.MD`](./planning.spec.MD) game card.
+Gameplay plane is **X/Z**; **Y** is visual height (C06). Earlier game-card X/Y wording is historical; current coordinates follow [run-flow.spec.MD](./run-flow.spec.MD).
 
 ---
 
@@ -126,7 +128,7 @@ RESUME: One despawn box — shots, meteors, drops, enemies recycle off-field; no
 
 | Rule | Detail |
 | --- | --- |
-| Box | `BALANCE.world.despawn` — axis-aligned X/Y (gameplay plane) plus a Z visual slack |
+| Box | `BALANCE.world.despawn` — axis-aligned X/Z (gameplay plane); visual Y has no gameplay extent |
 | Recycle | Entity outside the box → owning `*Manager` **releases to pool** (never `dispose` GPU from Core) |
 | Who | `ShotManager` · `MeteorManager` · `DropManager` · `EnemyManager` (and bombs when they exist) |
 | Player | Player craft is **clamped** to the playfield; it does **not** despawn |

@@ -8,6 +8,7 @@ import { BALANCE } from '../core/balancer.ts'
 import { DEG2RAD } from '../core/math.ts'
 import type { CameraState } from '../systems/camera-manager.ts'
 import type { WorldSnapshot } from '../core/world-snapshot.ts'
+import type { Group } from 'three'
 
 export interface GameRendererOptions {
   readonly canvas: HTMLCanvasElement
@@ -75,6 +76,14 @@ export class GameRenderer {
 
   render(): void {
     this._renderer.render(this.scene, this.camera)
+  }
+
+  /** Compile prepared assets on a detached scene; this never presents a combat frame. */
+  prewarm(root: Group): void {
+    const staging = new Scene()
+    staging.add(root)
+    try { this._renderer.compile(staging, this.camera) }
+    finally { staging.remove(root) }
   }
 
   dispose(): void {

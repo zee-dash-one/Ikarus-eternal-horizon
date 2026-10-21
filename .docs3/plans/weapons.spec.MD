@@ -1,5 +1,8 @@
 # Ikarus Eternal Horizon — Weapons & Ordnance
 
+> **Runtime F (2026-10-21):** the playable per-run catalog is integrated and tested; [consolidation.spec.MD](./consolidation.spec.MD) records the shipped profiles, bounded pools, recipes, equipment and Survivor restrictions. Older theme/defer notes below describe the original milestones; unshipped GDD catalog entries remain future content.
+
+
 tag_g_combat tag_s_combat_weapon_fire tag_s_combat_weapon_catalog
 RESUME: Primary/Secondary catalog (Laser · Plasma · Beam · Mjolnir); ShotManager pools; FiringManager virtual pad; Special Ordnance on Bomb slot.
 

@@ -1,5 +1,8 @@
 # Ikarus Eternal Horizon — Drops & Collection
 
+> **Runtime F (2026-10-21):** the playable per-run catalog is integrated and tested; [consolidation.spec.MD](./consolidation.spec.MD) records the shipped profiles, bounded pools, recipes, equipment and Survivor restrictions. Older theme/defer notes below describe the original milestones; unshipped GDD catalog entries remain future content.
+
+
 tag_g_drops tag_s_drops_manager tag_s_drops_loot_table
 RESUME: DropManager — loot tables on kill, pooled Drop fragments, magnet pull, collect into run inventory; layer Drop; zero alloc on hot path.
 

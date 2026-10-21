@@ -38,3 +38,8 @@ demo-host/data/
 dev.err
 dev.out
 
+
+# Reproducible release output and local benchmark reports
+poc3/dist-release/
+poc3/releases/
+poc3/benchmark-results/

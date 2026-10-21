@@ -7,14 +7,18 @@ import { RankingError } from './run-repository.ts'
 import { validateStart, validateSubmission } from './ranking-validation.ts'
 import { RANKING_PERIODS, type RankingPeriod } from '../../shared/rankings.ts'
 
+import { AuthServiceUnavailable, createProductionAuth, type ProductionAuth } from './production-auth.ts'
+
 const COOKIE = 'ikarus_session'
 const SETTING_KEYS = new Set(['controls', 'audio', 'graphics', 'progress', 'achievements', 'dev-content'])
 type Variables = { session: PublicSession }
 
-export function createApp({ repository, config, now = Date.now }: { repository: LocalRepository; config: AppConfig; now?: () => number }) {
-  const resolveSession = (cookie: string | undefined): PublicSession | null => {
+export function createApp({ repository, config, now = Date.now, productionAuth }: { repository: LocalRepository; config: AppConfig; now?: () => number; productionAuth?: ProductionAuth }) {
+  const auth = productionAuth ?? createProductionAuth(config, repository, now)
+  const resolveSession = async (cookie: string | undefined, authorization: string | undefined): Promise<PublicSession | null> => {
     if (config.profile === 'dev') return repository.probeSession(cookie, now())
-    return null
+    if (!auth || !authorization?.startsWith('Bearer ') || authorization.length > 8192) return null
+    return auth.resolve(authorization.slice(7))
   }
   const app = new Hono<{ Variables: Variables }>()
   app.use('/api/*', async (c, next) => {
@@ -48,7 +52,7 @@ export function createApp({ repository, config, now = Date.now }: { repository: 
     })
   }
   app.get('/api/me', async (c) => {
-    const session = resolveSession(getCookie(c, COOKIE))
+    const session = await resolveSession(getCookie(c, COOKIE), c.req.header('Authorization'))
     return session ? c.json(session) : c.json({ error: 'unauthorized' }, 401)
   })
   app.post('/api/auth/logout', (c) => {
@@ -58,7 +62,7 @@ export function createApp({ repository, config, now = Date.now }: { repository: 
     return c.json({ ok: true })
   })
   const requireSession: import('hono').MiddlewareHandler<{ Variables: Variables }> = async (c, next) => {
-    const session = resolveSession(getCookie(c, COOKIE))
+    const session = await resolveSession(getCookie(c, COOKIE), c.req.header('Authorization'))
     if (!session) return c.json({ error: 'unauthorized' }, 401)
     const expectedUser = c.req.header('X-Ikarus-User')
     if (expectedUser && expectedUser !== session.userId) return c.json({ error: 'account_changed' }, 409)
@@ -105,6 +109,7 @@ export function createApp({ repository, config, now = Date.now }: { repository: 
     return c.json({ ok: true })
   })
   app.onError((error, c) => {
+    if (error instanceof AuthServiceUnavailable) return c.json({ error: 'auth_unavailable' }, 503)
     if (error instanceof RankingError) return c.json({ error: error.message }, error.status)
     console.error('DemoHost request failed:', error.message)
     return c.json({ error: 'service_error' }, 500)

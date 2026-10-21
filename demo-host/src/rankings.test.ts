@@ -152,7 +152,7 @@ test('migration from part A preserves users and existing runs while adding ticke
   db.close()
   const migrated = new LocalRepository(path)
   repos.push(migrated)
-  assert.equal(migrated.schemaVersion, 2)
+  assert.equal(migrated.schemaVersion, 3)
   assert.equal(migrated.runs.findForUser('old-run', 'old-user')?.score, 500)
   assert.equal(migrated.runs.start('old-user', 'test', '1', 1000).mode, 'normal')
 })

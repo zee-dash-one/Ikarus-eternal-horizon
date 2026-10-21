@@ -5,6 +5,8 @@ export interface AppConfig {
   readonly secureCookies: boolean
   readonly allowedOrigins: readonly string[]
   readonly sessionTtlMs: number
+  readonly supabaseUrl?: string
+  readonly supabasePublishableKey?: string
 }
 
 export function readConfig(env: Record<string, string | undefined> = process.env, args = process.argv.slice(2)) {
@@ -18,8 +20,12 @@ export function readConfig(env: Record<string, string | undefined> = process.env
     if (!['http:', 'https:'].includes(url.protocol) || url.origin !== value.trim()) throw new Error('Allowed origins must be exact HTTP(S) origins')
     return url.origin
   })
+  if (profile === 'production' && env.NODE_ENV === 'production') {
+    if (!env.SUPABASE_URL || !env.SUPABASE_PUBLISHABLE_KEY || !env.IKARUS_ALLOWED_ORIGINS || !env.IKARUS_DB_PATH) throw new Error('Production requires Supabase URL/public key, exact HTTPS origins and a durable database path')
+    if (new URL(env.SUPABASE_URL).protocol !== 'https:' || allowedOrigins.some((origin) => new URL(origin).protocol !== 'https:')) throw new Error('Production auth and origins require HTTPS')
+  }
   return {
-    profile, secureCookies: !allowLocalHttp, allowedOrigins,
+    profile, supabaseUrl: env.SUPABASE_URL, supabasePublishableKey: env.SUPABASE_PUBLISHABLE_KEY, secureCookies: !allowLocalHttp, allowedOrigins,
     sessionTtlMs: 7 * 24 * 60 * 60 * 1000,
     port, hostname: '127.0.0.1',
     databasePath: env.IKARUS_DB_PATH ?? fileURLToPath(new URL('../data/ikarus-dev.sqlite', import.meta.url)),

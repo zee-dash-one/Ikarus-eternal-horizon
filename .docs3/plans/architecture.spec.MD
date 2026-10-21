@@ -4,7 +4,11 @@
 
 > **Current DEV contract (D47/D49, 2026-10-02):** local DemoHost + SQLite; email-only mock auth; separated preparation/simulation/View. VPS/OAuth/Dexie platform material below is future production scope where it conflicts with this section. Active backlog: [todo-codex.md](../todo-codex.md).
 
-## Local development baseline — implementation pending
+## Local development baseline — A/B/C/D/E implemented
+
+Part C implements `RunSimulation` (DOM-free input → immutable snapshot/events), a disposable `RunContext` per attempt, and `RunFlowManager` with async cancellation/generation guards. `RunScene` is presentation only. UI input polling continues while paused; the loop caps delta at 250 ms / 5 fixed ticks and drops excess debt. Logical coordinates are X/Z, converted explicitly to world X/Y/Z at the View boundary. Detailed implemented policy and D/E boundaries: [run-flow.spec.MD](./run-flow.spec.MD).
+
+Part E adds protected logical entry, WaveManager, separate Enemy/Squad state, pooled asteroids/hostile bolts, swept collision/damage and bounded current/next sprint planning outside the tick. Prepared View caches display enemy/meteor/bolt snapshots. Score authorization is bounded by emitted entities; no growing destruction-ID history in live gameplay.
 
 - `poc3/` Vite proxies `/api` to `demo-host/` on loopback. Runtime profile is explicit on server and client; browser DEV flags alone do not authorize mock routes.
 - SQLite is a local server file (default `demo-host/data/ikarus-dev.sqlite`, configurable); migrations run before serving. Ignore DB/WAL/SHM files in Git. Driver selection must match the supported Node runtime.

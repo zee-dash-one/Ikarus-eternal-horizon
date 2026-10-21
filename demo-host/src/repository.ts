@@ -8,7 +8,7 @@ import { RunRepository } from './run-repository.ts'
 export interface PublicSession {
   readonly userId: string
   readonly displayName: string
-  readonly provider: 'mock'
+  readonly provider: 'mock' | 'email' | 'google'
 }
 function hashToken(token: string): string { return createHash('sha256').update(token).digest('hex') }
 
@@ -24,6 +24,21 @@ export class LocalRepository {
     this.db = new DatabaseSync(path)
     try { this.schemaVersion = migrate(this.db) } catch (error) { this.db.close(); throw error }
     this.runs = new RunRepository(this.db)
+  }
+  resolveExternal(subject: string, provider: 'email' | 'google', now: number): PublicSession {
+    this.db.exec('BEGIN IMMEDIATE')
+    try {
+      let row = this.db.prepare('SELECT u.id, u.display_name FROM external_identities i JOIN users u ON u.id = i.user_id WHERE i.subject = ?').get(subject)
+      if (!row) {
+        const id = randomUUID(), name = `Pilot ${id.slice(0, 8)}`
+        // Namespace external identities. Never link a real identity to an unverified DEV email.
+        this.db.prepare('INSERT INTO users(id, email_normalized, display_name, created_at) VALUES (?, ?, ?, ?)').run(id, `supabase:${subject}`, name, now)
+        this.db.prepare('INSERT INTO external_identities(subject, user_id, provider) VALUES (?, ?, ?)').run(subject, id, provider)
+        row = { id, display_name: name }
+      }
+      this.db.exec('COMMIT')
+      return { userId: String(row.id), displayName: String(row.display_name), provider }
+    } catch (error) { this.db.exec('ROLLBACK'); throw error }
   }
   signIn(email: string, now: number, ttlMs: number, previousToken?: string) {
     const token = randomBytes(32).toString('hex')

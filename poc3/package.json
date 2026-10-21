@@ -13,9 +13,14 @@
     "lint": "eslint src",
     "test": "vitest run",
     "test:watch": "vitest",
-    "verify": "npm run typecheck && npm run lint && npm run test"
+    "verify": "npm run typecheck && npm run lint && npm run test",
+    "build:release": "node scripts/package-release.mjs",
+    "release:check": "node scripts/package-release.mjs --check",
+    "test:release": "node --test scripts/package-release.test.mjs",
+    "benchmark": "vitest run src/systems/run-performance.test.ts"
   },
   "dependencies": {
+    "@supabase/supabase-js": "2.118.0",
     "dexie": "^4.0.11",
     "nipplejs": "^1.0.4",
     "react": "^19.2.8",
@@ -24,6 +29,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@types/node": "24.19.2",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.5",
     "@types/three": "^0.185.4",

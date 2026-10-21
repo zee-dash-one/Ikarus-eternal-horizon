@@ -33,6 +33,6 @@ describe('HTTP auth and account persistence', () => {
     expect((await loadControlSettings(store)).scheme).toBe('keyboard')
     await expect(loadControlSettings(store)).rejects.toThrow(/expirou/)
     await store.save('controls', { schemaVersion: 1, payload: { scheme: 'touch' } })
-    expect(fetch.mock.lastCall?.[1].headers['X-Ikarus-User']).toBe('u1')
+    expect(new Headers(fetch.mock.lastCall?.[1].headers).get('X-Ikarus-User')).toBe('u1')
   })
 })

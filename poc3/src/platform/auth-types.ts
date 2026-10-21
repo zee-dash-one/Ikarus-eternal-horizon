@@ -5,6 +5,7 @@ export interface AuthSession {
 }
 
 export interface AuthCapabilities {
+  readonly password?: boolean
   readonly email: boolean
   readonly google: boolean
   readonly mock: boolean
@@ -13,7 +14,8 @@ export interface AuthCapabilities {
 export interface AuthPlatformAdapter {
   readonly capabilities: AuthCapabilities
   probeSession(): Promise<AuthSession | null>
-  signInWithEmail(email: string): Promise<AuthSession>
-  startGoogleSignIn?(): void
+  signInWithEmail(email: string, password?: string): Promise<AuthSession>
+  signUpWithEmail?(email: string, password: string): Promise<void>
+  startGoogleSignIn?(): void | Promise<void>
   signOut(): Promise<void>
 }

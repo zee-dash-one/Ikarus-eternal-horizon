@@ -6,7 +6,10 @@ export default defineConfig(({ mode }) => {
   return {
   base: './',
   plugins: [react()],
-  define: { 'import.meta.env.VITE_AUTH_PROFILE': JSON.stringify(mode === 'development' ? 'dev' : 'production') },
+  define: {
+    'import.meta.env.VITE_AUTH_PROFILE': JSON.stringify(mode === 'development' ? 'dev' : 'production'),
+    '__BUILD_VERSION__': JSON.stringify(env.IKARUS_BUILD_VERSION ?? '0.1.0'),
+  },
   server: {
     host: '127.0.0.1',
     port: 5173,
@@ -16,6 +19,11 @@ export default defineConfig(({ mode }) => {
   build: {
     outDir: 'dist',
     target: 'es2020',
+    rolldownOptions: { output: { codeSplitting: { groups: [
+      { name: 'three', test: /node_modules[\\/]three/ },
+      { name: 'react', test: /node_modules[\\/](react|react-dom|scheduler)[\\/]/ },
+      { name: 'supabase', test: /node_modules[\\/]@supabase[\\/]/ },
+    ] } } },
   },
   }
 })

@@ -70,6 +70,26 @@ body {
 }
 
 .login__note { margin: 0; color: #a9bad3; font-size: 13px; }
+.run-meta { position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; padding: 24px 16px 70px; overflow-y: auto; background: #020408e8; }
+.run-meta__panel { width: min(500px, 100%); padding: clamp(20px, 4vw, 40px); border: 1px solid #263e50; border-radius: 14px; background: #0b121c; box-shadow: 0 20px 80px #0008; }
+.run-meta__panel--wide { width: min(940px, 100%); }
+.run-meta h1 { margin: 0 0 20px; font-size: clamp(28px, 4vw, 44px); letter-spacing: .06em; outline: none; }
+.run-meta__eyebrow { color: #7dd3fc; letter-spacing: .15em; font-size: 12px; }
+.run-meta__note { color: #a5b5c9; font-size: 13px; line-height: 1.6; }
+.run-meta__actions, .run-meta__tabs { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+.run-meta button { padding: 10px 18px; border: 1px solid #365069; border-radius: 6px; background: #152233; color: #e8f0ff; cursor: pointer; }
+.run-meta button:hover:not(:disabled), .run-meta button:focus-visible { border-color: #7dd3fc; }
+.run-meta button:disabled { opacity: .45; cursor: default; }
+.run-meta button[aria-selected="true"], .run-meta button.run-meta__primary { background: #166496; border-color: #3badd5; }
+.run-meta [role="alert"] { color: #fca5a5; }
+.run-meta__stats { display: grid; gap: 14px; }
+.run-meta__stats div { display: flex; justify-content: space-between; gap: 20px; }
+.run-meta__stats dd { margin: 0; font-weight: 700; }
+.run-meta__table-scroll { overflow: auto; max-height: 45vh; }
+.run-meta table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.run-meta th, .run-meta td { padding: 13px 10px; text-align: left; border-bottom: 1px solid #203045; }
+.run-meta th { font-size: 12px; color: #a5b5c9; }
+.run-meta__current { color: #b5efff; background: #153c50; }
 .account-panel { position: fixed; bottom: 8px; left: 50%; transform: translateX(-50%); z-index: 60; padding: 6px 10px; background: #111827ed; border: 1px solid #334; border-radius: 6px; color: #e8f0ff; font-size: 12px; max-width: calc(100vw - 24px); }
 .account-panel button { margin-left: 10px; cursor: pointer; }
 .account-panel [role="alert"] { color: #fca5a5; margin-top: 6px; }
@@ -821,3 +841,17 @@ body {
   white-space: nowrap;
   letter-spacing: 0.02em;
 }
+
+.lab-recipes { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
+.lab-recipes article { padding: 12px; border: 1px solid #3d5362; border-radius: 8px; }
+button:focus-visible, input:focus-visible { outline: 2px solid #7ef8e1; outline-offset: 3px; }
+.debugger-area { top: 86px; max-width: 280px; pointer-events: none; }
+.debugger-area pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+
+.lab-recipes button, [aria-label="Laboratório da partida"] .run-meta__tabs button {
+  padding: 9px 14px; border: 1px solid #355566; border-radius: 6px;
+  background: #11232f; color: #e5eff7; font: inherit; cursor: pointer;
+}
+.lab-recipes button:disabled { opacity: .45; cursor: default; }
+.lab-recipes article h4 { margin: 0 0 10px; }
+.lab-recipes article p { font-size: 13px; line-height: 1.5; }

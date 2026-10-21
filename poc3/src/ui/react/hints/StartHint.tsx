@@ -22,7 +22,7 @@ export function StartHint() {
 
   return (
     <p>
-      Press <kbd>Enter</kbd> or click to fly — auto-starting…
+      Pressione <kbd>Enter</kbd> ou clique para começar.
     </p>
   )
 }

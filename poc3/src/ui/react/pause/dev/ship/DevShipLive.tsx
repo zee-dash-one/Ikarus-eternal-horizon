@@ -6,6 +6,7 @@ export function DevShipLive() {
 
   return (
     <dl className="pause-dev__live">
+      {live.preparation && <><dt>Preparação</dt><dd>{live.preparation}</dd></>}
       <dt>Integrity</dt>
       <dd>{live.integrity}</dd>
       <dt>Energy</dt>

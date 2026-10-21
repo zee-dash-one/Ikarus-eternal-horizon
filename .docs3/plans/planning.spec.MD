@@ -15,10 +15,10 @@ RESUME: Design hub authority — requirement IDs, locked decisions, coverage mat
 POC3 is the product workstream. POC2 is a study reference **only for enemy movement and group logic**. Docs2 links elsewhere are historical traceability, not implementation instructions or a requirement to port systems.
 
 - Active backlog: [todo-codex.md](../todo-codex.md); old [todo.md](../todo.md) is an implementation history.
-- DEV: email-only mock login and local server SQLite for persistent data. Google and real email auth are future production work; no automatic guest bypass.
+- DEV: email-only mock login and local server SQLite for persistent data. Production Auth code uses Supabase email/password + confirmation and Google; external project/SMTP/Google setup and live QA remain pending. No guest bypass.
 - Run: explicit preparation → ready world → Ikarus entry → Sprint 1 → prepare Sprint 2 during gameplay. Each sprint has **50 waves (0–49), miniboss at 49**. See [run-flow.spec.MD](./run-flow.spec.MD), `FLOW-01`–`09`.
 - Rankings: weekly/monthly/annual/eternal, persisted locally in DEV; accessible from Title and Result.
-- New requirements are planned, not already implemented. D47–D50 supersede conflicting portions of D19/D28/D30/D38/D39/D41/D42/D43 and kill-based progression for this workstream. Production platform designs remain future scope.
+- Parts A–E and F01–F04 are implemented (2026-10-21), including per-run economy, arsenal/crafting, recoverable results and Survivor. F05/F06 code/tooling is delivered, with real-provider configuration and final production validation pending. G remains pending. D47–D50 supersede conflicting portions of D19/D28/D30/D38/D39/D41/D42/D43 and kill-based progression for this workstream. Production platform designs remain future scope.
 
 ## 0. What this hub is (and is not)
 
@@ -43,7 +43,7 @@ POC3 is the product workstream. POC2 is a study reference **only for enemy movem
 | ------------------- | ------------------------------------------------------------------------------------- |
 | **Title**           | Ikarus: Eternal Horizon                                                               |
 | **Genre**           | Shooter roguelite / arcade shmup, 2.5D                                                |
-| **Perspective**     | 3D rendering · gameplay on **X/Y** (Z visual)                                         |
+| **Perspective**     | 3D rendering · gameplay on **X/Z**, Y visual height (C06; right +X, forward -Z)        |
 | **Session**         | Endless runs; sprint/wave difficulty; 50 waves per sprint (0–49)                             |
 | **Modes**           | **Normal** (full systems) · **Survivor** (one-shot, laser-only v1) — [`rankings.spec.MD`](./rankings.spec.MD) · boards never mix |
 | **Playable pillar** | move · fire · shield→integrity risk · **DRIFTING→DEAD** · collect · result · next run |

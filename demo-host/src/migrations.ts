@@ -51,6 +51,11 @@ export const MIGRATIONS: readonly string[] = [
      expires_at INTEGER NOT NULL
    ) STRICT;
    CREATE INDEX run_tickets_user ON run_tickets(user_id);`,
+  `CREATE TABLE external_identities (
+     subject TEXT PRIMARY KEY,
+     user_id TEXT NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+     provider TEXT NOT NULL CHECK(provider IN ('email', 'google'))
+   ) STRICT;`,
 ]
 
 export function migrate(db: DatabaseSync): number {

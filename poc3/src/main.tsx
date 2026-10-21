@@ -69,11 +69,13 @@ function GameBootstrap() {
     }
     let cancelled = false
     void (async () => {
+    const production = import.meta.env.PROD ? await import('./platform/kit-production.ts') : null
     if (cancelled || gameApp) return
+    const kit = production?.createProductionKit()
     gameApp = new GameApp({
       canvas,
       debuggerRoot,
-      ui: controller,
+      ui: controller, kit,
     })
     await gameApp.boot()
     })().catch((error: unknown) => {

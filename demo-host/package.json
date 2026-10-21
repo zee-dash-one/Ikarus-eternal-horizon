@@ -10,11 +10,12 @@
     "dev": "node --watch src/index.ts --dev --allow-local-http",
     "start": "node src/index.ts",
     "typecheck": "tsc --noEmit",
-    "test": "node --test src/app.test.ts src/rankings.test.ts",
+    "test": "node --test src/app.test.ts src/rankings.test.ts src/production-auth.test.ts",
     "verify": "npm run typecheck && npm test"
   },
   "dependencies": {
     "@hono/node-server": "^1.14.0",
+    "@supabase/supabase-js": "2.118.0",
     "hono": "^4.7.4"
   },
   "devDependencies": {

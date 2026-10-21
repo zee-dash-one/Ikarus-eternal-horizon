@@ -1,167 +1,65 @@
 import type { GameScene } from './game-scene.ts'
 import type { GameRenderer } from '../render/renderer.ts'
-import { ParallaxField } from '../render/parallax-field.ts'
-import { PlayerCraftView } from '../render/player-craft-view.ts'
-import { CraftRingsMesh } from '../render/craft-rings-mesh.ts'
-import { ShotFieldView } from '../render/shot-field-view.ts'
+import type { RunViewResources } from '../render/run-view-resources.ts'
+import { CameraManager } from '../systems/camera-manager.ts'
 import type { HudManager } from '../render/hud-manager.ts'
-import { BALANCE } from '../core/balancer.ts'
-import type { GameLoop } from '../core/game-loop.ts'
-import type { InputManager } from '../systems/input-manager.ts'
-import type { PlayerManager } from '../systems/player-manager.ts'
-import type { CameraManager } from '../systems/camera-manager.ts'
-import type { EnergyManager } from '../systems/energy-manager.ts'
-import type { CharSheetManager } from '../systems/char-sheet-manager.ts'
-import type { FiringManager } from '../systems/firing-manager.ts'
-import type { ShotManager } from '../systems/shot-manager.ts'
-import {
-  createEmptyWorldSnapshot,
-  type WorldSnapshot,
-} from '../core/world-snapshot.ts'
+import type { WorldSnapshot } from '../core/world-snapshot.ts'
+import { playfieldToWorld } from '../core/playfield.ts'
 
 export interface RunSceneDeps {
   readonly renderer: GameRenderer
-  readonly loop: GameLoop
-  readonly input: InputManager
-  readonly player: PlayerManager
-  readonly camera: CameraManager
-  readonly energy: EnergyManager
-  readonly sheet: CharSheetManager
-  readonly firing: FiringManager
-  readonly shots: ShotManager
+  readonly view: RunViewResources
   readonly hud: HudManager
-  readonly onPause: () => void
+  readonly getSnapshot: () => WorldSnapshot
+  readonly getHighScore: () => number
 }
 
+/** Presentation only. Fixed gameplay and result submission are owned elsewhere. */
 export class RunScene implements GameScene {
   readonly id = 'run'
-  private readonly _deps: RunSceneDeps
-  private readonly _parallax: ParallaxField
-  private readonly _craft: PlayerCraftView
-  private readonly _rings: CraftRingsMesh
-  private readonly _shotView: ShotFieldView
-  private _snapshot: WorldSnapshot = createEmptyWorldSnapshot()
-  private _elapsed = 0
-  private _tick = 0
-
-  constructor(deps: RunSceneDeps) {
-    this._deps = deps
-    this._parallax = new ParallaxField()
-    this._craft = new PlayerCraftView()
-    this._rings = new CraftRingsMesh()
-    this._shotView = new ShotFieldView()
-  }
-
-  get snapshot(): WorldSnapshot {
-    return this._snapshot
-  }
-
+  private readonly _camera = new CameraManager()
+  private _lastTick = 0
+  private _disposed = false
+  constructor(private readonly _deps: RunSceneDeps) {}
+  get snapshot(): WorldSnapshot { return this._deps.getSnapshot() }
   mount(): void {
-    const scene = this._deps.renderer.scene
-    scene.add(this._parallax.root)
-    scene.add(this._shotView.root)
-    scene.add(this._craft.root)
-    scene.add(this._rings.root)
+    if (!this._deps.view.ready) throw new Error('Mundo ainda não preparado.')
+    this._deps.renderer.scene.add(this._deps.view.root)
   }
-
-  update(dt: number): void {
-    this._deps.input.update(dt)
-    if (this._deps.input.wasPressed('Start')) {
-      this._deps.onPause()
-      return
-    }
-    if (this._deps.loop.paused) {
-      return
-    }
-    this._tick += 1
-    this._elapsed += dt
-    this._deps.player.updateSim(dt)
-    this._deps.firing.updateSim(dt, { x: this._deps.player.pose.x, z: this._deps.player.pose.z })
-    this._deps.sheet.shipStatus.tick(dt * 1000)
-    this._deps.energy.updateSim(dt)
-    const pose = this._deps.player.pose
-    this._deps.shots.updateSim(dt)
-    this._deps.camera.updateFollow(pose, dt)
-    if (this._deps.camera.freeCamEnabled) {
-      this._deps.camera.updateFreeCam(
-        this._deps.input.axis('moveX'),
-        this._deps.input.axis('moveZ'),
-        0,
-        dt,
-      )
-    }
-    this._parallax.update(dt, this._deps.renderer.camera)
-    const s = this._deps.sheet.summary
-    const score = Math.floor(this._elapsed * 120)
-    this._snapshot = {
-      tick: this._tick,
-      paused: this._deps.loop.paused,
-      player: { ...pose },
-      summary: {
-        ENE: s.ENE,
-        SHD: s.SHD,
-        DEF: s.DEF,
-        MIT: s.MIT,
-        SPD: s.SPD,
-        S_D: s.S_D,
-        S_R: s.S_R,
-        REG: s.REG,
-        LVL: s.LVL,
-        HP: s.HP,
-        integrityMax: s.integrity_max,
-        eneMax: BALANCE.sheet.playerDefaults.ENE_max,
-        shdMax: BALANCE.sheet.playerDefaults.SHD_max,
-        integrityState: s.integrityState,
-      },
-      elapsedSec: this._elapsed,
-      kills: 0,
-      score,
-    }
+  update(): void { /* No gameplay authority in View. */ }
+  setFreeCam(enabled: boolean): void { this._camera.setFreeCam(enabled) }
+  updateCameraControls(moveX: number, moveZ: number, dt: number): void {
+    this._camera.updateFreeCam(moveX, moveZ, 0, dt)
   }
-
   syncRender(): void {
-    const pose = this._deps.player.pose
-    this._craft.syncPose(pose.x, 0, pose.z, pose.rotY, pose.bank)
-    this._rings.syncWorldPosition(pose.x, 0, pose.z)
-    this._rings.applyOrientation()
-    this._rings.sync(this._snapshot.summary)
-    this._shotView.syncShots(this._deps.shots.activeShots)
-    this._deps.renderer.syncCamera(this._deps.camera.state)
-    this._parallax.syncRender()
+    if (this._disposed) return
+    const snapshot = this.snapshot
+    const pose = snapshot.player
+    const world = playfieldToWorld(pose)
+    const { craft, rings, shots, parallax } = this._deps.view
+    const dt = Math.max(0, snapshot.tick - this._lastTick) / 60
+    this._lastTick = snapshot.tick
+    craft.syncPose(world.x, world.y, world.z, pose.rotY, pose.bank)
+    rings.syncWorldPosition(world.x, world.y, world.z)
+    rings.applyOrientation()
+    rings.sync(snapshot.summary)
+    shots.syncShots(snapshot.shots ?? [])
+    this._deps.view.encounter.sync(snapshot)
+    this._camera.updateFollow(pose, dt)
+    this._deps.renderer.syncCamera(this._camera.state)
+    parallax.update(dt, this._deps.renderer.camera)
+    parallax.syncRender()
     this._deps.renderer.render()
-    this._deps.hud.syncRender(
-      this._snapshot,
-      {
-        activeWeapon: this._deps.firing.activeWeapon,
-        weaponLevel: this._deps.sheet.summary.LVL,
-        highScore: BALANCE.hud.stubs.defaultHighScore,
-        craftPct: null,
-        craftName: null,
-      },
-      {
-        camera: this._deps.renderer.camera,
-        canvas: this._deps.renderer.canvas,
-      },
-    )
+    this._deps.hud.syncRender(snapshot, {
+      activeWeapon: snapshot.activeWeapon ?? 'laser', weaponLevel: snapshot.weaponLevel ?? snapshot.summary.LVL,
+      highScore: this._deps.getHighScore(), craftPct: snapshot.crafting?.progress ?? null, craftName: snapshot.crafting?.name ?? null,
+    }, { camera: this._deps.renderer.camera, canvas: this._deps.renderer.canvas }, dt)
   }
-
-  refreshCraftRings(): void {
-    const pose = this._deps.player.pose
-    this._rings.syncWorldPosition(pose.x, 0, pose.z)
-    this._rings.invalidateLayout()
-    this._rings.applyOrientation()
-    this._rings.sync(this._snapshot.summary)
-  }
-
+  refreshCraftRings(): void { this._deps.view.rings.invalidateLayout() }
   dispose(): void {
+    if (this._disposed) return
+    this._disposed = true
     this._deps.hud.setVisible(false)
-    this._parallax.dispose()
-    this._parallax.root.removeFromParent()
-    this._shotView.dispose()
-    this._shotView.root.removeFromParent()
-    this._rings.dispose()
-    this._rings.root.removeFromParent()
-    this._craft.dispose()
-    this._craft.root.removeFromParent()
+    this._deps.view.dispose()
   }
 }

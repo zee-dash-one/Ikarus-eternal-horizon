@@ -4,13 +4,15 @@ import { ObjectPool } from '../pools/object-pool.ts'
 import { BoundaryManager } from './boundary-manager.ts'
 
 export class ShotManager {
+  onExpire: ((shot: PlayerShot) => void) | null = null
   private readonly _pool: ObjectPool<PlayerShot>
   private readonly _active: PlayerShot[] = []
+  private _sequence = 0
   private readonly _bounds = new BoundaryManager()
 
   constructor() {
     const cap = BALANCE.weapons.laser.poolSize
-    this._pool = new ObjectPool(() => new PlayerShot(), 16, cap)
+    this._pool = new ObjectPool(() => new PlayerShot(), cap, cap)
   }
 
   get activeShots(): readonly PlayerShot[] {
@@ -22,6 +24,7 @@ export class ShotManager {
     if (!shot) {
       return null
     }
+    shot.id = ++this._sequence
     this._active.push(shot)
     return shot
   }
@@ -43,6 +46,7 @@ export class ShotManager {
       }
       shot.updateSim(dt)
       if (!shot.active) {
+        this.onExpire?.(shot)
         this.release(shot)
         continue
       }

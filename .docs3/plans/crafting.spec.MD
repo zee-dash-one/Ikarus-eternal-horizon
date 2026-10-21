@@ -1,5 +1,8 @@
 # Ikarus Eternal Horizon — Crafting & Resources
 
+> **Runtime F (2026-10-21):** the playable per-run catalog is integrated and tested; [consolidation.spec.MD](./consolidation.spec.MD) records the shipped profiles, bounded pools, recipes, equipment and Survivor restrictions. Older theme/defer notes below describe the original milestones; unshipped GDD catalog entries remain future content.
+
+
 tag_g_resources tag_g_crafting tag_s_resources_material_types tag_s_crafting_craft_slot
 RESUME: Run material economy — inventory caps, Pause-only real-time CraftSlot, recipes consuming materials + Energy + time. World drops → [`drops.spec.MD`](./drops.spec.MD).
 

@@ -1,5 +1,8 @@
 import { DEFAULT_RUN_PREPARATION } from './run-balance.ts'
+import { DEFAULT_COMBAT, type CombatBalance } from './combat-balance.ts'
 import type { RunPreparationBalance } from './run-plan.ts'
+
+import { DEFAULT_ECONOMY, type EconomyBalance } from './run-economy.ts'
 
 const PARALLAX_GAIN_UNIT = 0.015
 
@@ -302,7 +305,9 @@ export interface PlayerBalance {
 }
 
 export interface BalanceConfig {
+  readonly economy: EconomyBalance
   readonly preparation: RunPreparationBalance
+  readonly combat: CombatBalance
   readonly scoring: {
     readonly enemy: number
     readonly miniboss: number
@@ -324,7 +329,9 @@ export interface BalanceConfig {
 }
 
 export const BALANCE: BalanceConfig = {
+  economy: DEFAULT_ECONOMY,
   preparation: DEFAULT_RUN_PREPARATION,
+  combat: DEFAULT_COMBAT,
   scoring: { enemy: 100, miniboss: 1000, meteors: { S: 10, M: 25, L: 50 } },
   layout: {
     aspect: 16 / 9,

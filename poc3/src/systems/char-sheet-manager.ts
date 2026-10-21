@@ -17,6 +17,8 @@ export class CharSheetManager {
   private _summary: SummarySheet = createDefaultSummary()
   private readonly _context = new Set<GrantContext>()
   private _contextPatch: Partial<SummarySheet> = {}
+  private _equipment: Partial<Record<'DEF' | 'SPD' | 'S_D' | 'S_R' | 'REG', number>> = {}
+  private _combatBaseSpeed: number | null = null
   readonly shipStatus = new ShipStatusTracker()
 
   get full(): FullCharSheet {
@@ -33,6 +35,24 @@ export class CharSheetManager {
     return mgr
   }
 
+  setEquipment(grants: Partial<Record<'DEF' | 'SPD' | 'S_D' | 'S_R' | 'REG', number>>): void {
+    this._equipment = { ...grants }
+    this._summary.DEF = BALANCE.sheet.playerDefaults.DEF + (grants.DEF ?? 0) + (this._contextPatch.DEF ?? 0)
+    this._summary.MIT = this._summary.DEF / 10
+    this._summary.S_D = 10 + (grants.S_D ?? 0)
+    this._summary.REG = BALANCE.sheet.playerDefaults.REG + (grants.REG ?? 0)
+    this._applyIntegrityPenalties()
+  }
+  restoreIntegrity(amount: number): void {
+    if (this._summary.integrityState === 'DEAD' || amount <= 0) return
+    this._summary.integrity_cur = Math.min(this._summary.integrity_max, this._summary.integrity_cur + amount)
+    this._updateIntegrityState()
+    this._applyIntegrityPenalties()
+  }
+  restoreShield(amount: number): void {
+    if (this._summary.integrityState !== 'DEAD' && amount > 0) this._summary.SHD = Math.min(BALANCE.sheet.playerDefaults.SHD_max, this._summary.SHD + amount)
+  }
+
   setContext(ctx: GrantContext, active: boolean): void {
     if (active) {
       this._context.add(ctx)
@@ -40,7 +60,17 @@ export class CharSheetManager {
       this._context.delete(ctx)
     }
     this._applyContextGrants()
-    this.recalcSummaryOnly()
+    if (this._combatBaseSpeed === null) this.setEquipment(this._equipment)
+    else this.recalcSummaryOnly()
+  }
+
+  /** Reuse a preallocated enemy CHAR; never construct a sheet on the combat path. */
+  resetCombat(hp: number, shield: number, speed: number): void {
+    this._combatBaseSpeed = speed
+    this._context.clear()
+    this._contextPatch = {}
+    Object.assign(this._summary, { integrity_max: hp, integrity_cur: hp, HP: hp, SHD: shield,
+      DEF: 0, MIT: 0, SPD: speed, S_R: 8, integrityState: 'LIGHT', LVL: 1 })
   }
 
   private _applyContextGrants(): void {
@@ -76,9 +106,9 @@ export class CharSheetManager {
 
   private _applyIntegrityPenalties(): void {
     const mul = integritySpeedMultiplier(this._summary.integrityState)
-    const base = BALANCE.sheet.playerDefaults.SPD
+    const base = this._combatBaseSpeed ?? (BALANCE.sheet.playerDefaults.SPD + (this._equipment.SPD ?? 0))
     this._summary.SPD = base * mul
-    this._summary.S_R = 8 * mul
+    this._summary.S_R = (8 + (this._equipment.S_R ?? 0)) * mul
   }
 
   private _updateIntegrityState(): void {

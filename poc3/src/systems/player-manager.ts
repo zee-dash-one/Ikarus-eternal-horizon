@@ -1,8 +1,7 @@
 import { BALANCE } from '../core/balancer.ts'
 import { clamp } from '../core/math.ts'
-import { integritySpeedMultiplier } from '../core/sheet/char-sheet.ts'
 import type { PlayerPose } from '../core/world-snapshot.ts'
-import type { InputManager } from './input-manager.ts'
+import type { GameplayInput } from '../core/run-input.ts'
 import type { CharSheetManager } from './char-sheet-manager.ts'
 import type { EnergyManager } from './energy-manager.ts'
 
@@ -61,7 +60,7 @@ function wrapDeg(value: number): number {
 
 /** POC2 PlayerController motion port — Core sim only. */
 export class PlayerManager {
-  private readonly _input: InputManager
+  private readonly _input: GameplayInput
   private readonly _sheet: CharSheetManager
   private readonly _energy: EnergyManager
   private _vx = 0
@@ -75,7 +74,7 @@ export class PlayerManager {
   private _dashing = false
   private _pose = { x: 0, y: 0, z: 0, rotY: 0, bank: 0, dashing: false }
 
-  constructor(input: InputManager, sheet: CharSheetManager, energy: EnergyManager) {
+  constructor(input: GameplayInput, sheet: CharSheetManager, energy: EnergyManager) {
     this._input = input
     this._sheet = sheet
     this._energy = energy
@@ -87,6 +86,10 @@ export class PlayerManager {
 
   get dashing(): boolean {
     return this._dashing
+  }
+
+  setEntryProgress(progress: number, fromZ: number): void {
+    this._pose.z = fromZ * Math.pow(1 - Math.max(0, Math.min(1, progress)), 3)
   }
 
   updateSim(dt: number): void {
@@ -109,9 +112,8 @@ export class PlayerManager {
     const motion = BALANCE.player.motion
     const tilt = BALANCE.player.tilt
     const dash = BALANCE.player.dash
-    const integrityMul = integritySpeedMultiplier(summary.integrityState)
     const accel = motion.accel
-    let maxSpeed = summary.SPD * integrityMul
+    let maxSpeed = summary.SPD
 
     if (this._input.wasPressed('R1') && !this._dashing) {
       if (

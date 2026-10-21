@@ -14,14 +14,14 @@ RESUME: Device-blind controls — sim reads only the virtual pad; physical devic
 
 Gameplay systems (`PlayerManager`, `FiringManager`, Pause gate, …) read **only** the **virtual pad**. They never import keyboard codes, mouse buttons, `Gamepad` indices, DOM events, or **nipplejs**. Physical hardware is normalized by **adapters** inside `InputManager`.
 
-**Core boundary (`D40`):** each sim tick, `InputManager` translates pad edges/levels into **Commands** (pure objects) dispatched to Core — e.g. `{ type: 'FIRE_PRIMARY' }`. Core never reads DOM or Three.js.
+**Core boundary (`D40`):** each UI frame, InputManager translates pad edges/levels into a pure RunInputFrame; RunInputBuffer retains edges until a fixed tick consumes them. Start stays outside sim. Core never reads DOM or Three.js.
 
 #### Virtual vocabulary (locked)
 
 | Kind | Tokens | Rule |
 | --- | --- | --- |
 | **Directions** | `Up` · `Down` · `Left` · `Right` | Digital edge/level. Adapters also publish analog **`moveX`** / **`moveZ`** ∈ [−1, 1] for stick/nipple/WASD merge (PlayerManager reads axes, not raw hardware). |
-| **System** | `Start` | **Pause / unpause** at the gameplay boundary (`RunScene` gate). Not a gameplay action token. |
+| **System** | `Start` | **Pause / unpause** at the gameplay boundary (`GameLoop.beforeFrame` UI boundary). Not a gameplay action token. |
 | **Face / shoulders** | `A` · `B` · `X` · `Y` · `R1` · `R2` | Digital actions only |
 
 No other symbols exist at the gameplay boundary (`D27`).
@@ -31,7 +31,7 @@ No other symbols exist at the gameplay boundary (`D27`).
 | Virtual | Default role | Primary consumer |
 | --- | --- | --- |
 | `Up`/`Down`/`Left`/`Right` | Move (+ `moveX`/`moveZ`) | `PlayerManager` |
-| `Start` | Pause / unpause | `RunScene` → `GameLoop` pause gate · Pause DOM overlay |
+| `Start` | Pause / unpause | `GameLoop.beforeFrame` → pause gate · Pause DOM overlay |
 | `A` | Fire | `FiringManager` |
 | `B` | Bomb | `FiringManager` |
 | `X` | Switch weapon | `FiringManager` |
@@ -110,13 +110,13 @@ Adapter rules:
 - `TouchControls` — pause button calls `TouchInputAdapter.press('Start')`
 - When `captureDom` is false (Pause menu open), **only** the bound pause key is still captured (`shouldCaptureKeyboardPress`) so pause can close; other gameplay keys are ignored on DOM UI.
 
-#### Pause gate (`RunScene`)
+#### Pause gate (`GameLoop.beforeFrame`, C02)
 
 ```
-input.update(dt)
-if input.wasPressed('Start') → onPause()   // toggles overlay; all schemes
+input.update(frameDt) // UI clock: even while paused or before a zero-tick frame
+if input.wasPressed('Start') → togglePause()   // toggles overlay; all schemes
 if loop.paused → return                     // no gameplay sim
-… PlayerManager / FiringManager …
+buffer.sample(virtual frame); fixed tick consumes buffered commands → RunSimulation
 ```
 
 While remap listen mode is active (`remap-listen-state`), `onPause` is suppressed so binding capture is not interrupted.
@@ -214,7 +214,7 @@ RESUME: View-layer touch chrome above HUD; semi-transparent; stick + combat clus
 | ID | Prio | Requirement | Acceptance |
 | --- | --- | --- | --- |
 | `CTRL-01` | must | Virtual pad vocabulary; four exclusive scheme adapters; `InputManager` port | Gameplay code reads only virtual tokens; scheme switch on Pause Controls; no hardware imports in `PlayerManager`/`FiringManager` |
-| `CTRL-02` | must | Pause only via virtual `Start` from bound physical inputs; persisted `InputBindings`; no hardcoded Esc/Start/touch pause in `game-app` | Rebind pause key/button; unbound physical inputs behave normally; `wasPressed('Start')` is the sole pause gate in `RunScene` |
+| `CTRL-02` | must | Pause only via virtual `Start` from bound physical inputs; persisted `InputBindings`; no hardcoded Esc/Start/touch pause in `game-app` | Rebind pause key/button; unbound physical inputs behave normally; `wasPressed('Start')` is polled at the UI frame boundary outside sim |
 | `CTRL-03` | must | Pause Controls tab: scheme picker, pause + combat remap, mix mouse options, remap listen guard, DOM Exit navigation | Remap succeeds for all schemes; listen mode does not toggle pause or steal gamepad buttons; bindings persist |
 | `CTRL-04` | must | Touch overlay layout + z-index above HUD + transparent chrome | Buttons tappable over HUD; pause top-right; combat bottom-right; nipplejs isolated |
 

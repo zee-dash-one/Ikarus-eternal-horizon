@@ -7,7 +7,7 @@
  *
  * Acceptance:
  *   "Rebind pause key/button; unbound physical inputs behave normally;
- *    wasPressed('Start') is the sole pause gate in RunScene"
+ *    wasPressed('Start') is polled outside the sim gate (C02)"
  */
 
 import { existsSync, readFileSync } from 'node:fs';
@@ -40,11 +40,13 @@ describe('CTRL-02 — Pause via virtual Start from bindings only', () => {
     expect(src).not.toMatch(/e\.key === 'Escape'/);
   });
 
-  it('RunScene toggles pause only through wasPressed(Start)', () => {
-    const src = readFileSync(RUN_SCENE, 'utf8');
+  it('frame-level input uses virtual Start while RunScene has no input authority', () => {
+    const src = readFileSync(GAME_APP, 'utf8');
     expect(src).toMatch(/wasPressed\('Start'\)/);
-    expect(src).toMatch(/onPause\(\)/);
-    expect(src).not.toMatch(/scheme === 'touch'/);
+    expect(src).toMatch(/beforeFrame:/);
+    const view = readFileSync(RUN_SCENE, 'utf8');
+    expect(view).not.toMatch(/wasPressed|InputManager|updateSim/);
+    // Behavioral pause/no-tick/resume coverage lives in core/game-loop.test.ts.
   });
 
   it('keyboard adapter routes bound pause key even when DOM capture is off', () => {

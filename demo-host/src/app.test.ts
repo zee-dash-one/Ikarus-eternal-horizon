@@ -118,7 +118,7 @@ test('migrations are idempotent, runs have foreign keys and settings reject inva
   for (const body of [{ schemaVersion: -1, payload: {} }, { schemaVersion: 1 }, { schemaVersion: 1, payload: 'x'.repeat(70000) }]) {
     assert.equal((await request(app, '/profile/settings/controls', { method: 'PUT', cookie, body })).status, 400)
   }
-  assert.equal(repository.schemaVersion, 1)
+  assert.equal(repository.schemaVersion, 2)
   const run = { runId: 'test-run', userId: session.userId, mode: 'normal' as const, score: 100, kills: 2, durationMs: 1000, endedAtUtc: '2026-10-19T00:00:00.000Z', seed: 'test-seed', buildVersion: 'test', contentVersion: 'test', eligible: true }
   repository.runs.insert(run)
   assert.deepEqual(repository.runs.findForUser('test-run', session.userId), run)
@@ -127,7 +127,7 @@ test('migrations are idempotent, runs have foreign keys and settings reject inva
   const inspection = new DatabaseSync(path)
   try {
     inspection.exec('PRAGMA foreign_keys = ON')
-    assert.equal(inspection.prepare('SELECT COUNT(*) AS count FROM schema_migrations').get()?.count, 1)
+    assert.equal(inspection.prepare('SELECT COUNT(*) AS count FROM schema_migrations').get()?.count, 2)
     assert.throws(() => inspection.prepare('INSERT INTO sessions(token_hash, user_id, expires_at) VALUES (?, ?, ?)').run('hash', 'nonexistent-user', 1000), /FOREIGN KEY/)
     assert.equal(inspection.prepare("SELECT COUNT(*) AS count FROM sqlite_master WHERE type = 'table' AND name = 'runs'").get()?.count, 1)
   } finally { inspection.close() }

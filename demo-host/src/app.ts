@@ -3,15 +3,31 @@ import { getCookie, setCookie, deleteCookie } from 'hono/cookie'
 import { bodyLimit } from 'hono/body-limit'
 import type { AppConfig } from './config.ts'
 import type { LocalRepository, PublicSession } from './repository.ts'
+import { RankingError } from './run-repository.ts'
+import { validateStart, validateSubmission } from './ranking-validation.ts'
+import { RANKING_PERIODS, type RankingPeriod } from '../../shared/rankings.ts'
 
 const COOKIE = 'ikarus_session'
 const SETTING_KEYS = new Set(['controls', 'audio', 'graphics', 'progress', 'achievements', 'dev-content'])
 type Variables = { session: PublicSession }
 
 export function createApp({ repository, config, now = Date.now }: { repository: LocalRepository; config: AppConfig; now?: () => number }) {
+  const resolveSession = (cookie: string | undefined): PublicSession | null => {
+    if (config.profile === 'dev') return repository.probeSession(cookie, now())
+    return null
+  }
   const app = new Hono<{ Variables: Variables }>()
   app.use('/api/*', async (c, next) => {
     c.header('Cache-Control', 'no-store')
+    c.header('X-Content-Type-Options', 'nosniff')
+    const requestOrigin = c.req.header('Origin')
+    if (requestOrigin && config.allowedOrigins.includes(requestOrigin)) {
+      c.header('Access-Control-Allow-Origin', requestOrigin)
+      c.header('Vary', 'Origin')
+      c.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Ikarus-User')
+      c.header('Access-Control-Allow-Methods', 'GET, POST, PUT, OPTIONS')
+    }
+    if (c.req.method === 'OPTIONS') return requestOrigin && config.allowedOrigins.includes(requestOrigin) ? c.body(null, 204) : c.json({ error: 'forbidden_origin' }, 403)
     if (!['GET', 'HEAD', 'OPTIONS'].includes(c.req.method)) {
       const origin = c.req.header('Origin')
       if (!origin || !config.allowedOrigins.includes(origin)) return c.json({ error: 'forbidden_origin' }, 403)
@@ -31,8 +47,8 @@ export function createApp({ repository, config, now = Date.now }: { repository: 
       return c.json(session)
     })
   }
-  app.get('/api/me', (c) => {
-    const session = config.profile === 'dev' ? repository.probeSession(getCookie(c, COOKIE), now()) : null
+  app.get('/api/me', async (c) => {
+    const session = resolveSession(getCookie(c, COOKIE))
     return session ? c.json(session) : c.json({ error: 'unauthorized' }, 401)
   })
   app.post('/api/auth/logout', (c) => {
@@ -41,13 +57,35 @@ export function createApp({ repository, config, now = Date.now }: { repository: 
     deleteCookie(c, COOKIE, { path: '/', secure: config.secureCookies })
     return c.json({ ok: true })
   })
-  app.use('/api/profile/*', async (c, next) => {
-    const session = config.profile === 'dev' ? repository.probeSession(getCookie(c, COOKIE), now()) : null
+  const requireSession: import('hono').MiddlewareHandler<{ Variables: Variables }> = async (c, next) => {
+    const session = resolveSession(getCookie(c, COOKIE))
     if (!session) return c.json({ error: 'unauthorized' }, 401)
     const expectedUser = c.req.header('X-Ikarus-User')
     if (expectedUser && expectedUser !== session.userId) return c.json({ error: 'account_changed' }, 409)
     c.set('session', session)
     await next()
+  }
+  app.use('/api/profile/*', requireSession)
+  app.use('/api/rankings/*', requireSession)
+  app.post('/api/rankings/start', async (c) => {
+    const input = validateStart(await c.req.json().catch(() => null))
+    return c.json(repository.runs.start(c.get('session').userId, input.buildVersion, input.contentVersion, now(), input.mode))
+  })
+  app.post('/api/rankings/submit', async (c) => {
+    const input = validateSubmission(await c.req.json().catch(() => null))
+    return c.json(repository.runs.submit(c.get('session').userId, input, now()))
+  })
+  app.get('/api/rankings/board', (c) => {
+    const mode = c.req.query('mode')
+    const period = c.req.query('period')
+    if ((mode !== 'normal' && mode !== 'survivor') || !RANKING_PERIODS.includes(period as RankingPeriod)) return c.json({ error: 'invalid_board' }, 400)
+    return c.json(repository.runs.board(c.get('session').userId, mode, period as RankingPeriod, now()))
+  })
+  app.get('/api/rankings/bests', (c) => {
+    const time = now()
+    const mode = c.req.query('mode') ?? 'normal'
+    if (mode !== 'normal' && mode !== 'survivor') return c.json({ error: 'invalid_mode' }, 400)
+    return c.json(Object.fromEntries(RANKING_PERIODS.map((period) => [period, repository.runs.board(c.get('session').userId, mode, period, time, 0).personalBest?.score ?? 0])))
   })
   app.get('/api/profile/settings/:key', (c) => {
     const key = c.req.param('key')
@@ -67,6 +105,7 @@ export function createApp({ repository, config, now = Date.now }: { repository: 
     return c.json({ ok: true })
   })
   app.onError((error, c) => {
+    if (error instanceof RankingError) return c.json({ error: error.message }, error.status)
     console.error('DemoHost request failed:', error.message)
     return c.json({ error: 'service_error' }, 500)
   })
